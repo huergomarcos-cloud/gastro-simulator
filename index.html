@@ -125,7 +125,8 @@
           <div class="slider-group" data-key="vueltasAlmuerzo" data-min="0" data-max="5" data-step="0.5" data-default="2" data-label="Vueltas almuerzo" data-suffix=""></div>
           <div class="slider-group" data-key="vueltasCena" data-min="0" data-max="5" data-step="0.5" data-default="2" data-label="Vueltas cena" data-suffix=""></div>
           <div class="slider-group" data-key="diasOperativos" data-min="15" data-max="31" data-step="1" data-default="26" data-label="Días operativos / mes" data-suffix=""></div>
-          <div class="slider-group" data-key="ticketPromedio" data-min="5" data-max="100" data-step="1" data-default="25" data-label="Ticket promedio (USD)" data-suffix="$"></div>
+          <div class="slider-group" data-key="ticketAlmuerzo" data-min="5" data-max="100" data-step="1" data-default="20" data-label="Ticket almuerzo (USD)" data-suffix="$"></div>
+          <div class="slider-group" data-key="ticketCena" data-min="5" data-max="100" data-step="1" data-default="35" data-label="Ticket cena (USD)" data-suffix="$"></div>
         </div>
       </div>
 
@@ -152,6 +153,17 @@
           <div class="slider-group" data-key="costoEmpleado" data-min="200" data-max="2000" data-step="50" data-default="600" data-label="Costo promedio / empleado (USD)" data-suffix="$"></div>
           <div class="slider-group" data-key="alquiler" data-min="0" data-max="10000" data-step="100" data-default="2000" data-label="Alquiler mensual (USD)" data-suffix="$"></div>
           <div class="slider-group" data-key="servicios" data-min="0" data-max="3000" data-step="50" data-default="500" data-label="Servicios / expensas (USD)" data-suffix="$"></div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="text-lg font-semibold mb-4 text-blue-400">Impuestos</h2>
+        <div class="space-y-4">
+          <div class="slider-group" data-key="iibbPct" data-min="0" data-max="8" data-step="0.5" data-default="3.5" data-label="IIBB (% s/ fact. blanca)" data-suffix="%"></div>
+          <div class="slider-group" data-key="ivaAlicuota" data-min="0" data-max="27" data-step="0.5" data-default="21" data-label="IVA Alícuota (%)" data-suffix="%"></div>
+          <div class="slider-group" data-key="ivaCreditoPct" data-min="0" data-max="100" data-step="5" data-default="40" data-label="IVA Crédito Fiscal (% s/ débito)" data-suffix="%"></div>
+          <div class="slider-group" data-key="gananciasPct" data-min="0" data-max="50" data-step="1" data-default="35" data-label="Ganancias (% s/ resultado fiscal)" data-suffix="%"></div>
+          <div class="slider-group" data-key="debCredPct" data-min="0" data-max="3" data-step="0.1" data-default="1.2" data-label="Déb. y Créd. Bancarios (% s/ blanco)" data-suffix="%"></div>
         </div>
       </div>
 
@@ -236,7 +248,7 @@
 const FIXED = {
   opexPct: 2,
   marketingPct: 3,
-  processingPctBlanco: 2.5,
+  processingPctBlanco: 1.5,
   estudioContable: 500,
   softwareMisc: 300,
   demandaMaxPct: 90,
@@ -381,14 +393,23 @@ function calc() {
   const f = FIXED;
 
   // Covers
-  const coversDiarios = s.capacidad * (s.vueltasAlmuerzo + s.vueltasCena);
+  const coversAlmuerzoDia = s.capacidad * s.vueltasAlmuerzo;
+  const coversCenaDia = s.capacidad * s.vueltasCena;
+  const coversDiarios = coversAlmuerzoDia + coversCenaDia;
   const coversMensuales = coversDiarios * s.diasOperativos;
 
   // Revenue at steady state (demanda max)
   const coversEfectivos = coversMensuales * (f.demandaMaxPct / 100);
-  const revenueTotal = coversEfectivos * s.ticketPromedio;
+  const coversAlmuerzoMes = coversAlmuerzoDia * s.diasOperativos * (f.demandaMaxPct / 100);
+  const coversCenaMes = coversCenaDia * s.diasOperativos * (f.demandaMaxPct / 100);
+  const revenueAlmuerzo = coversAlmuerzoMes * s.ticketAlmuerzo;
+  const revenueCena = coversCenaMes * s.ticketCena;
+  const revenueTotal = revenueAlmuerzo + revenueCena;
+  const ticketPromedioPonderado = coversEfectivos > 0 ? revenueTotal / coversEfectivos : 0;
   const revenueNegro = revenueTotal * (s.pctNegro / 100);
-  const revenueBlanco = revenueTotal * (s.pctBlanco / 100);
+  const revenueBlancoConIVA = revenueTotal * (s.pctBlanco / 100);
+  // El ticket blanco incluye IVA → neto = bruto / (1 + IVA%)
+  const revenueBlanco = revenueBlancoConIVA / (1 + s.ivaAlicuota / 100);
 
   // COGS
   const foodCost = revenueTotal * (s.foodCost / 100);
@@ -414,9 +435,25 @@ function calc() {
   const ebitda = grossProfit - totalOpex;
   const ebitdaMargin = revenueTotal > 0 ? (ebitda / revenueTotal * 100) : 0;
 
-  // Net (sin impuestos en negro, ~35% sobre blanco simplificado)
-  const impuestosBlanco = Math.max(0, ebitda * (s.pctBlanco / 100) * 0.35);
-  const netIncome = ebitda - impuestosBlanco;
+  // ===== IMPUESTOS DESGLOSADOS =====
+  // IVA: débito - crédito fiscal
+  const ivaDebito = revenueBlanco * (s.ivaAlicuota / 100);
+  const ivaCredito = ivaDebito * (s.ivaCreditoPct / 100);
+  const ivaNeto = Math.max(0, ivaDebito - ivaCredito);
+
+  // IIBB: sobre facturación blanca (neta de IVA)
+  const iibb = revenueBlanco * (s.iibbPct / 100);
+
+  // Déb. y Créd. Bancarios: sobre blanco con IVA (lo que pasa por banco)
+  const debCred = revenueBlancoConIVA * (s.debCredPct / 100);
+
+  // Ganancias: sobre EBITDA × % blanco (resultado fiscal positivo)
+  const baseGanancias = Math.max(0, ebitda * (s.pctBlanco / 100));
+  const ganancias = baseGanancias * (s.gananciasPct / 100);
+
+  // Total impuestos
+  const totalImpuestos = ivaNeto + iibb + debCred + ganancias;
+  const netIncome = ebitda - totalImpuestos;
   const netMargin = revenueTotal > 0 ? (netIncome / revenueTotal * 100) : 0;
 
   // 24-month projection with ramp-up
@@ -431,9 +468,12 @@ function calc() {
     const rampPct = m <= s.rampUpMeses
       ? 20 + (f.demandaMaxPct - 20) * (m / s.rampUpMeses)
       : f.demandaMaxPct;
-    const mCovers = coversMensuales * (rampPct / 100);
-    const mRev = mCovers * s.ticketPromedio;
-    const mRevBlanco = mRev * (s.pctBlanco / 100);
+    const mCoversAlm = coversAlmuerzoDia * s.diasOperativos * (rampPct / 100);
+    const mCoversCena = coversCenaDia * s.diasOperativos * (rampPct / 100);
+    const mCovers = mCoversAlm + mCoversCena;
+    const mRev = mCoversAlm * s.ticketAlmuerzo + mCoversCena * s.ticketCena;
+    const mRevBlancoConIVA = mRev * (s.pctBlanco / 100);
+    const mRevBlanco = mRevBlancoConIVA / (1 + s.ivaAlicuota / 100);
 
     const mCOGS = mRev * ((s.foodCost + s.paperCost) / 100);
     const mGross = mRev - mCOGS;
@@ -444,7 +484,16 @@ function calc() {
       + sgaFixed;
 
     const mEbitda = mGross - mOpex;
-    const mImpuestos = Math.max(0, mEbitda * (s.pctBlanco / 100) * 0.35);
+
+    // Impuestos desglosados
+    const mIvaDebito = mRevBlanco * (s.ivaAlicuota / 100);
+    const mIvaCredito = mIvaDebito * (s.ivaCreditoPct / 100);
+    const mIvaNeto = Math.max(0, mIvaDebito - mIvaCredito);
+    const mIibb = mRevBlanco * (s.iibbPct / 100);
+    const mDebCred = mRevBlancoConIVA * (s.debCredPct / 100);
+    const mBaseGanancias = Math.max(0, mEbitda * (s.pctBlanco / 100));
+    const mGanancias = mBaseGanancias * (s.gananciasPct / 100);
+    const mImpuestos = mIvaNeto + mIibb + mDebCred + mGanancias;
     const mNet = mEbitda - mImpuestos;
 
     cashAccum += mNet;
@@ -471,8 +520,8 @@ function calc() {
 
   // Break-even covers
   const fixedCosts = staffTotal + s.alquiler + s.servicios + sgaFixed;
-  const contributionPerCover = s.ticketPromedio * (1 - (s.foodCost + s.paperCost + f.opexPct + f.marketingPct) / 100)
-    - s.ticketPromedio * (s.pctBlanco / 100) * (f.processingPctBlanco / 100);
+  const contributionPerCover = ticketPromedioPonderado * (1 - (s.foodCost + s.paperCost + f.opexPct + f.marketingPct) / 100)
+    - ticketPromedioPonderado * (s.pctBlanco / 100) * (f.processingPctBlanco / 100);
   const breakEvenCovers = contributionPerCover > 0 ? Math.ceil(fixedCosts / contributionPerCover) : Infinity;
   const breakEvenOccupancy = coversMensuales > 0 ? (breakEvenCovers / coversMensuales * 100) : 0;
 
@@ -482,10 +531,13 @@ function calc() {
 
   return {
     coversDiarios, coversMensuales, coversEfectivos,
-    revenueTotal, revenueNegro, revenueBlanco,
+    coversAlmuerzoMes, coversCenaMes, revenueAlmuerzo, revenueCena, ticketPromedioPonderado,
+    revenueTotal, revenueNegro, revenueBlanco, revenueBlancoConIVA,
     foodCost, paperCost, totalCOGS, grossProfit, grossMargin,
     staffTotal, opex, marketing, processing, sgaFixed, totalSGA, totalOpex,
-    ebitda, ebitdaMargin, impuestosBlanco, netIncome, netMargin,
+    ebitda, ebitdaMargin,
+    ivaDebito, ivaCredito, ivaNeto, iibb, debCred, baseGanancias, ganancias, totalImpuestos,
+    netIncome, netMargin,
     months, paybackMonth, breakEvenCovers, breakEvenOccupancy, roi, annualNet,
     s, f
   };
@@ -525,9 +577,12 @@ function renderKPIs(r) {
 function renderPnL(r) {
   const lines = [
     { label: 'Covers efectivos / mes', value: fmt(r.coversEfectivos), indent: 0, bold: false },
-    { label: 'Ticket promedio', value: fmtD(r.s.ticketPromedio), indent: 0, bold: false },
+    { label: 'Almuerzo: ' + fmt(r.coversAlmuerzoMes) + ' covers × ' + fmtD(r.s.ticketAlmuerzo), value: fmtD(r.revenueAlmuerzo), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: 'Cena: ' + fmt(r.coversCenaMes) + ' covers × ' + fmtD(r.s.ticketCena), value: fmtD(r.revenueCena), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: 'Ticket promedio ponderado', value: fmtD(Math.round(r.ticketPromedioPonderado)), indent: 1, bold: false, cls: 'text-slate-400' },
     { label: 'INGRESOS TOTALES', value: fmtD(r.revenueTotal), indent: 0, bold: true, cls: 'text-white' },
-    { label: 'En blanco (' + r.s.pctBlanco + '%)', value: fmtD(r.revenueBlanco), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: 'En blanco con IVA (' + r.s.pctBlanco + '%)', value: fmtD(r.revenueBlancoConIVA), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: 'En blanco neto IVA', value: fmtD(r.revenueBlanco), indent: 1, bold: false, cls: 'text-slate-400' },
     { label: 'En negro (' + r.s.pctNegro + '%)', value: fmtD(r.revenueNegro), indent: 1, bold: false, cls: 'text-slate-400' },
     { label: '', value: '', indent: 0, sep: true },
     { label: 'Food Cost (' + r.s.foodCost + '%)', value: '(' + fmtD(r.foodCost) + ')', indent: 1, bold: false, cls: 'metric-negative' },
@@ -547,7 +602,16 @@ function renderPnL(r) {
     { label: '', value: '', indent: 0, sep: true },
     { label: 'EBITDA', value: fmtD(r.ebitda), indent: 0, bold: true, cls: r.ebitda >= 0 ? 'metric-positive' : 'metric-negative' },
     { label: 'Margen EBITDA', value: fmtP(r.ebitdaMargin), indent: 1, cls: 'text-slate-400' },
-    { label: 'Impuestos (35% s/ blanco)', value: '(' + fmtD(r.impuestosBlanco) + ')', indent: 1, cls: 'metric-negative' },
+    { label: '', value: '', indent: 0, sep: true },
+    { label: 'IVA Débito (' + r.s.ivaAlicuota + '% s/ blanco neto)', value: '(' + fmtD(r.ivaDebito) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'IVA Crédito Fiscal (' + r.s.ivaCreditoPct + '% del débito)', value: fmtD(r.ivaCredito), indent: 1, cls: 'metric-positive' },
+    { label: 'IVA Neto a pagar', value: '(' + fmtD(r.ivaNeto) + ')', indent: 1, bold: true, cls: 'metric-negative' },
+    { label: 'IIBB (' + r.s.iibbPct + '% s/ blanco neto)', value: '(' + fmtD(r.iibb) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Déb. y Créd. Bancarios (' + r.s.debCredPct + '% s/ blanco)', value: '(' + fmtD(r.debCred) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Ganancias (' + r.s.gananciasPct + '% s/ EBITDA×' + r.s.pctBlanco + '%)', value: '(' + fmtD(r.ganancias) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Base imponible ganancias', value: fmtD(r.baseGanancias), indent: 2, cls: 'text-slate-500' },
+    { label: 'TOTAL IMPUESTOS', value: '(' + fmtD(r.totalImpuestos) + ')', indent: 0, bold: true, cls: 'metric-negative' },
+    { label: 'Presión fiscal (% s/ EBITDA)', value: r.ebitda > 0 ? fmtP(r.totalImpuestos / r.ebitda * 100) : '-', indent: 1, cls: 'text-slate-400' },
     { label: '', value: '', indent: 0, sep: true },
     { label: 'RESULTADO NETO', value: fmtD(r.netIncome), indent: 0, bold: true, cls: r.netIncome >= 0 ? 'metric-positive' : 'metric-negative' },
     { label: 'Margen neto', value: fmtP(r.netMargin), indent: 1, cls: 'text-slate-400' },
@@ -696,13 +760,16 @@ function renderInvestor(r) {
 
 function renderSensitivity(r) {
   const vars = [
-    { key: 'ticketPromedio', label: 'Ticket Promedio' },
+    { key: 'ticketAlmuerzo', label: 'Ticket Almuerzo' },
+    { key: 'ticketCena', label: 'Ticket Cena' },
     { key: 'capacidad', label: 'Capacidad' },
     { key: 'foodCost', label: 'Food Cost' },
     { key: 'staffCount', label: 'Staff' },
     { key: 'alquiler', label: 'Alquiler' },
     { key: 'pctNegro', label: '% Negro' },
     { key: 'costoEmpleado', label: 'Costo Empleado' },
+    { key: 'iibbPct', label: 'IIBB' },
+    { key: 'ivaCreditoPct', label: 'IVA Crédito Fiscal' },
   ];
 
   const baseNet = r.netIncome;
@@ -747,9 +814,9 @@ function renderSensitivity(r) {
 
   // Scenarios
   const scenarios = [
-    { name: 'Pesimista', mods: { ticketPromedio: 0.8, foodCost: 1.15, capacidad: 1, vueltasAlmuerzo: 0.8, vueltasCena: 0.8 } },
+    { name: 'Pesimista', mods: { ticketAlmuerzo: 0.8, ticketCena: 0.8, foodCost: 1.15, capacidad: 1, vueltasAlmuerzo: 0.8, vueltasCena: 0.8 } },
     { name: 'Base', mods: {} },
-    { name: 'Optimista', mods: { ticketPromedio: 1.15, foodCost: 0.9, capacidad: 1, vueltasAlmuerzo: 1.2, vueltasCena: 1.2 } },
+    { name: 'Optimista', mods: { ticketAlmuerzo: 1.15, ticketCena: 1.15, foodCost: 0.9, capacidad: 1, vueltasAlmuerzo: 1.2, vueltasCena: 1.2 } },
   ];
 
   let html = '<div class="grid grid-cols-3 gap-4">';

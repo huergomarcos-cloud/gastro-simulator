@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Gastronómico</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  body { font-family: 'Inter', sans-serif; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+  .metric-positive { color: #4ade80; }
+  .metric-negative { color: #f87171; }
+  .metric-neutral { color: #fbbf24; }
+  .tab-active { background: #3b82f6; color: white; }
+  .tab-inactive { background: #334155; color: #94a3b8; }
+  canvas { max-height: 300px; }
+
+  /* Dial track */
+  .dial-track {
+    position: relative;
+    height: 36px;
+    background: #0f172a;
+    border-radius: 18px;
+    cursor: grab;
+    user-select: none;
+    overflow: hidden;
+    border: 1px solid #334155;
+  }
+  .dial-track:active { cursor: grabbing; }
+
+  /* Fill bar */
+  .dial-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #1e40af, #3b82f6);
+    border-radius: 18px;
+    pointer-events: none;
+    transition: width 0.05s ease-out;
+  }
+
+  /* The knob */
+  .dial-knob {
+    position: absolute;
+    top: 50%;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #64748b, #334155);
+    border: 2px solid #94a3b8;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    pointer-events: none;
+    transition: left 0.05s ease-out;
+  }
+
+  /* Notch indicator on knob */
+  .dial-knob::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    width: 2px;
+    height: 8px;
+    background: #3b82f6;
+    border-radius: 1px;
+    transform: translateX(-50%);
+    box-shadow: 0 0 4px #3b82f6;
+  }
+
+  /* Tick marks */
+  .dial-ticks {
+    position: absolute;
+    top: 0; left: 18px; right: 18px; bottom: 0;
+    pointer-events: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2px;
+  }
+  .dial-tick {
+    width: 1px;
+    height: 8px;
+    background: #475569;
+    border-radius: 1px;
+    opacity: 0.5;
+  }
+
+  .dial-track.readonly { opacity: 0.4; pointer-events: none; }
+</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Simulador Gastronómico</h1>
+      <p class="text-slate-400 text-sm">Ajustá los supuestos y vé la viabilidad en tiempo real</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="exportCSV()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Exportar CSV</button>
+      <button onclick="saveScenario()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition">Guardar Escenario</button>
+      <select id="scenarioSelect" onchange="loadScenario()" class="px-3 py-2 bg-slate-700 rounded-lg text-sm border-0 outline-none">
+        <option value="">Escenarios guardados...</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6" id="kpiStrip">
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- LEFT: Supuestos -->
+    <div class="lg:col-span-4 space-y-4">
+      <div class="card p-4">
+        <h2 class="text-lg font-semibold mb-4 text-blue-400">Supuestos Operativos</h2>
+        <div class="space-y-4">
+          <div class="slider-group" data-key="capacidad" data-min="10" data-max="40" data-step="1" data-default="40" data-label="Capacidad (personas)" data-suffix=""></div>
+          <div class="slider-group" data-key="vueltasAlmuerzo" data-min="0" data-max="5" data-step="0.5" data-default="2" data-label="Vueltas almuerzo" data-suffix=""></div>
+          <div class="slider-group" data-key="vueltasCena" data-min="0" data-max="5" data-step="0.5" data-default="2" data-label="Vueltas cena" data-suffix=""></div>
+          <div class="slider-group" data-key="diasOperativos" data-min="15" data-max="31" data-step="1" data-default="26" data-label="Días operativos / mes" data-suffix=""></div>
+          <div class="slider-group" data-key="ticketPromedio" data-min="5" data-max="100" data-step="1" data-default="25" data-label="Ticket promedio (USD)" data-suffix="$"></div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="text-lg font-semibold mb-4 text-blue-400">Facturación</h2>
+        <div class="space-y-4">
+          <div class="slider-group" data-key="pctNegro" data-min="0" data-max="100" data-step="5" data-default="50" data-label="Facturación en negro (%)" data-suffix="%"></div>
+          <div class="slider-group" data-key="pctBlanco" data-min="0" data-max="100" data-step="5" data-default="50" data-label="Facturación en blanco (%)" data-suffix="%" data-readonly="true"></div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="text-lg font-semibold mb-4 text-blue-400">Costos Variables</h2>
+        <div class="space-y-4">
+          <div class="slider-group" data-key="foodCost" data-min="15" data-max="50" data-step="1" data-default="30" data-label="Food Cost (% rev)" data-suffix="%"></div>
+          <div class="slider-group" data-key="paperCost" data-min="0" data-max="15" data-step="0.5" data-default="5" data-label="Paper Cost (% rev)" data-suffix="%"></div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="text-lg font-semibold mb-4 text-blue-400">Costos Fijos</h2>
+        <div class="space-y-4">
+          <div class="slider-group" data-key="staffCount" data-min="1" data-max="30" data-step="1" data-default="8" data-label="Staff régimen (personas)" data-suffix=""></div>
+          <div class="slider-group" data-key="costoEmpleado" data-min="200" data-max="2000" data-step="50" data-default="600" data-label="Costo promedio / empleado (USD)" data-suffix="$"></div>
+          <div class="slider-group" data-key="alquiler" data-min="0" data-max="10000" data-step="100" data-default="2000" data-label="Alquiler mensual (USD)" data-suffix="$"></div>
+          <div class="slider-group" data-key="servicios" data-min="0" data-max="3000" data-step="50" data-default="500" data-label="Servicios / expensas (USD)" data-suffix="$"></div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="text-lg font-semibold mb-4 text-blue-400">Inversión & Sociedad</h2>
+        <div class="space-y-4">
+          <div class="slider-group" data-key="inversionTotal" data-min="5000" data-max="500000" data-step="5000" data-default="80000" data-label="Inversión total (USD)" data-suffix="$"></div>
+          <div class="slider-group" data-key="pctDurantePayback" data-min="0" data-max="100" data-step="5" data-default="60" data-label="% inversor durante payback" data-suffix="%"></div>
+          <div class="slider-group" data-key="pctPostPayback" data-min="0" data-max="100" data-step="5" data-default="30" data-label="% inversor post payback" data-suffix="%"></div>
+          <div class="slider-group" data-key="rampUpMeses" data-min="1" data-max="18" data-step="1" data-default="6" data-label="Ramp-up demanda (meses)" data-suffix=" meses"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Resultados -->
+    <div class="lg:col-span-8 space-y-4">
+      <!-- Tabs -->
+      <div class="flex gap-2 flex-wrap">
+        <button class="tab-btn tab-active px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="pnl">P&L Mensual</button>
+        <button class="tab-btn tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="cashflow">Flujo de Caja</button>
+        <button class="tab-btn tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="investor">Vista Inversor</button>
+        <button class="tab-btn tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="sensitivity">Sensibilidad</button>
+      </div>
+
+      <!-- Tab: P&L -->
+      <div id="tab-pnl" class="tab-content">
+        <div class="card p-5">
+          <h3 class="text-lg font-semibold mb-4">P&L Mensual — Estado Estable (demanda máx.)</h3>
+          <div id="pnlTable"></div>
+        </div>
+        <div class="card p-5 mt-4">
+          <h3 class="text-lg font-semibold mb-3">P&L Proyectado 24 Meses</h3>
+          <canvas id="chartPnl"></canvas>
+        </div>
+      </div>
+
+      <!-- Tab: Cash Flow -->
+      <div id="tab-cashflow" class="tab-content hidden">
+        <div class="card p-5">
+          <h3 class="text-lg font-semibold mb-3">Flujo de Caja Acumulado</h3>
+          <canvas id="chartCashflow"></canvas>
+        </div>
+        <div class="card p-5 mt-4">
+          <h3 class="text-lg font-semibold mb-4">Detalle Mensual</h3>
+          <div class="overflow-x-auto">
+            <table id="cashflowTable" class="w-full text-sm">
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Investor -->
+      <div id="tab-investor" class="tab-content hidden">
+        <div class="card p-5">
+          <h3 class="text-lg font-semibold mb-4">Retorno del Inversor</h3>
+          <div id="investorMetrics"></div>
+        </div>
+        <div class="card p-5 mt-4">
+          <h3 class="text-lg font-semibold mb-3">Acumulado Inversor vs Operador</h3>
+          <canvas id="chartInvestor"></canvas>
+        </div>
+      </div>
+
+      <!-- Tab: Sensitivity -->
+      <div id="tab-sensitivity" class="tab-content hidden">
+        <div class="card p-5">
+          <h3 class="text-lg font-semibold mb-4">Análisis de Sensibilidad</h3>
+          <p class="text-slate-400 text-sm mb-4">Impacto en el resultado neto mensual al variar cada supuesto ±20%</p>
+          <canvas id="chartSensitivity"></canvas>
+        </div>
+        <div class="card p-5 mt-4">
+          <h3 class="text-lg font-semibold mb-4">Escenarios</h3>
+          <div id="scenarioTable"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== STATE ==========
+const FIXED = {
+  opexPct: 2,
+  marketingPct: 3,
+  processingPctBlanco: 2.5,
+  estudioContable: 500,
+  softwareMisc: 300,
+  demandaMaxPct: 90,
+};
+
+let state = {};
+let charts = {};
+
+// ========== DIAL INIT ==========
+function initSliders() {
+  document.querySelectorAll('.slider-group').forEach(el => {
+    const key = el.dataset.key;
+    const min = parseFloat(el.dataset.min);
+    const max = parseFloat(el.dataset.max);
+    const step = parseFloat(el.dataset.step);
+    const def = parseFloat(el.dataset.default);
+    const label = el.dataset.label;
+    const suffix = el.dataset.suffix;
+    const readonly = el.dataset.readonly === 'true';
+
+    state[key] = def;
+
+    // Build tick marks (10 ticks)
+    let ticks = '';
+    for (let i = 0; i < 11; i++) ticks += '<div class="dial-tick"></div>';
+
+    const pct = ((def - min) / (max - min)) * 100;
+
+    el.innerHTML = `
+      <div class="flex justify-between items-center mb-1.5">
+        <label class="text-sm text-slate-300">${label}</label>
+        <div class="flex items-center gap-1">
+          ${suffix === '$' ? '<span class="text-xs text-slate-400">$</span>' : ''}
+          <input type="number" id="num_${key}" value="${def}" min="${min}" max="${max}" step="${step}"
+            class="w-20 text-right bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-white ${readonly ? 'opacity-50' : ''}"
+            ${readonly ? 'readonly' : ''}>
+          ${suffix === '%' ? '<span class="text-xs text-slate-400">%</span>' : ''}
+          ${suffix === ' meses' ? '<span class="text-xs text-slate-400">m</span>' : ''}
+        </div>
+      </div>
+      <div class="dial-track ${readonly ? 'readonly' : ''}" id="dial_${key}" data-key="${key}" data-min="${min}" data-max="${max}" data-step="${step}">
+        <div class="dial-fill" style="width: ${pct}%"></div>
+        <div class="dial-ticks">${ticks}</div>
+        <div class="dial-knob" style="left: calc(18px + ${pct / 100} * (100% - 36px))"></div>
+      </div>
+    `;
+
+    if (!readonly) {
+      const track = document.getElementById(`dial_${key}`);
+      const num = document.getElementById(`num_${key}`);
+
+      // Drag handler
+      function startDrag(e) {
+        e.preventDefault();
+        const rect = track.getBoundingClientRect();
+        const padding = 18;
+
+        function onMove(ev) {
+          const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+          const x = clientX - rect.left - padding;
+          const width = rect.width - padding * 2;
+          let ratio = Math.max(0, Math.min(1, x / width));
+
+          // Snap to step
+          let raw = min + ratio * (max - min);
+          raw = Math.round(raw / step) * step;
+          raw = Math.max(min, Math.min(max, raw));
+          ratio = (raw - min) / (max - min);
+
+          state[key] = raw;
+          num.value = raw;
+
+          const fillPct = ratio * 100;
+          track.querySelector('.dial-fill').style.width = fillPct + '%';
+          track.querySelector('.dial-knob').style.left = `calc(18px + ${ratio} * (100% - 36px))`;
+
+          syncLinked(key);
+          recalc();
+        }
+
+        function onEnd() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onEnd);
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onEnd);
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+        onMove(e);
+      }
+
+      track.addEventListener('mousedown', startDrag);
+      track.addEventListener('touchstart', startDrag, { passive: false });
+
+      // Number input
+      num.addEventListener('input', () => {
+        let v = parseFloat(num.value);
+        if (isNaN(v)) return;
+        v = Math.max(min, Math.min(max, v));
+        state[key] = v;
+        const ratio = (v - min) / (max - min);
+        track.querySelector('.dial-fill').style.width = (ratio * 100) + '%';
+        track.querySelector('.dial-knob').style.left = `calc(18px + ${ratio} * (100% - 36px))`;
+        syncLinked(key);
+        recalc();
+      });
+    }
+  });
+}
+
+function syncLinked(key) {
+  if (key === 'pctNegro') {
+    state.pctBlanco = 100 - state.pctNegro;
+    document.getElementById('num_pctBlanco').value = state.pctBlanco;
+    const track = document.getElementById('dial_pctBlanco');
+    if (track) {
+      const ratio = state.pctBlanco / 100;
+      track.querySelector('.dial-fill').style.width = (ratio * 100) + '%';
+      track.querySelector('.dial-knob').style.left = `calc(18px + ${ratio} * (100% - 36px))`;
+    }
+  }
+}
+
+function updateDialVisual(key) {
+  const track = document.getElementById('dial_' + key);
+  const num = document.getElementById('num_' + key);
+  if (!track) return;
+  const min = parseFloat(track.dataset.min);
+  const max = parseFloat(track.dataset.max);
+  const ratio = (state[key] - min) / (max - min);
+  track.querySelector('.dial-fill').style.width = (ratio * 100) + '%';
+  track.querySelector('.dial-knob').style.left = `calc(18px + ${ratio} * (100% - 36px))`;
+  if (num) num.value = state[key];
+}
+
+// ========== CALCULATIONS ==========
+function calc() {
+  const s = state;
+  const f = FIXED;
+
+  // Covers
+  const coversDiarios = s.capacidad * (s.vueltasAlmuerzo + s.vueltasCena);
+  const coversMensuales = coversDiarios * s.diasOperativos;
+
+  // Revenue at steady state (demanda max)
+  const coversEfectivos = coversMensuales * (f.demandaMaxPct / 100);
+  const revenueTotal = coversEfectivos * s.ticketPromedio;
+  const revenueNegro = revenueTotal * (s.pctNegro / 100);
+  const revenueBlanco = revenueTotal * (s.pctBlanco / 100);
+
+  // COGS
+  const foodCost = revenueTotal * (s.foodCost / 100);
+  const paperCost = revenueTotal * (s.paperCost / 100);
+  const totalCOGS = foodCost + paperCost;
+  const grossProfit = revenueTotal - totalCOGS;
+  const grossMargin = revenueTotal > 0 ? (grossProfit / revenueTotal * 100) : 0;
+
+  // Staff
+  const staffTotal = s.staffCount * s.costoEmpleado;
+
+  // SGA
+  const opex = revenueTotal * (f.opexPct / 100);
+  const marketing = revenueTotal * (f.marketingPct / 100);
+  const processing = revenueBlanco * (f.processingPctBlanco / 100);
+  const sgaFixed = f.estudioContable + f.softwareMisc;
+  const totalSGA = opex + marketing + processing + sgaFixed;
+
+  // Total OPEX
+  const totalOpex = staffTotal + s.alquiler + s.servicios + totalSGA;
+
+  // EBITDA
+  const ebitda = grossProfit - totalOpex;
+  const ebitdaMargin = revenueTotal > 0 ? (ebitda / revenueTotal * 100) : 0;
+
+  // Net (sin impuestos en negro, ~35% sobre blanco simplificado)
+  const impuestosBlanco = Math.max(0, ebitda * (s.pctBlanco / 100) * 0.35);
+  const netIncome = ebitda - impuestosBlanco;
+  const netMargin = revenueTotal > 0 ? (netIncome / revenueTotal * 100) : 0;
+
+  // 24-month projection with ramp-up
+  const months = [];
+  let cashAccum = -s.inversionTotal;
+  let investorAccum = 0;
+  let operadorAccum = 0;
+  let paybackMonth = null;
+
+  for (let m = 1; m <= 24; m++) {
+    // Ramp: linear from 20% to demandaMax over rampUpMeses
+    const rampPct = m <= s.rampUpMeses
+      ? 20 + (f.demandaMaxPct - 20) * (m / s.rampUpMeses)
+      : f.demandaMaxPct;
+    const mCovers = coversMensuales * (rampPct / 100);
+    const mRev = mCovers * s.ticketPromedio;
+    const mRevBlanco = mRev * (s.pctBlanco / 100);
+
+    const mCOGS = mRev * ((s.foodCost + s.paperCost) / 100);
+    const mGross = mRev - mCOGS;
+
+    const mOpex = staffTotal + s.alquiler + s.servicios
+      + mRev * ((f.opexPct + f.marketingPct) / 100)
+      + mRevBlanco * (f.processingPctBlanco / 100)
+      + sgaFixed;
+
+    const mEbitda = mGross - mOpex;
+    const mImpuestos = Math.max(0, mEbitda * (s.pctBlanco / 100) * 0.35);
+    const mNet = mEbitda - mImpuestos;
+
+    cashAccum += mNet;
+
+    // Investor split
+    const isPrePayback = investorAccum < s.inversionTotal;
+    const splitPct = isPrePayback ? s.pctDurantePayback / 100 : s.pctPostPayback / 100;
+    const investorShare = mNet > 0 ? mNet * splitPct : 0;
+    const operadorShare = mNet - investorShare;
+    investorAccum += investorShare;
+    operadorAccum += operadorShare;
+
+    if (paybackMonth === null && cashAccum >= 0) {
+      paybackMonth = m;
+    }
+
+    months.push({
+      month: m, rampPct, covers: mCovers, revenue: mRev, cogs: mCOGS,
+      grossProfit: mGross, opex: mOpex, ebitda: mEbitda, impuestos: mImpuestos,
+      netIncome: mNet, cashAccum, investorShare, operadorShare,
+      investorAccum, operadorAccum
+    });
+  }
+
+  // Break-even covers
+  const fixedCosts = staffTotal + s.alquiler + s.servicios + sgaFixed;
+  const contributionPerCover = s.ticketPromedio * (1 - (s.foodCost + s.paperCost + f.opexPct + f.marketingPct) / 100)
+    - s.ticketPromedio * (s.pctBlanco / 100) * (f.processingPctBlanco / 100);
+  const breakEvenCovers = contributionPerCover > 0 ? Math.ceil(fixedCosts / contributionPerCover) : Infinity;
+  const breakEvenOccupancy = coversMensuales > 0 ? (breakEvenCovers / coversMensuales * 100) : 0;
+
+  // ROI anual
+  const annualNet = months.slice(0, 12).reduce((sum, m) => sum + m.netIncome, 0);
+  const roi = s.inversionTotal > 0 ? (annualNet / s.inversionTotal * 100) : 0;
+
+  return {
+    coversDiarios, coversMensuales, coversEfectivos,
+    revenueTotal, revenueNegro, revenueBlanco,
+    foodCost, paperCost, totalCOGS, grossProfit, grossMargin,
+    staffTotal, opex, marketing, processing, sgaFixed, totalSGA, totalOpex,
+    ebitda, ebitdaMargin, impuestosBlanco, netIncome, netMargin,
+    months, paybackMonth, breakEvenCovers, breakEvenOccupancy, roi, annualNet,
+    s, f
+  };
+}
+
+// ========== RENDER ==========
+function fmt(n) { return n.toLocaleString('es-AR', { maximumFractionDigits: 0 }); }
+function fmtD(n) { return '$' + fmt(n); }
+function fmtP(n) { return n.toFixed(1) + '%'; }
+
+function recalc() {
+  const r = calc();
+  renderKPIs(r);
+  renderPnL(r);
+  renderCashflow(r);
+  renderInvestor(r);
+  renderSensitivity(r);
+}
+
+function renderKPIs(r) {
+  const kpis = [
+    { label: 'Revenue Mensual', value: fmtD(r.revenueTotal), cls: 'text-white' },
+    { label: 'EBITDA', value: fmtD(r.ebitda), cls: r.ebitda >= 0 ? 'metric-positive' : 'metric-negative' },
+    { label: 'Margen Neto', value: fmtP(r.netMargin), cls: r.netMargin >= 10 ? 'metric-positive' : r.netMargin >= 0 ? 'metric-neutral' : 'metric-negative' },
+    { label: 'Payback', value: r.paybackMonth ? r.paybackMonth + ' meses' : '> 24m', cls: r.paybackMonth && r.paybackMonth <= 18 ? 'metric-positive' : 'metric-negative' },
+    { label: 'Break-even', value: fmtP(r.breakEvenOccupancy) + ' ocup.', cls: r.breakEvenOccupancy <= 60 ? 'metric-positive' : r.breakEvenOccupancy <= 80 ? 'metric-neutral' : 'metric-negative' },
+    { label: 'ROI Año 1', value: fmtP(r.roi), cls: r.roi >= 30 ? 'metric-positive' : r.roi >= 0 ? 'metric-neutral' : 'metric-negative' },
+  ];
+  document.getElementById('kpiStrip').innerHTML = kpis.map(k => `
+    <div class="card p-3 text-center">
+      <div class="text-xs text-slate-400 mb-1">${k.label}</div>
+      <div class="text-lg font-bold ${k.cls}">${k.value}</div>
+    </div>
+  `).join('');
+}
+
+function renderPnL(r) {
+  const lines = [
+    { label: 'Covers efectivos / mes', value: fmt(r.coversEfectivos), indent: 0, bold: false },
+    { label: 'Ticket promedio', value: fmtD(r.s.ticketPromedio), indent: 0, bold: false },
+    { label: 'INGRESOS TOTALES', value: fmtD(r.revenueTotal), indent: 0, bold: true, cls: 'text-white' },
+    { label: 'En blanco (' + r.s.pctBlanco + '%)', value: fmtD(r.revenueBlanco), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: 'En negro (' + r.s.pctNegro + '%)', value: fmtD(r.revenueNegro), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: '', value: '', indent: 0, sep: true },
+    { label: 'Food Cost (' + r.s.foodCost + '%)', value: '(' + fmtD(r.foodCost) + ')', indent: 1, bold: false, cls: 'metric-negative' },
+    { label: 'Paper Cost (' + r.s.paperCost + '%)', value: '(' + fmtD(r.paperCost) + ')', indent: 1, bold: false, cls: 'metric-negative' },
+    { label: 'COGS TOTAL', value: '(' + fmtD(r.totalCOGS) + ')', indent: 0, bold: true, cls: 'metric-negative' },
+    { label: 'UTILIDAD BRUTA', value: fmtD(r.grossProfit), indent: 0, bold: true, cls: r.grossProfit >= 0 ? 'metric-positive' : 'metric-negative' },
+    { label: 'Margen bruto', value: fmtP(r.grossMargin), indent: 1, bold: false, cls: 'text-slate-400' },
+    { label: '', value: '', indent: 0, sep: true },
+    { label: 'Staff (' + r.s.staffCount + ' x ' + fmtD(r.s.costoEmpleado) + ')', value: '(' + fmtD(r.staffTotal) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Alquiler', value: '(' + fmtD(r.s.alquiler) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Servicios / Expensas', value: '(' + fmtD(r.s.servicios) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'OPEX / Mantenimiento (2%)', value: '(' + fmtD(r.opex) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Marketing (3%)', value: '(' + fmtD(r.marketing) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Processing (2.5% s/blanco)', value: '(' + fmtD(r.processing) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'Contable + Software', value: '(' + fmtD(r.sgaFixed) + ')', indent: 1, cls: 'metric-negative' },
+    { label: 'TOTAL GASTOS OPERATIVOS', value: '(' + fmtD(r.totalOpex) + ')', indent: 0, bold: true, cls: 'metric-negative' },
+    { label: '', value: '', indent: 0, sep: true },
+    { label: 'EBITDA', value: fmtD(r.ebitda), indent: 0, bold: true, cls: r.ebitda >= 0 ? 'metric-positive' : 'metric-negative' },
+    { label: 'Margen EBITDA', value: fmtP(r.ebitdaMargin), indent: 1, cls: 'text-slate-400' },
+    { label: 'Impuestos (35% s/ blanco)', value: '(' + fmtD(r.impuestosBlanco) + ')', indent: 1, cls: 'metric-negative' },
+    { label: '', value: '', indent: 0, sep: true },
+    { label: 'RESULTADO NETO', value: fmtD(r.netIncome), indent: 0, bold: true, cls: r.netIncome >= 0 ? 'metric-positive' : 'metric-negative' },
+    { label: 'Margen neto', value: fmtP(r.netMargin), indent: 1, cls: 'text-slate-400' },
+  ];
+
+  document.getElementById('pnlTable').innerHTML = `<table class="w-full text-sm">${lines.map(l => {
+    if (l.sep) return '<tr><td colspan="2" class="py-1 border-b border-slate-700"></td></tr>';
+    return `<tr>
+      <td class="py-1 ${l.bold ? 'font-semibold' : ''}" style="padding-left:${l.indent * 20}px">${l.label}</td>
+      <td class="py-1 text-right font-mono ${l.bold ? 'font-semibold' : ''} ${l.cls || ''}">${l.value}</td>
+    </tr>`;
+  }).join('')}</table>`;
+
+  // Chart
+  const ctx = document.getElementById('chartPnl').getContext('2d');
+  if (charts.pnl) charts.pnl.destroy();
+  charts.pnl = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: r.months.map(m => 'M' + m.month),
+      datasets: [
+        { label: 'Revenue', data: r.months.map(m => m.revenue), backgroundColor: '#3b82f6', order: 2 },
+        { label: 'EBITDA', data: r.months.map(m => m.ebitda), backgroundColor: r.months.map(m => m.ebitda >= 0 ? '#4ade80' : '#f87171'), order: 2 },
+        { label: 'Neto', data: r.months.map(m => m.netIncome), type: 'line', borderColor: '#fbbf24', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, interaction: { mode: 'index' },
+      scales: { y: { ticks: { color: '#94a3b8', callback: v => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: '#334155' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } },
+      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': $' + fmt(ctx.raw) } } }
+    }
+  });
+}
+
+function renderCashflow(r) {
+  const ctx = document.getElementById('chartCashflow').getContext('2d');
+  if (charts.cashflow) charts.cashflow.destroy();
+  charts.cashflow = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['M0', ...r.months.map(m => 'M' + m.month)],
+      datasets: [{
+        label: 'Caja Acumulada',
+        data: [-r.s.inversionTotal, ...r.months.map(m => m.cashAccum)],
+        borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)',
+        fill: true, tension: 0.3, pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { ticks: { color: '#94a3b8', callback: v => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: '#334155' } },
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      },
+      plugins: {
+        legend: { labels: { color: '#94a3b8' } },
+        annotation: r.paybackMonth ? { annotations: { line1: { type: 'line', xMin: r.paybackMonth, xMax: r.paybackMonth, borderColor: '#4ade80', borderWidth: 2, borderDash: [5, 5] } } } : {}
+      }
+    }
+  });
+
+  // Table
+  let html = `<thead class="text-slate-400"><tr>
+    <th class="text-left py-2 px-2">Mes</th><th class="text-right py-2 px-2">Ocup%</th>
+    <th class="text-right py-2 px-2">Revenue</th><th class="text-right py-2 px-2">COGS</th>
+    <th class="text-right py-2 px-2">OPEX</th><th class="text-right py-2 px-2">Neto</th>
+    <th class="text-right py-2 px-2">Caja Acum.</th>
+  </tr></thead><tbody>`;
+  r.months.forEach(m => {
+    const cls = m.cashAccum >= 0 ? 'metric-positive' : 'metric-negative';
+    html += `<tr class="border-t border-slate-800">
+      <td class="py-1 px-2">M${m.month}</td>
+      <td class="py-1 px-2 text-right">${m.rampPct.toFixed(0)}%</td>
+      <td class="py-1 px-2 text-right font-mono">${fmtD(m.revenue)}</td>
+      <td class="py-1 px-2 text-right font-mono metric-negative">(${fmtD(m.cogs)})</td>
+      <td class="py-1 px-2 text-right font-mono metric-negative">(${fmtD(m.opex)})</td>
+      <td class="py-1 px-2 text-right font-mono ${m.netIncome >= 0 ? 'metric-positive' : 'metric-negative'}">${fmtD(m.netIncome)}</td>
+      <td class="py-1 px-2 text-right font-mono font-semibold ${cls}">${fmtD(m.cashAccum)}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('cashflowTable').innerHTML = html;
+}
+
+function renderInvestor(r) {
+  const m24 = r.months[23];
+  const investorROI = r.s.inversionTotal > 0 ? ((m24.investorAccum / r.s.inversionTotal - 1) * 100) : 0;
+  const investorPayback = r.months.find(m => m.investorAccum >= r.s.inversionTotal);
+  const investorPaybackMonth = investorPayback ? investorPayback.month : null;
+
+  document.getElementById('investorMetrics').innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <div class="text-center">
+        <div class="text-xs text-slate-400">Inversión</div>
+        <div class="text-xl font-bold">${fmtD(r.s.inversionTotal)}</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-slate-400">Retorno 24m Inversor</div>
+        <div class="text-xl font-bold ${m24.investorAccum > r.s.inversionTotal ? 'metric-positive' : 'metric-neutral'}">${fmtD(m24.investorAccum)}</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-slate-400">ROI Inversor 24m</div>
+        <div class="text-xl font-bold ${investorROI > 0 ? 'metric-positive' : 'metric-negative'}">${fmtP(investorROI)}</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-slate-400">Payback Inversor</div>
+        <div class="text-xl font-bold ${investorPaybackMonth && investorPaybackMonth <= 18 ? 'metric-positive' : 'metric-negative'}">${investorPaybackMonth ? investorPaybackMonth + ' meses' : '> 24m'}</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="text-center">
+        <div class="text-xs text-slate-400">Acumulado Operador 24m</div>
+        <div class="text-xl font-bold metric-positive">${fmtD(m24.operadorAccum)}</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-slate-400">Split Mensual (estable)</div>
+        <div class="text-sm text-slate-300">
+          Inv: ${fmtD(r.netIncome * r.s.pctPostPayback / 100)} | Op: ${fmtD(r.netIncome * (100 - r.s.pctPostPayback) / 100)}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const ctx = document.getElementById('chartInvestor').getContext('2d');
+  if (charts.investor) charts.investor.destroy();
+  charts.investor = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: r.months.map(m => 'M' + m.month),
+      datasets: [
+        { label: 'Inversor (acum)', data: r.months.map(m => m.investorAccum), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 },
+        { label: 'Operador (acum)', data: r.months.map(m => m.operadorAccum), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.3 },
+        { label: 'Inversión', data: r.months.map(() => r.s.inversionTotal), borderColor: '#f87171', borderDash: [5, 5], borderWidth: 1, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { ticks: { color: '#94a3b8', callback: v => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: '#334155' } },
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8' } } }
+    }
+  });
+}
+
+function renderSensitivity(r) {
+  const vars = [
+    { key: 'ticketPromedio', label: 'Ticket Promedio' },
+    { key: 'capacidad', label: 'Capacidad' },
+    { key: 'foodCost', label: 'Food Cost' },
+    { key: 'staffCount', label: 'Staff' },
+    { key: 'alquiler', label: 'Alquiler' },
+    { key: 'pctNegro', label: '% Negro' },
+    { key: 'costoEmpleado', label: 'Costo Empleado' },
+  ];
+
+  const baseNet = r.netIncome;
+  const impacts = vars.map(v => {
+    const original = state[v.key];
+    // +20%
+    state[v.key] = original * 1.2;
+    syncLinked(v.key);
+    const upNet = calc().netIncome;
+    // -20%
+    state[v.key] = original * 0.8;
+    syncLinked(v.key);
+    const downNet = calc().netIncome;
+    // restore
+    state[v.key] = original;
+    syncLinked(v.key);
+    return { label: v.label, up: upNet - baseNet, down: downNet - baseNet };
+  });
+
+  impacts.sort((a, b) => Math.abs(b.up - b.down) - Math.abs(a.up - a.down));
+
+  const ctx = document.getElementById('chartSensitivity').getContext('2d');
+  if (charts.sensitivity) charts.sensitivity.destroy();
+  charts.sensitivity = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: impacts.map(i => i.label),
+      datasets: [
+        { label: '+20%', data: impacts.map(i => i.up), backgroundColor: '#4ade80' },
+        { label: '-20%', data: impacts.map(i => i.down), backgroundColor: '#f87171' },
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true,
+      scales: {
+        x: { ticks: { color: '#94a3b8', callback: v => '$' + (v/1000).toFixed(1) + 'k' }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': $' + fmt(ctx.raw) } } }
+    }
+  });
+
+  // Scenarios
+  const scenarios = [
+    { name: 'Pesimista', mods: { ticketPromedio: 0.8, foodCost: 1.15, capacidad: 1, vueltasAlmuerzo: 0.8, vueltasCena: 0.8 } },
+    { name: 'Base', mods: {} },
+    { name: 'Optimista', mods: { ticketPromedio: 1.15, foodCost: 0.9, capacidad: 1, vueltasAlmuerzo: 1.2, vueltasCena: 1.2 } },
+  ];
+
+  let html = '<div class="grid grid-cols-3 gap-4">';
+  scenarios.forEach(sc => {
+    const saved = { ...state };
+    Object.entries(sc.mods).forEach(([k, mult]) => { state[k] = saved[k] * mult; });
+    const sr = calc();
+    Object.assign(state, saved);
+    html += `<div class="text-center p-3 rounded-lg ${sc.name === 'Pesimista' ? 'bg-red-900/30' : sc.name === 'Optimista' ? 'bg-green-900/30' : 'bg-slate-800'}">
+      <div class="font-semibold mb-2">${sc.name}</div>
+      <div class="text-xs text-slate-400">Revenue</div><div class="font-mono">${fmtD(sr.revenueTotal)}</div>
+      <div class="text-xs text-slate-400 mt-1">EBITDA</div><div class="font-mono ${sr.ebitda >= 0 ? 'metric-positive' : 'metric-negative'}">${fmtD(sr.ebitda)}</div>
+      <div class="text-xs text-slate-400 mt-1">Neto</div><div class="font-mono ${sr.netIncome >= 0 ? 'metric-positive' : 'metric-negative'}">${fmtD(sr.netIncome)}</div>
+      <div class="text-xs text-slate-400 mt-1">Payback</div><div class="font-mono">${sr.paybackMonth ? sr.paybackMonth + 'm' : '>24m'}</div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('scenarioTable').innerHTML = html;
+}
+
+// ========== TABS ==========
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('tab-active'); b.classList.add('tab-inactive'); });
+    btn.classList.remove('tab-inactive'); btn.classList.add('tab-active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// ========== SCENARIOS SAVE/LOAD ==========
+function saveScenario() {
+  const name = prompt('Nombre del escenario:');
+  if (!name) return;
+  const scenarios = JSON.parse(localStorage.getItem('gastro_scenarios') || '{}');
+  scenarios[name] = { ...state };
+  localStorage.setItem('gastro_scenarios', JSON.stringify(scenarios));
+  loadScenarioList();
+}
+
+function loadScenario() {
+  const sel = document.getElementById('scenarioSelect');
+  if (!sel.value) return;
+  const scenarios = JSON.parse(localStorage.getItem('gastro_scenarios') || '{}');
+  const sc = scenarios[sel.value];
+  if (!sc) return;
+  Object.entries(sc).forEach(([k, v]) => {
+    state[k] = v;
+    updateDialVisual(k);
+  });
+  recalc();
+}
+
+function loadScenarioList() {
+  const scenarios = JSON.parse(localStorage.getItem('gastro_scenarios') || '{}');
+  const sel = document.getElementById('scenarioSelect');
+  sel.innerHTML = '<option value="">Escenarios guardados...</option>';
+  Object.keys(scenarios).forEach(name => {
+    sel.innerHTML += `<option value="${name}">${name}</option>`;
+  });
+}
+
+// ========== CSV EXPORT ==========
+function exportCSV() {
+  const r = calc();
+  let csv = 'Mes,Ocupacion%,Revenue,COGS,OPEX,EBITDA,Neto,Caja Acumulada,Inversor,Operador\n';
+  r.months.forEach(m => {
+    csv += `${m.month},${m.rampPct.toFixed(0)},${m.revenue.toFixed(0)},${m.cogs.toFixed(0)},${m.opex.toFixed(0)},${m.ebitda.toFixed(0)},${m.netIncome.toFixed(0)},${m.cashAccum.toFixed(0)},${m.investorShare.toFixed(0)},${m.operadorShare.toFixed(0)}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'simulacion_gastro.csv';
+  a.click();
+}
+
+// ========== INIT ==========
+initSliders();
+loadScenarioList();
+recalc();
+</script>
+</body>
+</html>

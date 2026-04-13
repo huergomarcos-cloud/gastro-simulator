@@ -126,6 +126,10 @@
         <canvas id="ch-cashflow"></canvas>
         <div id="cf-table" class="mt-2 overflow-x-auto"></div>
       </div>
+      <div>
+        <div class="stitle">Estado de Resultados (steady state — promedio mensual último año)</div>
+        <div id="pnl-detail"></div>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div><div class="stitle">P&L Mensual</div><canvas id="ch-pnl"></canvas></div>
         <div><div class="stitle">Composición de Costos</div><canvas id="ch-donut"></canvas></div>
@@ -386,6 +390,53 @@ function renderDash(){
     {l:'Costo Var / Cubierto',v:'$'+r.cVarCub.toFixed(1)},
     {l:'Margen / Cubierto',v:'$'+r.margCub.toFixed(1),c:r.margCub>=0?'#00d4aa':'#ff4444'},
   ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c||'#00d4aa'};font-size:1.1rem">${k.v}</div></div>`).join('');
+
+  // P&L detallado (steady state = promedio últimos 12 meses)
+  const l12=r.months.slice(-12);
+  const pAvg=k=>Math.round(l12.reduce((s,m)=>s+m[k],0)/12);
+  const pnlRows=[
+    {l:'Revenue Total',v:pAvg('rev'),bold:true,c:'#00d4aa'},
+    {l:'  Revenue Cena',v:pAvg('rC'),indent:true},
+    {l:'  Revenue Almuerzo',v:pAvg('rA'),indent:true},
+    {l:'',sep:true},
+    {l:'Costos Variables',v:pAvg('totVar'),bold:true,c:'#ff6b6b',neg:true},
+    {l:'  Food Cost',v:pAvg('cFood'),indent:true,neg:true},
+    {l:'  Paper / Descartables',v:pAvg('cPaper'),indent:true,neg:true},
+    {l:'  Comisiones Pago',v:pAvg('cCom'),indent:true,neg:true},
+    {l:'  Marketing',v:pAvg('cMkt'),indent:true,neg:true},
+    {l:'',sep:true},
+    {l:'Costos Fijos',v:pAvg('fijos'),bold:true,c:'#ff6b6b',neg:true},
+    {l:'  Staff ('+r.stTotal+' pers × $'+S.sueldo+')',v:pAvg('stCost'),indent:true,neg:true},
+    {l:'  Alquiler',v:S.alquiler,indent:true,neg:true},
+    {l:'  Servicios',v:S.servicios,indent:true,neg:true},
+    {l:'  Contador',v:S.contador,indent:true,neg:true},
+    {l:'  Software',v:S.software,indent:true,neg:true},
+    {l:'  Seguros',v:S.seguros,indent:true,neg:true},
+    {l:'',sep:true},
+    {l:'EBITDA',v:pAvg('ebitda'),bold:true,c:pAvg('ebitda')>=0?'#00d4aa':'#ff4444'},
+    {l:'',sep:true},
+    {l:'Impuestos',v:pAvg('totImp'),bold:true,c:'#ffa726',neg:true},
+    {l:'  IVA a pagar (débito - crédito)',v:pAvg('iva'),indent:true,neg:true},
+    {l:'  IIBB',v:pAvg('iibb'),indent:true,neg:true},
+    {l:'  Déb/Créd Bancarios',v:pAvg('dc'),indent:true,neg:true},
+    {l:'  Ganancias',v:pAvg('gan'),indent:true,neg:true},
+    {l:'',sep:true},
+    {l:'NET INCOME',v:pAvg('net'),bold:true,c:pAvg('net')>=0?'#00d4aa':'#ff4444',big:true},
+    {l:'  % sobre Revenue',v:null,pct:pAvg('rev')>0?(pAvg('net')/pAvg('rev')*100).toFixed(1)+'%':'—'},
+    {l:'  Impuestos / Revenue',v:null,pct:pAvg('rev')>0?(pAvg('totImp')/pAvg('rev')*100).toFixed(1)+'%':'—'},
+  ];
+  let pnlH='<table>';
+  pnlRows.forEach(r=>{
+    if(r.sep){pnlH+='<tr><td colspan="2" style="border-bottom:1px solid #333;height:4px"></td></tr>';return}
+    const style=r.bold?'font-weight:700;':'';
+    const color=r.c?`color:${r.c}`:'';
+    const fs=r.big?'font-size:1.1rem;':'';
+    const indent=r.indent?'padding-left:20px;color:#888;':'';
+    const val=r.pct?r.pct:(r.neg?'-'+$(r.v):$(r.v));
+    pnlH+=`<tr><td style="${indent}${style}">${r.l}</td><td style="text-align:right;${style}${color}${fs}">${val}</td></tr>`;
+  });
+  pnlH+='</table>';
+  document.getElementById('pnl-detail').innerHTML=pnlH;
 
   // Cash flow chart
   dc('ch-cashflow');

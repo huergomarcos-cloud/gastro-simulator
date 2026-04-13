@@ -210,63 +210,64 @@ function calcScenario(p){
     dem=Math.max(0,Math.min(1,dem));
     const cm=(mesApertura-1+m)%12;
 
-    // ── Covers & Revenue ──
+    // ── Revenue ──
     const cvC=cap*rcAvg*DAYS_OP*dem,cvA=cap*raAvg*DAYS_OP*dem,cvT=cvC+cvA;
     const rC2=cvC*ticketCena,rA2=cvA*ticketAlm,rev=rC2+rA2;
     const revB=rev*pctBlanco,revN=rev*pctNegro;
 
-    // ── Estado de Resultados (sobre blanco) ──
-    // Ingresos blancos
-    const ingBlanco=revB;
-
-    // Costos (todos contra blanco)
+    // ── CMV (Cost of Merchandise/Goods) ──
     const cFood=rev*foodCost,cPaper=rev*paperCost;
-    const cCom=revB*comisionPago;
+    const cmv=cFood+cPaper;
+    const grossProfit=rev-cmv;
+
+    // ── Cost of Revenue ──
+    const crewLabor=stCost;
+    const occupancy=alquiler+servicios;
     const mR=m<rampupMeses?mktRampup:mktDespues;
     const cMkt=rev*mR;
-    const totVar=cFood+cPaper+cCom+cMkt;
-    const totCost=totVar+fijos;
+    const cCom=revB*comisionPago;
+    const costOfRev=crewLabor+occupancy+cMkt+cCom;
 
-    // EBITDA = ingresos blancos - todos los costos
-    const ebitda=ingBlanco-totCost;
+    // ── Store Operating Income ──
+    const storeOpIncome=grossProfit-costOfRev;
 
-    // Impuestos operativos (sobre blanco)
+    // ── SG&A ──
+    const sga=contador+software+seguros;
+
+    // ── EBITDA (sobre revenue TOTAL) ──
+    const ebitda=storeOpIncome-sga;
+
+    // ── Impuestos (sobre blanco) ──
     const iibb=revB/(1+ivaRate)*iibbRate;
     const ivaD=revB*ivaRate/(1+ivaRate);
-    const compCred=(cFood+cPaper)+servicios+contador+software+seguros;
+    const compCred=cmv+servicios+contador+software+seguros;
     const ivaC=compCred*ivaRate/(1+ivaRate);
-    const iva=Math.max(0,ivaD-ivaC);
+    const ivaNeto=Math.max(0,ivaD-ivaC);
     const dc=revB*debCredRate;
-    const totImpOp=iibb+iva+dc;
+    const totImpOp=iibb+ivaNeto+dc;
 
-    // Resultado pre-ganancias
+    // ── Resultado pre-Ganancias ──
     const resPreGan=ebitda-totImpOp;
 
-    // Ganancias (35% sobre resultado pre-gan si positivo)
+    // ── Ganancias ──
     const gan=Math.max(0,resPreGan)*gananciasRate;
-
     const totImp=totImpOp+gan;
 
-    // Net income blanco
-    const netBlanco=resPreGan-gan;
-
-    // Net income total = blanco + negro
-    const net=netBlanco+revN;
+    // ── Resultado Neto ──
+    const net=resPreGan-gan;
 
     cash+=net;
     const pre=cashI<0;const si=pre?splitPreInv:splitPostInv;
     cashI+=net*si;cashO+=net*(1-si);
     if(pb===null&&cashI>=0)pb=m+1;
 
-    months.push({month:m+1,cm,dem,cvC,cvA,cvT,rC:rC2,rA:rA2,rev,revB,revN,ingBlanco,cFood,cPaper,cCom,cMkt,totVar,stCost,alq:alquiler,serv:servicios,cont:contador,soft:software,seg:seguros,fijos,totCost,ebitda,iibb,iva,dc,totImpOp,resPreGan,gan,totImp,netBlanco,net,cash,cashI,cashO});
+    months.push({month:m+1,cm,dem,cvC,cvA,cvT,rC:rC2,rA:rA2,rev,revB,revN,cFood,cPaper,cmv,grossProfit,crewLabor,occupancy,cMkt,cCom,costOfRev,storeOpIncome,sga,ebitda,iibb,ivaD,ivaC,ivaNeto,dc,totImpOp,resPreGan,gan,totImp,net,cash,cashI,cashO});
   }
 
   const l12=months.slice(-12);
   const avgRev=l12.reduce((s,m)=>s+m.rev,0)/12;
   const avgEb=l12.reduce((s,m)=>s+m.ebitda,0)/12;
   const avgNet=l12.reduce((s,m)=>s+m.net,0)/12;
-  const avgNetBl=l12.reduce((s,m)=>s+m.netBlanco,0)/12;
-  const avgNetNeg=l12.reduce((s,m)=>s+m.revN,0)/12;
   const y1Net=months.slice(0,12).reduce((s,m)=>s+m.net,0);
   const roi1=y1Net/inversion;
   const cash60=months[MONTHS-1].cash;
@@ -276,19 +277,25 @@ function calcScenario(p){
   // Unit economics
   const ssCov=l12.reduce((s,m)=>s+m.cvT,0)/12;
   const tPond=ssCov>0?avgRev/ssCov:0;
-  const cVarCub=ssCov>0?l12.reduce((s,m)=>s+m.totVar,0)/12/ssCov:0;
-  const margCub=tPond-cVarCub;
+  const avgCMV=l12.reduce((s,m)=>s+m.cmv,0)/12;
+  const cmvCub=ssCov>0?avgCMV/ssCov:0;
+  const margCub=tPond-cmvCub;
 
-  // Ratios
+  // Ratios (sobre revenue total)
+  const grossMargin=avgRev>0?(avgRev-avgCMV)/avgRev:0;
   const labPct=avgRev>0?stCost/avgRev:0;
-  const prime=avgRev>0?(l12.reduce((s,m)=>s+m.cFood,0)/12+stCost)/avgRev:0;
+  const prime=avgRev>0?(avgCMV+stCost)/avgRev:0;
   const alqPct=avgRev>0?alquiler/avgRev:0;
+  const storeOpMargin=avgRev>0?l12.reduce((s,m)=>s+m.storeOpIncome,0)/12/avgRev:0;
+  const ebitdaMargin=avgRev>0?avgEb/avgRev:0;
+  const netMargin=avgRev>0?avgNet/avgRev:0;
 
   // Break-even
+  const totalFixedMonth=stCost+alquiler+servicios+contador+software+seguros;
   let beCov=0;
-  for(let c=1;c<500;c++){const tr=c*tPond;const tv=tr*(foodCost+paperCost+comisionPago*(1-pctNegro)+mktDespues);if(tr-tv>=fijos/DAYS_OP){beCov=c;break;}}
+  for(let c=1;c<500;c++){const tr=c*tPond;const tv=tr*(foodCost+paperCost+comisionPago*(1-pctNegro)+mktDespues);if(tr-tv>=totalFixedMonth/DAYS_OP){beCov=c;break;}}
 
-  return{months,pb:pb??'>60',avgRev,avgEb,avgNet,avgNetBl,avgNetNeg,roi1,cash60,minCash,minCashM:minCashM?minCashM.month:1,inversion,stTotal,stCost,fijos,tPond,cVarCub,margCub,prime,labPct,alqPct,beCov,rcAvg,raAvg,DAYS_OP,p};
+  return{months,pb:pb??'>60',avgRev,avgEb,avgNet,roi1,cash60,minCash,minCashM:minCashM?minCashM.month:1,inversion,stTotal,stCost,totalFixedMonth,tPond,cmvCub,margCub,grossMargin,prime,labPct,alqPct,storeOpMargin,ebitdaMargin,netMargin,beCov,rcAvg,raAvg,DAYS_OP,p};
 }
 
 // ─── calcDaily ───
@@ -387,11 +394,10 @@ function renderDash(){
   document.getElementById('dash-kpis').innerHTML=[
     {l:'Revenue/mes',v:$(Math.round(r.avgRev)),c:'#00d4aa'},
     {l:'EBITDA/mes',v:$(Math.round(r.avgEb)),c:r.avgEb>=0?'#00d4aa':'#ff4444'},
-    {l:'Net Income/mes',v:$(Math.round(r.avgNet)),c:r.avgNet>=0?'#00d4aa':'#ff4444'},
-    {l:'Net Blanco/mes',v:$(Math.round(r.avgNetBl)),c:r.avgNetBl>=0?'#4fc3f7':'#ff4444'},
-    {l:'Net Negro/mes',v:$(Math.round(r.avgNetNeg)),c:'#888'},
+    {l:'Resultado Neto/mes',v:$(Math.round(r.avgNet)),c:r.avgNet>=0?'#00d4aa':'#ff4444'},
     {l:'Payback',v:typeof r.pb==='number'?r.pb+'m':r.pb,c:'#00d4aa'},
     {l:'ROI Año 1',v:(r.roi1*100).toFixed(1)+'%',c:r.roi1>=0?'#00d4aa':'#ff4444'},
+    {l:'Net Margin',v:(r.netMargin*100).toFixed(1)+'%',c:r.netMargin>=0?'#00d4aa':'#ff4444'},
   ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c}">${k.v}</div></div>`).join('');
 
   // Ratios
@@ -413,40 +419,47 @@ function renderDash(){
   const pAvg=k=>Math.round(l12.reduce((s,m)=>s+m[k],0)/12);
   const pnlRows=[
     {l:'Revenue Total',v:pAvg('rev'),bold:true,c:'#00d4aa'},
-    {l:'  Ingresos Blancos ('+((1-S.pctNegro)*100).toFixed(0)+'%)',v:pAvg('ingBlanco'),indent:true},
-    {l:'  Ingresos Negro ('+((S.pctNegro)*100).toFixed(0)+'%)',v:pAvg('revN'),indent:true,c:'#888'},
+    {l:'  Rev. Negro (efectivo)',v:pAvg('revN'),indent:true,c:'#888'},
+    {l:'  Rev. Blanco (bancos)',v:pAvg('revB'),indent:true},
     {l:'',sep:true},
-    {l:'Costos Variables',v:pAvg('totVar'),bold:true,c:'#ff6b6b',neg:true},
     {l:'  Food Cost',v:pAvg('cFood'),indent:true,neg:true},
-    {l:'  Paper / Descartables',v:pAvg('cPaper'),indent:true,neg:true},
-    {l:'  Comisiones Pago',v:pAvg('cCom'),indent:true,neg:true},
+    {l:'  Paper Cost',v:pAvg('cPaper'),indent:true,neg:true},
+    {l:'Total CMV',v:pAvg('cmv'),bold:true,neg:true,c:'#ff6b6b'},
+    {l:'Gross Profit',v:pAvg('grossProfit'),bold:true,c:pAvg('grossProfit')>=0?'#00d4aa':'#ff4444'},
+    {l:'  Gross Margin',v:null,pct:(r.grossMargin*100).toFixed(1)+'%'},
+    {l:'',sep:true},
+    {l:'Cost of Revenue',v:null,bold:true},
+    {l:'  Crew Labor ('+r.stTotal+' × $'+S.sueldo+')',v:pAvg('crewLabor'),indent:true,neg:true},
+    {l:'  Occupancy (alq+serv)',v:pAvg('occupancy'),indent:true,neg:true},
     {l:'  Marketing',v:pAvg('cMkt'),indent:true,neg:true},
+    {l:'  Processing / Bancarios',v:pAvg('cCom'),indent:true,neg:true},
+    {l:'Total Cost of Revenue',v:pAvg('costOfRev'),bold:true,neg:true,c:'#ff6b6b'},
     {l:'',sep:true},
-    {l:'Costos Fijos',v:pAvg('fijos'),bold:true,c:'#ff6b6b',neg:true},
-    {l:'  Staff ('+r.stTotal+' pers × $'+S.sueldo+')',v:pAvg('stCost'),indent:true,neg:true},
-    {l:'  Alquiler',v:S.alquiler,indent:true,neg:true},
-    {l:'  Servicios',v:S.servicios,indent:true,neg:true},
-    {l:'  Contador',v:S.contador,indent:true,neg:true},
-    {l:'  Software',v:S.software,indent:true,neg:true},
-    {l:'  Seguros',v:S.seguros,indent:true,neg:true},
+    {l:'Store Operating Income',v:pAvg('storeOpIncome'),bold:true,c:pAvg('storeOpIncome')>=0?'#00d4aa':'#ff4444'},
+    {l:'  Store Op. Margin',v:null,pct:(r.storeOpMargin*100).toFixed(1)+'%'},
     {l:'',sep:true},
-    {l:'EBITDA',v:pAvg('ebitda'),bold:true,c:pAvg('ebitda')>=0?'#00d4aa':'#ff4444'},
-    {l:'  (Ing. Blancos - Costos)',v:null,pct:'',indent:true},
+    {l:'SG&A',v:null,bold:true},
+    {l:'  Estudio contable',v:S.contador,indent:true,neg:true},
+    {l:'  Software / seguros / misc',v:S.software+S.seguros,indent:true,neg:true},
+    {l:'Total SG&A',v:S.contador+S.software+S.seguros,bold:true,neg:true,c:'#ff6b6b'},
     {l:'',sep:true},
-    {l:'Impuestos Operativos',v:pAvg('totImpOp'),bold:true,c:'#ffa726',neg:true},
+    {l:'EBITDA',v:pAvg('ebitda'),bold:true,c:pAvg('ebitda')>=0?'#00d4aa':'#ff4444',big:true},
+    {l:'  EBITDA Margin',v:null,pct:(r.ebitdaMargin*100).toFixed(1)+'%'},
+    {l:'',sep:true},
+    {l:'IMPUESTOS (aplica a lo blanco)',v:null,bold:true,c:'#ffa726'},
+    {l:'  Revenue Blanco (base imp.)',v:pAvg('revB'),indent:true},
     {l:'  IIBB',v:pAvg('iibb'),indent:true,neg:true},
-    {l:'  IVA Neto (débito - crédito)',v:pAvg('iva'),indent:true,neg:true},
-    {l:'  Déb/Créd Bancarios',v:pAvg('dc'),indent:true,neg:true},
+    {l:'  IVA Débito Fiscal',v:pAvg('ivaD'),indent:true,neg:true},
+    {l:'  IVA Crédito Fiscal',v:pAvg('ivaC'),indent:true},
+    {l:'  IVA Neto',v:pAvg('ivaNeto'),indent:true,neg:true},
+    {l:'  Déb. y Créd. Bancarios',v:pAvg('dc'),indent:true,neg:true},
+    {l:'Total Imp. Operativos',v:pAvg('totImpOp'),bold:true,neg:true,c:'#ffa726'},
     {l:'',sep:true},
-    {l:'RESULTADO PRE-GANANCIAS',v:pAvg('resPreGan'),bold:true,c:pAvg('resPreGan')>=0?'#00d4aa':'#ff4444'},
+    {l:'Resultado pre-Ganancias',v:pAvg('resPreGan'),bold:true,c:pAvg('resPreGan')>=0?'#00d4aa':'#ff4444'},
+    {l:'  Imp. Ganancias',v:pAvg('gan'),indent:true,neg:true,c:'#ffa726'},
     {l:'',sep:true},
-    {l:'  Imp. Ganancias (35%)',v:pAvg('gan'),neg:true,c:'#ffa726'},
-    {l:'',sep:true},
-    {l:'NET INCOME BLANCO',v:pAvg('netBlanco'),bold:true,c:pAvg('netBlanco')>=0?'#00d4aa':'#ff4444'},
-    {l:'',sep:true},
-    {l:'(+) Ingresos Negro',v:pAvg('revN'),c:'#888'},
-    {l:'',sep:true},
-    {l:'NET INCOME TOTAL',v:pAvg('net'),bold:true,c:pAvg('net')>=0?'#00d4aa':'#ff4444',big:true},
+    {l:'RESULTADO NETO',v:pAvg('net'),bold:true,c:pAvg('net')>=0?'#00d4aa':'#ff4444',big:true},
+    {l:'  Net Margin',v:null,pct:(r.netMargin*100).toFixed(1)+'%'},
   ];
   let pnlH='<table>';
   pnlRows.forEach(r=>{
@@ -468,7 +481,7 @@ function renderDash(){
   // Cash flow table
   const cfI=[0,1,2,3,5,8,11,17,23,35,47,59].filter(i=>i<r.months.length);
   let cfH='<table><thead><tr><th>Mes</th><th>Revenue</th><th>Costos</th><th>Impuestos</th><th>Net</th><th>Cash Acum</th></tr></thead><tbody>';
-  cfI.forEach(i=>{const m=r.months[i];cfH+=`<tr><td class="font-semibold">M${m.month}</td><td>${$(Math.round(m.rev))}</td><td class="red">${$(Math.round(m.totCost))}</td><td class="yellow">${$(Math.round(m.totImp))}</td><td style="color:${m.net>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.net))}</td><td style="color:${m.cash>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.cash))}</td></tr>`});
+  cfI.forEach(i=>{const m=r.months[i];cfH+=`<tr><td class="font-semibold">M${m.month}</td><td>${$(Math.round(m.rev))}</td><td class="red">${$(Math.round(m.cmv+m.costOfRev+m.sga))}</td><td class="yellow">${$(Math.round(m.totImp))}</td><td style="color:${m.net>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.net))}</td><td style="color:${m.cash>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.cash))}</td></tr>`});
   cfH+='</tbody></table>';
   cfH+=`<div class="mt-2 text-xs p-2 rounded" style="background:#2a0a0a;border:1px solid #ff444433"><strong class="red">Piso de caja: ${$(Math.round(r.minCash))}</strong> (mes ${r.minCashM}). Capital total necesario: <strong>${$(Math.round(Math.abs(r.minCash)))}</strong></div>`;
   document.getElementById('cf-table').innerHTML=cfH;
@@ -481,7 +494,7 @@ function renderDash(){
   // Donut
   const ss=r.months[MONTHS-1];
   dc('ch-donut');
-  CI['ch-donut']=new Chart(document.getElementById('ch-donut'),{type:'doughnut',data:{labels:['Food','Paper','Comisiones','Marketing','Staff','Alquiler','Servicios','Otros Fijos','Impuestos'],datasets:[{data:[ss.cFood,ss.cPaper,ss.cCom,ss.cMkt,ss.stCost,ss.alq,ss.serv,ss.cont+ss.soft+ss.seg,ss.totImp].map(Math.round),backgroundColor:['#ff6b6b','#ff9a76','#ffa726','#ffcc02','#4fc3f7','#7e57c2','#26a69a','#78909c','#ef5350']}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#888',font:{size:10}}}}}});
+  CI['ch-donut']=new Chart(document.getElementById('ch-donut'),{type:'doughnut',data:{labels:['Food','Paper','Crew Labor','Occupancy','Marketing','Processing','SG&A','Impuestos'],datasets:[{data:[ss.cFood,ss.cPaper,ss.crewLabor,ss.occupancy,ss.cMkt,ss.cCom,ss.sga,ss.totImp].map(Math.round),backgroundColor:['#ff6b6b','#ff9a76','#4fc3f7','#7e57c2','#ffcc02','#ffa726','#78909c','#ef5350']}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#888',font:{size:10}}}}}});
 
   // Weekly
   const rCD=S.rotCenaDay,rAD=S.rotAlmDay;
@@ -505,7 +518,7 @@ function renderOp(){
   let h='';
 
   // Daily target
-  const fijoDia=r.fijos/r.DAYS_OP;
+  const fijoDia=r.totalFixedMonth/r.DAYS_OP;
   const tPond=r.tPond;
   const beCov=r.beCov;
   h+=`<div class="kpi mb-4"><div class="kpi-lbl">Target Diario</div><div class="kpi-val green">${beCov} covers/día = ${$(Math.round(beCov*tPond))}/día</div><div class="text-xs muted mt-1">Para cubrir costos fijos (${$(Math.round(fijoDia))}/día) + variables. Ticket promedio: ${$(Math.round(tPond))}</div></div>`;
@@ -692,9 +705,9 @@ function renderStress(){
 function renderSup(){
   const r=calcScenario(S);
   // P&L 24 meses
-  let pnl='<div class="overflow-x-auto"><table><thead><tr><th>Mes</th><th>Rev</th><th>Food</th><th>Paper</th><th>Com</th><th>Mkt</th><th>Staff</th><th>Alq</th><th>Serv</th><th>Otros</th><th>EBITDA</th><th>IVA</th><th>IIBB</th><th>D/C</th><th>Gan</th><th>Net</th><th>Cash</th></tr></thead><tbody>';
+  let pnl='<div class="overflow-x-auto"><table><thead><tr><th>Mes</th><th>Rev</th><th>CMV</th><th>Gross</th><th>CostRev</th><th>StoreOp</th><th>EBITDA</th><th>Imp.Op</th><th>PreGan</th><th>Gan</th><th>Neto</th><th>Cash</th></tr></thead><tbody>';
   r.months.slice(0,24).forEach(m=>{
-    pnl+=`<tr><td class="font-semibold">M${m.month} <span class="muted">${MN[m.cm]}</span></td><td>${$(Math.round(m.rev))}</td><td class="red">${$(Math.round(m.cFood))}</td><td class="red">${$(Math.round(m.cPaper))}</td><td class="red">${$(Math.round(m.cCom))}</td><td class="red">${$(Math.round(m.cMkt))}</td><td class="red">${$(Math.round(m.stCost))}</td><td class="red">${$(Math.round(m.alq))}</td><td class="red">${$(Math.round(m.serv))}</td><td class="red">${$(Math.round(m.cont+m.soft+m.seg))}</td><td style="color:${m.ebitda>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.ebitda))}</td><td class="yellow">${$(Math.round(m.iva))}</td><td class="yellow">${$(Math.round(m.iibb))}</td><td class="yellow">${$(Math.round(m.dc))}</td><td class="yellow">${$(Math.round(m.gan))}</td><td style="color:${m.net>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.net))}</td><td style="color:${m.cash>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.cash))}</td></tr>`;
+    pnl+=`<tr><td class="font-semibold">M${m.month} <span class="muted">${MN[m.cm]}</span></td><td>${$(Math.round(m.rev))}</td><td class="red">${$(Math.round(m.cmv))}</td><td>${$(Math.round(m.grossProfit))}</td><td class="red">${$(Math.round(m.costOfRev))}</td><td style="color:${m.storeOpIncome>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.storeOpIncome))}</td><td style="color:${m.ebitda>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.ebitda))}</td><td class="yellow">${$(Math.round(m.totImpOp))}</td><td style="color:${m.resPreGan>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.resPreGan))}</td><td class="yellow">${$(Math.round(m.gan))}</td><td style="color:${m.net>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.net))}</td><td style="color:${m.cash>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.cash))}</td></tr>`;
   });
   pnl+='</tbody></table></div>';
 

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SNACK — Simulador Financiero v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #0a0a0a; color: #e5e5e5; font-family: system-ui, sans-serif; }
+    .tab-btn { transition: all 0.15s; cursor: pointer; }
+    .tab-btn.active { background: #1a1a2e; color: #00d4aa; border-bottom: 2px solid #00d4aa; }
+    .tab-btn:not(.active):hover { background: #111; }
+    .kpi { background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; }
+    .kpi-val { font-size: 1.3rem; font-weight: 700; }
+    .kpi-lbl { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+    .ratio-card { padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; }
+    .sg { margin-bottom: 6px; }
+    .sg label { font-size: 0.75rem; color: #aaa; display: flex; justify-content: space-between; }
+    .sg input[type="range"] { width: 100%; accent-color: #00d4aa; height: 4px; }
+    .sv { color: #00d4aa; font-weight: 600; }
+    .stitle { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #222; }
+    .banner { background: #1a1a2e; border: 1px solid #00d4aa33; border-radius: 6px; padding: 8px 14px; font-size: 0.78rem; color: #aaa; margin-bottom: 16px; }
+    .banner span { color: #00d4aa; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th { background: #1a1a2e; color: #999; padding: 6px 8px; text-align: left; font-weight: 500; }
+    td { padding: 5px 8px; border-bottom: 1px solid #161616; }
+    .ni { width: 50px; background: #1a1a2e; border: 1px solid #333; color: #fff; text-align: center; border-radius: 4px; padding: 3px; font-size: 0.78rem; }
+    canvas { max-height: 280px; }
+    .green { color: #00d4aa; } .red { color: #ff4444; } .yellow { color: #ffa726; } .muted { color: #666; }
+    .view { display: none; } .view.active { display: block; }
+    select { background: #1a1a2e; border: 1px solid #333; color: #fff; border-radius: 4px; padding: 3px 8px; font-size: 0.78rem; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- NAV -->
+<nav class="flex items-center gap-1 px-4 py-2 border-b border-gray-800 bg-black/60 sticky top-0 z-50">
+  <h1 class="text-base font-bold mr-4" style="color:#00d4aa">SNACK</h1>
+  <button class="tab-btn active px-3 py-1.5 text-xs rounded-t" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn px-3 py-1.5 text-xs rounded-t" data-tab="operacion">Operación</button>
+  <button class="tab-btn px-3 py-1.5 text-xs rounded-t" data-tab="socios">Socios</button>
+  <button class="tab-btn px-3 py-1.5 text-xs rounded-t" data-tab="stress">Stress Test</button>
+  <button class="tab-btn px-3 py-1.5 text-xs rounded-t" data-tab="supuestos">Supuestos</button>
+</nav>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="view-dashboard" class="view active p-4">
+  <!-- KPIs -->
+  <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-4" id="dash-kpis"></div>
+  <!-- Ratios -->
+  <div class="grid grid-cols-3 gap-2 mb-4" id="dash-ratios"></div>
+  <!-- Unit Economics -->
+  <div class="grid grid-cols-3 gap-2 mb-4" id="dash-unit"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <!-- Sliders -->
+    <div class="lg:col-span-1 space-y-1" style="max-height:calc(100vh - 220px);overflow-y:auto;padding-right:6px" id="sliders-col">
+      <div class="stitle">Local</div>
+      <div class="sg"><label>Capacidad <span class="sv" id="v-cap"></span> pax</label><input type="range" id="s-cap" min="10" max="60" step="1"></div>
+      <div class="sg"><label>Inversión $<span class="sv" id="v-inversion"></span></label><input type="range" id="s-inversion" min="100000" max="350000" step="5000"></div>
+      <div class="sg"><label>Alquiler $<span class="sv" id="v-alquiler"></span>/mes</label><input type="range" id="s-alquiler" min="1500" max="6000" step="100"></div>
+      <div class="sg"><label>Servicios $<span class="sv" id="v-servicios"></span>/mes</label><input type="range" id="s-servicios" min="500" max="3000" step="50"></div>
+
+      <div class="stitle mt-2">Staff</div>
+      <div class="sg"><label>Staff Cena <span class="sv" id="v-staffCena"></span></label><input type="range" id="s-staffCena" min="3" max="25" step="1"></div>
+      <div class="sg"><label>Staff Almuerzo <span class="sv" id="v-staffAlm"></span></label><input type="range" id="s-staffAlm" min="2" max="15" step="1"></div>
+      <div class="sg"><label>Sueldo $<span class="sv" id="v-sueldo"></span></label><input type="range" id="s-sueldo" min="800" max="2000" step="50"></div>
+
+      <div class="stitle mt-2">Pricing</div>
+      <div class="sg"><label>Ticket Cena $<span class="sv" id="v-ticketCena"></span></label><input type="range" id="s-ticketCena" min="25" max="60" step="1"></div>
+      <div class="sg"><label>Ticket Almuerzo $<span class="sv" id="v-ticketAlm"></span></label><input type="range" id="s-ticketAlm" min="10" max="40" step="1"></div>
+
+      <div class="stitle mt-2">Costos Variables</div>
+      <div class="sg"><label>Food Cost <span class="sv" id="v-foodCost"></span>%</label><input type="range" id="s-foodCost" min="15" max="40" step="1"></div>
+      <div class="sg"><label>Paper Cost <span class="sv" id="v-paperCost"></span>%</label><input type="range" id="s-paperCost" min="0" max="8" step="0.5"></div>
+      <div class="sg"><label>Comisiones <span class="sv" id="v-comisionPago"></span>%</label><input type="range" id="s-comisionPago" min="0" max="5" step="0.1"></div>
+      <div class="sg"><label>Mkt Ramp-up <span class="sv" id="v-mktRampup"></span>%</label><input type="range" id="s-mktRampup" min="0" max="15" step="1"></div>
+      <div class="sg"><label>Mkt Después <span class="sv" id="v-mktDespues"></span>%</label><input type="range" id="s-mktDespues" min="0" max="10" step="1"></div>
+
+      <div class="stitle mt-2">Mercado</div>
+      <div class="sg"><label>Demanda Máx <span class="sv" id="v-demandaMax"></span>%</label><input type="range" id="s-demandaMax" min="30" max="100" step="5"></div>
+      <div class="sg"><label>Ramp-up <span class="sv" id="v-rampupMeses"></span> meses</label><input type="range" id="s-rampupMeses" min="3" max="18" step="1"></div>
+      <div class="sg"><label>Apertura: <span class="sv" id="v-mesApertura"></span></label><input type="range" id="s-mesApertura" min="1" max="12" step="1"></div>
+      <div class="sg"><label>% Negro <span class="sv" id="v-pctNegro"></span>%</label><input type="range" id="s-pctNegro" min="0" max="50" step="5"></div>
+      <div class="sg"><label>% Compras Blanco <span class="sv" id="v-pctComprasBlanco"></span>%</label><input type="range" id="s-pctComprasBlanco" min="0" max="100" step="5"></div>
+
+      <div class="stitle mt-2">Fijos Menores</div>
+      <div class="sg"><label>Contador $<span class="sv" id="v-contador"></span></label><input type="range" id="s-contador" min="200" max="1000" step="50"></div>
+      <div class="sg"><label>Software $<span class="sv" id="v-software"></span></label><input type="range" id="s-software" min="100" max="600" step="50"></div>
+      <div class="sg"><label>Seguros $<span class="sv" id="v-seguros"></span></label><input type="range" id="s-seguros" min="100" max="600" step="50"></div>
+
+      <div class="stitle mt-2">Impuestos</div>
+      <div class="sg"><label>IVA <span class="sv" id="v-ivaRate"></span>%</label><input type="range" id="s-ivaRate" min="0" max="30" step="1"></div>
+      <div class="sg"><label>IIBB <span class="sv" id="v-iibbRate"></span>%</label><input type="range" id="s-iibbRate" min="0" max="8" step="0.5"></div>
+      <div class="sg"><label>Déb/Créd <span class="sv" id="v-debCredRate"></span>%</label><input type="range" id="s-debCredRate" min="0" max="3" step="0.1"></div>
+      <div class="sg"><label>Ganancias <span class="sv" id="v-gananciasRate"></span>%</label><input type="range" id="s-gananciasRate" min="0" max="50" step="5"></div>
+
+      <div class="stitle mt-2">Split Socios</div>
+      <div class="sg"><label>Inversor Pre-PB <span class="sv" id="v-splitPreInv"></span>%</label><input type="range" id="s-splitPreInv" min="50" max="100" step="5"></div>
+      <div class="sg"><label>Inversor Post-PB <span class="sv" id="v-splitPostInv"></span>%</label><input type="range" id="s-splitPostInv" min="0" max="50" step="5"></div>
+
+      <div class="stitle mt-2">Rotaciones Cena <span class="green" id="rc-avg">1.56</span> avg</div>
+      <div class="sg"><label>Lun <span class="sv" id="v-rc0">0</span></label><input type="range" class="rc" data-i="0" min="0" max="4" step="0.25" value="0"></div>
+      <div class="sg"><label>Mar <span class="sv" id="v-rc1">0.9</span></label><input type="range" class="rc" data-i="1" min="0" max="4" step="0.25" value="0.9"></div>
+      <div class="sg"><label>Mié <span class="sv" id="v-rc2">0.9</span></label><input type="range" class="rc" data-i="2" min="0" max="4" step="0.25" value="0.9"></div>
+      <div class="sg"><label>Jue <span class="sv" id="v-rc3">1.8</span></label><input type="range" class="rc" data-i="3" min="0" max="4" step="0.25" value="1.8"></div>
+      <div class="sg"><label>Vie <span class="sv" id="v-rc4">2.7</span></label><input type="range" class="rc" data-i="4" min="0" max="4" step="0.25" value="2.7"></div>
+      <div class="sg"><label>Sáb <span class="sv" id="v-rc5">2.4</span></label><input type="range" class="rc" data-i="5" min="0" max="4" step="0.25" value="2.4"></div>
+      <div class="sg"><label>Dom <span class="sv" id="v-rc6">2.1</span></label><input type="range" class="rc" data-i="6" min="0" max="4" step="0.25" value="2.1"></div>
+
+      <div class="stitle mt-2">Rotaciones Almuerzo <span style="color:#4fc3f7" id="ra-avg">0.77</span> avg</div>
+      <div class="sg"><label>Lun <span class="sv" id="v-ra0">0</span></label><input type="range" class="ra" data-i="0" min="0" max="4" step="0.25" value="0"></div>
+      <div class="sg"><label>Mar <span class="sv" id="v-ra1">0.3</span></label><input type="range" class="ra" data-i="1" min="0" max="4" step="0.25" value="0.3"></div>
+      <div class="sg"><label>Mié <span class="sv" id="v-ra2">0.6</span></label><input type="range" class="ra" data-i="2" min="0" max="4" step="0.25" value="0.6"></div>
+      <div class="sg"><label>Jue <span class="sv" id="v-ra3">0.9</span></label><input type="range" class="ra" data-i="3" min="0" max="4" step="0.25" value="0.9"></div>
+      <div class="sg"><label>Vie <span class="sv" id="v-ra4">1.5</span></label><input type="range" class="ra" data-i="4" min="0" max="4" step="0.25" value="1.5"></div>
+      <div class="sg"><label>Sáb <span class="sv" id="v-ra5">1.2</span></label><input type="range" class="ra" data-i="5" min="0" max="4" step="0.25" value="1.2"></div>
+      <div class="sg"><label>Dom <span class="sv" id="v-ra6">0.9</span></label><input type="range" class="ra" data-i="6" min="0" max="4" step="0.25" value="0.9"></div>
+    </div>
+
+    <!-- Charts area -->
+    <div class="lg:col-span-3 space-y-4">
+      <div>
+        <div class="stitle">Cash Flow Acumulado — 60 meses</div>
+        <canvas id="ch-cashflow"></canvas>
+        <div id="cf-table" class="mt-2 overflow-x-auto"></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><div class="stitle">P&L Mensual</div><canvas id="ch-pnl"></canvas></div>
+        <div><div class="stitle">Composición de Costos</div><canvas id="ch-donut"></canvas></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><div class="stitle">Covers por Día (steady state)</div><canvas id="ch-weekly"></canvas></div>
+        <div><div class="stitle">Ocupación por Día</div><div id="occ-table"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ OPERACIÓN ══════════ -->
+<div id="view-operacion" class="view p-4">
+  <div class="banner" id="op-banner"></div>
+  <div id="op-content"></div>
+</div>
+
+<!-- ══════════ SOCIOS ══════════ -->
+<div id="view-socios" class="view p-4">
+  <div class="banner" id="soc-banner"></div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div><div class="stitle">Escenarios</div><div id="soc-table"></div></div>
+    <div>
+      <div class="stitle">Cash Flow — Inversor vs Operador</div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs muted">Escenario:</span>
+        <select id="soc-select" onchange="renderSociosChart()"></select>
+      </div>
+      <div class="text-xs muted mb-1" id="soc-chart-label"></div>
+      <canvas id="ch-socios"></canvas>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <div><div class="stitle">Payback Cruzado: Rotaciones × Demanda</div><div id="soc-payback-grid"></div></div>
+    <div><div class="stitle">Tornado Sensibilidad</div><canvas id="ch-tornado"></canvas></div>
+  </div>
+  <div><div class="stitle">Break-even</div><div id="soc-be"></div></div>
+</div>
+
+<!-- ══════════ STRESS TEST ══════════ -->
+<div id="view-stress" class="view p-4">
+  <div class="banner" id="st-banner"></div>
+  <div class="max-w-4xl space-y-4" id="st-content"></div>
+</div>
+
+<!-- ══════════ SUPUESTOS ══════════ -->
+<div id="view-supuestos" class="view p-4">
+  <div class="max-w-4xl space-y-6" id="sup-content"></div>
+</div>
+
+<!-- ══════════ ENGINE ══════════ -->
+<script>
+// ─── CONSTANTS ───
+const MONTHS=60;
+const DN=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const MN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const SEASONAL=[0.55,0.60,0.90,0.90,0.90,0.95,0.95,0.95,0.95,0.95,1.00,1.05];
+
+// ─── calcScenario ───
+function calcScenario(p){
+  const {cap,rotCenaDay,rotAlmDay,ticketCena,ticketAlm,foodCost,paperCost,comisionPago,mktRampup,mktDespues,staffCena,staffAlm,sueldo,alquiler,servicios,contador,software,seguros,demandaMax,rampupMeses,mesApertura,pctNegro,pctComprasBlanco,inversion,ivaRate,iibbRate,debCredRate,gananciasRate,splitPreInv,splitPostInv,rotScale}=p;
+  const pctBlanco=1-pctNegro,sc=rotScale??1;
+  const rC=rotCenaDay.map(r=>r*sc),rA=rotAlmDay.map(r=>r*sc);
+  // Promedio semanal (sobre 7 días) × semanas/mes (~4.33)
+  const rcSum=rC.reduce((a,b)=>a+b,0),raSum=rA.reduce((a,b)=>a+b,0);
+  const rcAvg=rcSum/7,raAvg=raSum/7;
+  const daysOpen=rC.filter(r=>r>0).length; // días con rotación > 0
+  const DAYS_OP=Math.round(daysOpen*4.33); // días operativos por mes
+  const stTotal=staffCena+staffAlm,stCost=stTotal*sueldo;
+  const fijos=stCost+alquiler+servicios+contador+software+seguros;
+
+  const months=[];let cash=-inversion,cashI=-inversion,cashO=0,pb=null;
+
+  for(let m=0;m<MONTHS;m++){
+    let dem;
+    if(m<rampupMeses){dem=0.30+(demandaMax-0.30)*(m/rampupMeses)}
+    else{const cm=(mesApertura-1+m)%12;dem=demandaMax*SEASONAL[cm]}
+    dem=Math.max(0,Math.min(1,dem));
+    const cm=(mesApertura-1+m)%12;
+
+    const cvC=cap*rcAvg*DAYS_OP*dem,cvA=cap*raAvg*DAYS_OP*dem,cvT=cvC+cvA;
+    const rC2=cvC*ticketCena,rA2=cvA*ticketAlm,rev=rC2+rA2;
+    const revB=rev*pctBlanco,revN=rev*pctNegro;
+
+    const cFood=rev*foodCost,cPaper=rev*paperCost;
+    const cCom=revB*comisionPago;
+    const mR=m<rampupMeses?mktRampup:mktDespues;
+    const cMkt=rev*mR;
+    const totVar=cFood+cPaper+cCom+cMkt;
+    const totCost=totVar+fijos;
+    const ebitda=rev-totCost;
+
+    // Impuestos
+    const ivaD=revB*ivaRate/(1+ivaRate);
+    const compCred=(cFood+cPaper)*pctComprasBlanco+servicios+contador+software+seguros;
+    const ivaC=compCred*ivaRate/(1+ivaRate);
+    const iva=Math.max(0,ivaD-ivaC);
+    const iibb=revB/(1+ivaRate)*iibbRate;
+    const dc=revB*debCredRate;
+    const costDed=(cFood+cPaper)*pctComprasBlanco+cCom+cMkt+stCost+alquiler+servicios+contador+software+seguros;
+    const baseG=revB-costDed-iva-iibb-dc;
+    const gan=Math.max(0,baseG)*gananciasRate;
+    const totImp=iva+iibb+dc+gan;
+
+    const net=ebitda-totImp;
+    cash+=net;
+    const pre=cashI<0;const si=pre?splitPreInv:splitPostInv;
+    cashI+=net*si;cashO+=net*(1-si);
+    if(pb===null&&cashI>=0)pb=m+1;
+
+    months.push({month:m+1,cm,dem,cvC,cvA,cvT,rC:rC2,rA:rA2,rev,revB,revN,cFood,cPaper,cCom,cMkt,totVar,stCost,alq:alquiler,serv:servicios,cont:contador,soft:software,seg:seguros,fijos,totCost,ebitda,iva,iibb,dc,gan,totImp,net,cash,cashI,cashO});
+  }
+
+  const l12=months.slice(-12);
+  const avgRev=l12.reduce((s,m)=>s+m.rev,0)/12;
+  const avgEb=l12.reduce((s,m)=>s+m.ebitda,0)/12;
+  const avgNet=l12.reduce((s,m)=>s+m.net,0)/12;
+  const avgNetNeg=l12.reduce((s,m)=>s+m.ebitda*pctNegro,0)/12;
+  const avgNetBl=avgNet-avgNetNeg;
+  const y1Net=months.slice(0,12).reduce((s,m)=>s+m.net,0);
+  const roi1=y1Net/inversion;
+  const cash60=months[MONTHS-1].cash;
+  const minCash=Math.min(...months.map(m=>m.cash));
+  const minCashM=months.find(m=>m.cash===minCash);
+
+  // Unit economics
+  const ssCov=l12.reduce((s,m)=>s+m.cvT,0)/12;
+  const tPond=ssCov>0?avgRev/ssCov:0;
+  const cVarCub=ssCov>0?l12.reduce((s,m)=>s+m.totVar,0)/12/ssCov:0;
+  const margCub=tPond-cVarCub;
+
+  // Ratios
+  const labPct=avgRev>0?stCost/avgRev:0;
+  const prime=avgRev>0?(l12.reduce((s,m)=>s+m.cFood,0)/12+stCost)/avgRev:0;
+  const alqPct=avgRev>0?alquiler/avgRev:0;
+
+  // Break-even
+  let beCov=0;
+  for(let c=1;c<500;c++){const tr=c*tPond;const tv=tr*(foodCost+paperCost+comisionPago*pctBlanco+mktDespues);if(tr-tv>=fijos/DAYS_OP){beCov=c;break;}}
+
+  return{months,pb:pb??'>60',avgRev,avgEb,avgNet,avgNetBl,avgNetNeg,roi1,cash60,minCash,minCashM:minCashM?minCashM.month:1,inversion,stTotal,stCost,fijos,tPond,cVarCub,margCub,prime,labPct,alqPct,beCov,rcAvg,raAvg,DAYS_OP,p};
+}
+
+// ─── calcDaily ───
+function calcDaily(p,demOvr){
+  const{cap,rotCenaDay,rotAlmDay,ticketCena,ticketAlm,foodCost,paperCost,comisionPago,pctNegro,staffCena,staffAlm,sueldo,mktDespues}=p;
+  const pb=1-pctNegro,dem=demOvr??p.demandaMax;
+  const daysOpen=rotCenaDay.filter(r=>r>0).length;
+  const daysMonth=Math.round(daysOpen*4.33);
+  const lC=staffCena*sueldo/daysMonth,lA=staffAlm*sueldo/daysMonth;
+  const vr=foodCost+paperCost+comisionPago*pb+mktDespues;
+  return DN.map((n,i)=>{
+    const cc=cap*rotCenaDay[i]*dem,ca=cap*rotAlmDay[i]*dem;
+    const rc=cc*ticketCena,ra=ca*ticketAlm;
+    const vc=rc*vr,va=ra*vr;
+    const isOpen=rotCenaDay[i]>0||rotAlmDay[i]>0;
+    return{name:n,cc:Math.round(cc),ca:Math.round(ca),rc:Math.round(rc),ra:Math.round(ra),lC:isOpen?Math.round(lC):0,lA:isOpen?Math.round(lA):0,pC:isOpen?Math.round(rc-vc-lC):0,pA:isOpen?Math.round(ra-va-lA):0,isOpen};
+  });
+}
+
+// ─── HELPERS ───
+function fmt(n){return typeof n!=='number'||isNaN(n)?'—':n.toLocaleString('en-US',{maximumFractionDigits:0})}
+function $(n){return typeof n!=='number'||isNaN(n)?'—':'$'+fmt(n)}
+let CI={};function dc(id){if(CI[id]){CI[id].destroy();delete CI[id]}}
+function ratioColor(v,g,y){return v<=g?'#00d4aa':v<=y?'#ffa726':'#ff4444'}
+
+// ─── STATE ───
+const DEFAULTS={cap:30,rotCenaDay:[0,0.9,0.9,1.8,2.7,2.4,2.1],rotAlmDay:[0,0.3,0.6,0.9,1.5,1.2,0.9],ticketCena:38,ticketAlm:22,foodCost:0.25,paperCost:0.025,comisionPago:0.012,mktRampup:0.05,mktDespues:0.03,staffCena:9,staffAlm:5,sueldo:1150,alquiler:3400,servicios:1350,contador:500,software:300,seguros:300,demandaMax:0.90,rampupMeses:9,mesApertura:3,pctNegro:0.20,pctComprasBlanco:0.80,inversion:225000,ivaRate:0.21,iibbRate:0.035,debCredRate:0.012,gananciasRate:0.35,splitPreInv:0.80,splitPostInv:0.25};
+
+let S={...DEFAULTS};
+let scenCache=[];
+
+// ─── SLIDER MAP ───
+const SM={cap:{k:'cap'},inversion:{k:'inversion'},alquiler:{k:'alquiler'},servicios:{k:'servicios'},staffCena:{k:'staffCena'},staffAlm:{k:'staffAlm'},sueldo:{k:'sueldo'},ticketCena:{k:'ticketCena'},ticketAlm:{k:'ticketAlm'},foodCost:{k:'foodCost',s:100},paperCost:{k:'paperCost',s:100},comisionPago:{k:'comisionPago',s:100},mktRampup:{k:'mktRampup',s:100},mktDespues:{k:'mktDespues',s:100},demandaMax:{k:'demandaMax',s:100},rampupMeses:{k:'rampupMeses'},mesApertura:{k:'mesApertura'},pctNegro:{k:'pctNegro',s:100},pctComprasBlanco:{k:'pctComprasBlanco',s:100},contador:{k:'contador'},software:{k:'software'},seguros:{k:'seguros'},ivaRate:{k:'ivaRate',s:100},iibbRate:{k:'iibbRate',s:100},debCredRate:{k:'debCredRate',s:100},gananciasRate:{k:'gananciasRate',s:100},splitPreInv:{k:'splitPreInv',s:100},splitPostInv:{k:'splitPostInv',s:100}};
+
+function setSliders(p){
+  for(const[id,c]of Object.entries(SM)){
+    const el=document.getElementById('s-'+id);if(!el)continue;
+    const v=c.s?p[c.k]*c.s:p[c.k];el.value=v;
+    const lbl=document.getElementById('v-'+id);
+    if(lbl)lbl.textContent=id==='mesApertura'?MN[v-1]:v;
+  }
+  readRots();
+}
+
+function readSliders(){
+  const p={};
+  for(const[id,c]of Object.entries(SM)){
+    const el=document.getElementById('s-'+id);if(!el)continue;
+    const raw=parseFloat(el.value);p[c.k]=c.s?raw/c.s:raw;
+    const lbl=document.getElementById('v-'+id);
+    if(lbl)lbl.textContent=id==='mesApertura'?MN[raw-1]:raw;
+  }
+  const rots=readRots();
+  p.rotCenaDay=rots.c;p.rotAlmDay=rots.a;
+  return p;
+}
+
+function readRots(){
+  const c=[],a=[];
+  document.querySelectorAll('.rc').forEach(el=>{const i=+el.dataset.i;c[i]=parseFloat(el.value)||0;const lbl=document.getElementById('v-rc'+i);if(lbl)lbl.textContent=c[i]});
+  document.querySelectorAll('.ra').forEach(el=>{const i=+el.dataset.i;a[i]=parseFloat(el.value)||0;const lbl=document.getElementById('v-ra'+i);if(lbl)lbl.textContent=a[i]});
+  document.getElementById('rc-avg').textContent=(c.reduce((s,v)=>s+v,0)/7).toFixed(2);
+  document.getElementById('ra-avg').textContent=(a.reduce((s,v)=>s+v,0)/7).toFixed(2);
+  return{c,a};
+}
+
+// ─── TABS ───
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+b.dataset.tab).classList.add('active');
+  render(b.dataset.tab);
+}));
+
+function render(tab){
+  S=readSliders();
+  if(tab==='dashboard')renderDash();
+  if(tab==='operacion')renderOp();
+  if(tab==='socios')renderSoc();
+  if(tab==='stress')renderStress();
+  if(tab==='supuestos')renderSup();
+}
+
+// ─── EVENT LISTENERS ───
+document.querySelectorAll('input[type="range"]').forEach(el=>el.addEventListener('input',()=>{S=readSliders();renderDash()}));
+document.querySelectorAll('.ni').forEach(el=>el.addEventListener('input',()=>{S=readSliders();renderDash()}));
+
+// ════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════
+function renderDash(){
+  const r=calcScenario(S);
+
+  // KPIs
+  document.getElementById('dash-kpis').innerHTML=[
+    {l:'Revenue/mes',v:$(Math.round(r.avgRev)),c:'#00d4aa'},
+    {l:'EBITDA/mes',v:$(Math.round(r.avgEb)),c:r.avgEb>=0?'#00d4aa':'#ff4444'},
+    {l:'Net Income/mes',v:$(Math.round(r.avgNet)),c:r.avgNet>=0?'#00d4aa':'#ff4444'},
+    {l:'Net Blanco/mes',v:$(Math.round(r.avgNetBl)),c:r.avgNetBl>=0?'#4fc3f7':'#ff4444'},
+    {l:'Net Negro/mes',v:$(Math.round(r.avgNetNeg)),c:'#888'},
+    {l:'Payback',v:typeof r.pb==='number'?r.pb+'m':r.pb,c:'#00d4aa'},
+    {l:'ROI Año 1',v:(r.roi1*100).toFixed(1)+'%',c:r.roi1>=0?'#00d4aa':'#ff4444'},
+  ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c}">${k.v}</div></div>`).join('');
+
+  // Ratios
+  document.getElementById('dash-ratios').innerHTML=[
+    {l:'Prime Cost (food+labor)',v:(r.prime*100).toFixed(1)+'%',c:ratioColor(r.prime,0.65,0.70),bench:'<65% ✓'},
+    {l:'Labor / Revenue',v:(r.labPct*100).toFixed(1)+'%',c:ratioColor(r.labPct,0.30,0.35),bench:'<30% ✓'},
+    {l:'Alquiler / Revenue',v:(r.alqPct*100).toFixed(1)+'%',c:ratioColor(r.alqPct,0.10,0.15),bench:'<10% ✓'},
+  ].map(k=>`<div class="ratio-card" style="background:${k.c}22;border:1px solid ${k.c}44"><div class="text-xs muted">${k.l}</div><div class="font-bold" style="color:${k.c}">${k.v}</div><div class="text-xs muted">${k.bench}</div></div>`).join('');
+
+  // Unit economics
+  document.getElementById('dash-unit').innerHTML=[
+    {l:'Ticket Ponderado',v:'$'+r.tPond.toFixed(1)},
+    {l:'Costo Var / Cubierto',v:'$'+r.cVarCub.toFixed(1)},
+    {l:'Margen / Cubierto',v:'$'+r.margCub.toFixed(1),c:r.margCub>=0?'#00d4aa':'#ff4444'},
+  ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c||'#00d4aa'};font-size:1.1rem">${k.v}</div></div>`).join('');
+
+  // Cash flow chart
+  dc('ch-cashflow');
+  CI['ch-cashflow']=new Chart(document.getElementById('ch-cashflow'),{type:'line',data:{labels:r.months.map(m=>m.month),datasets:[{label:'Cash Acumulado',data:r.months.map(m=>Math.round(m.cash)),borderColor:'#00d4aa',backgroundColor:'rgba(0,212,170,0.08)',fill:true,tension:0.3,pointRadius:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555'},grid:{color:'#161616'}},y:{ticks:{color:'#555',callback:v=>$(v)},grid:{color:'#161616'}}}}});
+
+  // Cash flow table
+  const cfI=[0,1,2,3,5,8,11,17,23,35,47,59].filter(i=>i<r.months.length);
+  let cfH='<table><thead><tr><th>Mes</th><th>Revenue</th><th>Costos</th><th>Impuestos</th><th>Net</th><th>Cash Acum</th></tr></thead><tbody>';
+  cfI.forEach(i=>{const m=r.months[i];cfH+=`<tr><td class="font-semibold">M${m.month}</td><td>${$(Math.round(m.rev))}</td><td class="red">${$(Math.round(m.totCost))}</td><td class="yellow">${$(Math.round(m.totImp))}</td><td style="color:${m.net>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.net))}</td><td style="color:${m.cash>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.cash))}</td></tr>`});
+  cfH+='</tbody></table>';
+  cfH+=`<div class="mt-2 text-xs p-2 rounded" style="background:#2a0a0a;border:1px solid #ff444433"><strong class="red">Piso de caja: ${$(Math.round(r.minCash))}</strong> (mes ${r.minCashM}). Capital total necesario: <strong>${$(Math.round(Math.abs(r.minCash)))}</strong></div>`;
+  document.getElementById('cf-table').innerHTML=cfH;
+
+  // P&L chart
+  const pm=r.months.filter((_,i)=>i%5===0||i===MONTHS-1);
+  dc('ch-pnl');
+  CI['ch-pnl']=new Chart(document.getElementById('ch-pnl'),{type:'bar',data:{labels:pm.map(m=>'M'+m.month),datasets:[{label:'Revenue',data:pm.map(m=>Math.round(m.rev)),backgroundColor:'#00d4aa'},{label:'Costos',data:pm.map(m=>-Math.round(m.totCost)),backgroundColor:'#ff6b6b'},{label:'Net',data:pm.map(m=>Math.round(m.net)),backgroundColor:'#4fc3f7'}]},options:{responsive:true,plugins:{legend:{labels:{color:'#888'}}},scales:{x:{ticks:{color:'#555'},grid:{color:'#161616'}},y:{ticks:{color:'#555',callback:v=>$(v)},grid:{color:'#161616'}}}}});
+
+  // Donut
+  const ss=r.months[MONTHS-1];
+  dc('ch-donut');
+  CI['ch-donut']=new Chart(document.getElementById('ch-donut'),{type:'doughnut',data:{labels:['Food','Paper','Comisiones','Marketing','Staff','Alquiler','Servicios','Otros Fijos','Impuestos'],datasets:[{data:[ss.cFood,ss.cPaper,ss.cCom,ss.cMkt,ss.stCost,ss.alq,ss.serv,ss.cont+ss.soft+ss.seg,ss.totImp].map(Math.round),backgroundColor:['#ff6b6b','#ff9a76','#ffa726','#ffcc02','#4fc3f7','#7e57c2','#26a69a','#78909c','#ef5350']}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#888',font:{size:10}}}}}});
+
+  // Weekly
+  const rCD=S.rotCenaDay,rAD=S.rotAlmDay;
+  const wk=rCD.map((rc,i)=>({c:Math.round(S.cap*rc*S.demandaMax),a:Math.round(S.cap*rAD[i]*S.demandaMax)}));
+  dc('ch-weekly');
+  CI['ch-weekly']=new Chart(document.getElementById('ch-weekly'),{type:'bar',data:{labels:DN,datasets:[{label:'Cena',data:wk.map(w=>w.c),backgroundColor:'#00d4aa'},{label:'Almuerzo',data:wk.map(w=>w.a),backgroundColor:'#4fc3f7'}]},options:{responsive:true,plugins:{legend:{labels:{color:'#888'}}},scales:{x:{stacked:true,ticks:{color:'#555'},grid:{color:'#161616'}},y:{stacked:true,ticks:{color:'#555'},grid:{color:'#161616'}}}}});
+
+  // Occupancy table
+  let oH='<table><thead><tr><th>Día</th><th>Cena</th><th>Alm</th><th>Total</th></tr></thead><tbody>';
+  wk.forEach((w,i)=>{oH+=`<tr><td>${DN[i]}</td><td>${w.c}</td><td>${w.a}</td><td class="font-bold">${w.c+w.a}</td></tr>`});
+  const avg=Math.round(wk.reduce((s,w)=>s+w.c+w.a,0)/7);
+  oH+=`<tr style="border-top:2px solid #333"><td class="font-bold">Promedio</td><td></td><td></td><td class="font-bold green">${avg} covers/día</td></tr></tbody></table>`;
+  document.getElementById('occ-table').innerHTML=oH;
+}
+
+// ════════════════════════════════════════════
+// OPERACIÓN
+// ════════════════════════════════════════════
+function renderOp(){
+  const r=calcScenario(S);
+  let h='';
+
+  // Daily target
+  const fijoDia=r.fijos/r.DAYS_OP;
+  const tPond=r.tPond;
+  const beCov=r.beCov;
+  h+=`<div class="kpi mb-4"><div class="kpi-lbl">Target Diario</div><div class="kpi-val green">${beCov} covers/día = ${$(Math.round(beCov*tPond))}/día</div><div class="text-xs muted mt-1">Para cubrir costos fijos (${$(Math.round(fijoDia))}/día) + variables. Ticket promedio: ${$(Math.round(tPond))}</div></div>`;
+
+  // Function to build daily grid
+  function dailyGrid(label,dem){
+    const d=calcDaily(S,dem);
+    let t=`<div class="stitle mt-4">${label} (demanda ${(dem*100).toFixed(0)}%)</div>`;
+    t+='<table><thead><tr><th>Día</th><th>Cena Rev</th><th>Cena Labor</th><th>Cena P/L</th><th>Alm Rev</th><th>Alm Labor</th><th>Alm P/L</th></tr></thead><tbody>';
+    d.forEach(x=>{
+      if(!x.isOpen){t+=`<tr><td class="font-semibold muted">${x.name}</td><td colspan="6" class="muted">Cerrado</td></tr>`;return}
+      const cc=x.pC<0?'red':'green',ca=x.pA<0?'red':'green';
+      t+=`<tr><td class="font-semibold">${x.name}</td><td>${$(x.rc)}</td><td class="yellow">${$(x.lC)}</td><td class="${cc} font-bold">${$(x.pC)}</td><td>${$(x.ra)}</td><td class="yellow">${$(x.lA)}</td><td class="${ca} font-bold">${$(x.pA)}</td></tr>`;
+    });
+    t+='</tbody></table>';
+    // Summary
+    const lossDays=d.filter(x=>x.isOpen&&x.pC<0).map(x=>x.name+' cena').concat(d.filter(x=>x.isOpen&&x.pA<0).map(x=>x.name+' alm'));
+    if(lossDays.length>0)t+=`<div class="text-xs red mt-1">⚠ Pierde plata: ${lossDays.join(', ')}</div>`;
+    else t+=`<div class="text-xs green mt-1">✓ Todos los días/servicios son rentables</div>`;
+    return t;
+  }
+
+  h+=dailyGrid('Steady State (demanda máxima)',S.demandaMax);
+  h+=dailyGrid('Enero (peor mes, 55%)',S.demandaMax*0.55);
+  h+=dailyGrid('Diciembre (mejor mes, 105%)',S.demandaMax*1.05);
+
+  // Recommendation
+  const dSS=calcDaily(S);
+  const lossAlm=dSS.filter(x=>x.isOpen&&x.pA<0);
+  if(lossAlm.length>0){
+    const ahorro=lossAlm.reduce((s,x)=>s+Math.abs(x.pA),0)*4.33;
+    h+=`<div class="mt-4 p-3 rounded" style="background:#1a1a2e;border:1px solid #00d4aa33"><div class="text-xs"><strong>Nota:</strong> ${lossAlm.map(x=>x.name).join(' y ')} almuerzo pierde plata. Si pudieras no abrir esos días, ahorrarías ~${$(Math.round(ahorro))}/mes. Pero el staff es fijo mensual — solo sirve si renegociás contratos o usás part-time.</div></div>`;
+  }
+
+  document.getElementById('op-banner').innerHTML=`Config: <span>${S.cap} pax</span> · TC <span>$${S.ticketCena}</span> · TA <span>$${S.ticketAlm}</span> · Staff <span>${S.staffCena}+${S.staffAlm}</span> · Demanda <span>${(S.demandaMax*100).toFixed(0)}%</span>`;
+  document.getElementById('op-content').innerHTML=h;
+}
+
+// ════════════════════════════════════════════
+// SOCIOS
+// ════════════════════════════════════════════
+function renderSoc(){
+  const rcAvg=S.rotCenaDay.reduce((a,b)=>a+b,0)/6;
+  const scenarios=[
+    {name:'Pesimista',rs:0.6},{name:'Conservador',rs:0.8},{name:'Base',rs:1.0},
+    {name:'Optimista',rs:1.2},{name:'Muy bueno',rs:1.4},{name:'Boom',rs:1.6}
+  ];
+  scenCache=scenarios.map(s=>({...s,r:calcScenario({...S,rotScale:s.rs})}));
+
+  document.getElementById('soc-banner').innerHTML=`Config: <span>${S.cap} pax</span> · TC <span>$${S.ticketCena}</span> · Demanda <span>${(S.demandaMax*100).toFixed(0)}%</span> · Los escenarios varían las rotaciones.`;
+
+  // Table
+  let t='<table><thead><tr><th>Escenario</th><th>Rot/noche</th><th>Net/mes</th><th>Payback</th><th>ROI Y1</th><th>Cash 60m</th></tr></thead><tbody>';
+  scenCache.forEach(s=>{const r=s.r;t+=`<tr><td class="font-semibold">${s.name}</td><td>${(rcAvg*s.rs).toFixed(1)}</td><td style="color:${r.avgNet>=0?'#00d4aa':'#ff4444'}">${$(Math.round(r.avgNet))}</td><td>${typeof r.pb==='number'?r.pb+'m':r.pb}</td><td>${(r.roi1*100).toFixed(1)}%</td><td style="color:${r.cash60>=0?'#00d4aa':'#ff4444'}">${$(Math.round(r.cash60))}</td></tr>`});
+  t+='</tbody></table>';
+  document.getElementById('soc-table').innerHTML=t;
+
+  // Dropdown
+  const sel=document.getElementById('soc-select');
+  sel.innerHTML=scenCache.map((s,i)=>`<option value="${i}"${s.name==='Base'?' selected':''}>${s.name} (${(rcAvg*s.rs).toFixed(1)} rot)</option>`).join('');
+  renderSociosChart();
+
+  // Payback grid
+  const dems=[0.60,0.70,0.80,0.90,1.00];
+  const rots=[0.6,0.8,1.0,1.2,1.4];
+  let g='<table><thead><tr><th>Rot↓ Dem→</th>';
+  dems.forEach(d=>g+=`<th>${(d*100).toFixed(0)}%</th>`);
+  g+='</tr></thead><tbody>';
+  rots.forEach(rs=>{
+    g+=`<tr><td class="font-semibold">${(rcAvg*rs).toFixed(1)}</td>`;
+    dems.forEach(d=>{
+      const rr=calcScenario({...S,rotScale:rs,demandaMax:d});
+      const pb=typeof rr.pb==='number'?rr.pb+'m':rr.pb;
+      const c=typeof rr.pb==='number'&&rr.pb<=36?'#00d4aa':typeof rr.pb==='number'?'#ffa726':'#ff4444';
+      g+=`<td style="color:${c};font-weight:600;text-align:center">${pb}</td>`;
+    });
+    g+='</tr>';
+  });
+  g+='</tbody></table><div class="text-xs muted mt-1">Verde: payback ≤36m | Amarillo: 37-60m | Rojo: >60m</div>';
+  document.getElementById('soc-payback-grid').innerHTML=g;
+
+  // Tornado
+  const base=calcScenario(S).avgNet;
+  const vars=[
+    {n:'Rotaciones -50%',calc:()=>calcScenario({...S,rotScale:0.5}).avgNet-base},
+    {n:'Rotaciones +40%',calc:()=>calcScenario({...S,rotScale:1.4}).avgNet-base},
+    {n:'Demanda -40%',calc:()=>calcScenario({...S,demandaMax:S.demandaMax*0.6}).avgNet-base},
+    {n:'Demanda +15%',calc:()=>calcScenario({...S,demandaMax:Math.min(1,S.demandaMax*1.15)}).avgNet-base},
+    {n:'Ticket -15%',calc:()=>calcScenario({...S,ticketCena:S.ticketCena*0.85,ticketAlm:S.ticketAlm*0.85}).avgNet-base},
+    {n:'Ticket +15%',calc:()=>calcScenario({...S,ticketCena:S.ticketCena*1.15,ticketAlm:S.ticketAlm*1.15}).avgNet-base},
+    {n:'Food Cost +7pp',calc:()=>calcScenario({...S,foodCost:S.foodCost+0.07}).avgNet-base},
+    {n:'Food Cost -5pp',calc:()=>calcScenario({...S,foodCost:S.foodCost-0.05}).avgNet-base},
+    {n:'Sueldo +30%',calc:()=>calcScenario({...S,sueldo:S.sueldo*1.3}).avgNet-base},
+    {n:'Alquiler +30%',calc:()=>calcScenario({...S,alquiler:S.alquiler*1.3}).avgNet-base},
+  ];
+  const td=vars.map(v=>({name:v.n,delta:v.calc()})).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+  dc('ch-tornado');
+  CI['ch-tornado']=new Chart(document.getElementById('ch-tornado'),{type:'bar',data:{labels:td.map(d=>d.name),datasets:[{data:td.map(d=>Math.round(d.delta)),backgroundColor:td.map(d=>d.delta>=0?'#00d4aa':'#ff4444')}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',callback:v=>$(v)},grid:{color:'#161616'}},y:{ticks:{color:'#aaa'},grid:{color:'#161616'}}}}});
+
+  // Break-even
+  const rBase=calcScenario(S);
+  const avgCov=Math.round(rBase.months.slice(-12).reduce((s,m)=>s+m.cvT,0)/12/rBase.DAYS_OP);
+  document.getElementById('soc-be').innerHTML=`<div class="kpi"><div class="kpi-val green">${rBase.beCov} covers/día</div><div class="text-xs muted mt-1">Mínimo para cubrir costos. Hoy proyectás ~${avgCov} covers/día en steady state. Margen: <strong class="${avgCov>rBase.beCov?'green':'red'}">${avgCov>rBase.beCov?'+':''}${avgCov-rBase.beCov} covers</strong></div></div>`;
+}
+
+function renderSociosChart(){
+  const i=parseInt(document.getElementById('soc-select').value);
+  const s=scenCache[i];if(!s)return;
+  const r=s.r,rcAvg=S.rotCenaDay.reduce((a,b)=>a+b,0)/6;
+  document.getElementById('soc-chart-label').innerHTML=`<strong style="color:#00d4aa">${s.name}</strong>: ${(rcAvg*s.rs).toFixed(1)} rot/noche · Net: ${$(Math.round(r.avgNet))}/mes · Payback: ${typeof r.pb==='number'?r.pb+'m':r.pb}`;
+  dc('ch-socios');
+  CI['ch-socios']=new Chart(document.getElementById('ch-socios'),{type:'line',data:{labels:r.months.map(m=>m.month),datasets:[{label:'Inversor',data:r.months.map(m=>Math.round(m.cashI)),borderColor:'#00d4aa',tension:0.3,pointRadius:0},{label:'Operador',data:r.months.map(m=>Math.round(m.cashO)),borderColor:'#4fc3f7',tension:0.3,pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{color:'#888'}}},scales:{x:{ticks:{color:'#555'},grid:{color:'#161616'}},y:{ticks:{color:'#555',callback:v=>$(v)},grid:{color:'#161616'}}}}});
+}
+
+// ════════════════════════════════════════════
+// STRESS TEST
+// ════════════════════════════════════════════
+function renderStress(){
+  const base=calcScenario(S),bNet=base.avgNet;
+  document.getElementById('st-banner').innerHTML=`Config: <span>${S.cap} pax</span> · TC <span>$${S.ticketCena}</span> · Demanda <span>${(S.demandaMax*100).toFixed(0)}%</span> · Net <span>${$(Math.round(bNet))}/mes</span> · USD constantes`;
+
+  const sens=[
+    {n:'Rotaciones',dl:'Mal escenario (-50%)',ul:'Buen escenario (+40%)',up:()=>calcScenario({...S,rotScale:1.4}).avgNet,dn:()=>calcScenario({...S,rotScale:0.5}).avgNet},
+    {n:'Demanda',dl:'Caída fuerte (-40%)',ul:'Lleno casi siempre (+15%)',up:()=>calcScenario({...S,demandaMax:Math.min(1,S.demandaMax*1.15)}).avgNet,dn:()=>calcScenario({...S,demandaMax:S.demandaMax*0.6}).avgNet},
+    {n:'Ticket',dl:'Bajás precios -15%',ul:'Subís precios +15%',up:()=>calcScenario({...S,ticketCena:S.ticketCena*1.15,ticketAlm:S.ticketAlm*1.15}).avgNet,dn:()=>calcScenario({...S,ticketCena:S.ticketCena*0.85,ticketAlm:S.ticketAlm*0.85}).avgNet},
+    {n:'Food Cost',dl:'Proveedores suben (+7pp)',ul:'Optimizás compras (-5pp)',up:()=>calcScenario({...S,foodCost:S.foodCost-0.05}).avgNet,dn:()=>calcScenario({...S,foodCost:S.foodCost+0.07}).avgNet},
+    {n:'Sueldos',dl:'Paritaria fuerte +30%',ul:'Optimizás -10%',up:()=>calcScenario({...S,sueldo:S.sueldo*0.9}).avgNet,dn:()=>calcScenario({...S,sueldo:S.sueldo*1.3}).avgNet},
+    {n:'Alquiler',dl:'Sube 30% post-contrato',ul:'Negociás -15%',up:()=>calcScenario({...S,alquiler:S.alquiler*0.85}).avgNet,dn:()=>calcScenario({...S,alquiler:S.alquiler*1.3}).avgNet},
+  ];
+
+  const sr=sens.map(v=>{const u=v.up(),d=v.dn();return{...v,u,d,dU:u-bNet,dD:d-bNet,impact:Math.abs(u-d)}}).sort((a,b)=>b.impact-a.impact);
+
+  let h='<div class="kpi mb-4"><div class="stitle" style="border:0;margin:0;padding:0">¿Qué variables más te afectan?</div><div class="text-xs muted mb-3">Cada variable se movió en su rango realista.</div>';
+  sr.forEach((v,i)=>{
+    const bw=Math.round(v.impact/sr[0].impact*100);
+    const bc=i<2?'#ff4444':i<4?'#ffa726':'#00d4aa';
+    h+=`<div class="mb-3"><div class="flex justify-between mb-1"><span class="text-sm font-semibold">${i+1}. ${v.n}</span><span class="text-xs muted">Rango: ${$(Math.round(v.impact))}/mes</span></div><div style="background:#1a1a2e;border-radius:4px;height:16px"><div style="background:${bc};height:100%;width:${bw}%;border-radius:4px"></div></div><div class="flex justify-between text-xs muted mt-1"><span>${v.dl}: <span style="color:${v.dD>=0?'#00d4aa':'#ff4444'}">${v.dD>=0?'+':''}${$(Math.round(v.dD))}/mes</span></span><span>${v.ul}: <span style="color:${v.dU>=0?'#00d4aa':'#ff4444'}">${v.dU>=0?'+':''}${$(Math.round(v.dU))}/mes</span></span></div></div>`;
+  });
+  h+='</div>';
+
+  // Thresholds
+  h+='<div class="kpi mb-4"><div class="stitle" style="border:0;margin:0;padding:0">¿Cuándo empezás a perder plata?</div><div class="text-xs muted mb-3">Punto donde net income = 0.</div>';
+  [{n:'Demanda',fn:d=>calcScenario({...S,demandaMax:d}).avgNet,start:S.demandaMax,step:-0.05,limit:0.1,fmt:v=>(v*100).toFixed(0)+'%',act:(S.demandaMax*100).toFixed(0)+'%',dir:'baja'},
+   {n:'Rotaciones',fn:s=>calcScenario({...S,rotScale:s}).avgNet,start:1.0,step:-0.1,limit:0.1,fmt:v=>{const a=S.rotCenaDay.reduce((s,r)=>s+r,0)/6;return(a*v).toFixed(1)+' rot/noche'},act:(S.rotCenaDay.reduce((s,r)=>s+r,0)/7).toFixed(1)+' rot/noche',dir:'bajan'},
+   {n:'Food Cost',fn:f=>calcScenario({...S,foodCost:f}).avgNet,start:S.foodCost,step:0.01,limit:0.50,fmt:v=>(v*100).toFixed(0)+'%',act:(S.foodCost*100).toFixed(0)+'%',dir:'sube'},
+  ].forEach(t=>{
+    let thresh=null;
+    for(let v=t.start;t.step>0?v<=t.limit:v>=t.limit;v+=t.step){if(t.fn(v)<0){thresh=v;break}}
+    if(thresh===null){h+=`<div class="p-2 rounded mb-2" style="background:#0a2a1f;border:1px solid #00d4aa33"><span class="text-sm">${t.n}</span> — <span class="text-xs green">no pierde plata en el rango testeado</span></div>`}
+    else{
+      const marg=Math.abs((thresh-t.start)/t.start*100);
+      const tight=marg<20;
+      h+=`<div class="p-2 rounded mb-2" style="background:${tight?'#2a1a0a':'#0d0d1a'};border:1px solid ${tight?'#ff444433':'#1a1a2e'}"><div class="flex justify-between"><span class="text-sm font-semibold">${t.n}</span><span class="text-xs" style="color:${tight?'#ff4444':'#ffa726'}">Margen: ${marg.toFixed(0)}%</span></div><div class="text-xs muted mt-1">Si ${t.dir} a <strong class="red">${t.fmt(thresh)}</strong>, perdés plata. Hoy: <strong class="green">${t.act}</strong>${tight?' ⚠ margen chico':''}</div></div>`}
+  });
+  h+='</div>';
+
+  // Combos
+  const combos=[
+    {n:'Verano flojo',d:'Demanda -30%',p:{demandaMax:S.demandaMax*0.7},t:'bad'},
+    {n:'Rotaciones bajas',d:'Rotaciones -40%',p:{rotScale:0.6},t:'bad'},
+    {n:'Peor caso',d:'Demanda -30% + rot -20% + food +5pp',p:{demandaMax:S.demandaMax*0.7,rotScale:0.8,foodCost:S.foodCost+0.05},t:'bad'},
+    {n:'Buen invierno',d:'Demanda +15%',p:{demandaMax:Math.min(1,S.demandaMax*1.15)},t:'good'},
+    {n:'El formato pegó',d:'Rotaciones +30%',p:{rotScale:1.3},t:'good'},
+    {n:'Mejor caso',d:'Demanda +15% + rot +20% + food -3pp',p:{demandaMax:Math.min(1,S.demandaMax*1.15),rotScale:1.2,foodCost:S.foodCost-0.03},t:'good'},
+  ];
+  h+='<div class="kpi"><div class="stitle" style="border:0;margin:0;padding:0">Escenarios: ¿qué pasa si...?</div>';
+  h+='<div class="text-xs font-semibold muted mb-2">SI SALE MAL</div>';
+  combos.filter(c=>c.t==='bad').forEach(c=>{
+    const r=calcScenario({...S,...c.p});const ok=r.avgNet>=0;
+    h+=`<div class="p-2 rounded mb-2" style="background:${ok?'#0a2a1f':'#2a0a0a'};border:1px solid ${ok?'#00d4aa33':'#ff444433'}"><div class="flex justify-between"><span class="text-sm font-semibold">${c.n}</span><span class="text-sm font-bold ${ok?'green':'red'}">${ok?'Sobrevive':'Pierde plata'}</span></div><div class="text-xs muted">${c.d}</div><div class="flex gap-4 mt-1 text-xs"><span>Net: <strong style="color:${r.avgNet>=0?'#00d4aa':'#ff4444'}">${$(Math.round(r.avgNet))}/mes</strong></span><span>PB: ${typeof r.pb==='number'?r.pb+'m':r.pb}</span><span>Cash 60m: <strong style="color:${r.cash60>=0?'#00d4aa':'#ff4444'}">${$(Math.round(r.cash60))}</strong></span></div></div>`;
+  });
+  h+='<div class="text-xs font-semibold muted mb-2 mt-3">SI SALE BIEN</div>';
+  combos.filter(c=>c.t==='good').forEach(c=>{
+    const r=calcScenario({...S,...c.p});
+    h+=`<div class="p-2 rounded mb-2" style="background:#0a2a1f;border:1px solid #00d4aa33"><div class="flex justify-between"><span class="text-sm font-semibold">${c.n}</span><span class="text-sm font-bold green">${$(Math.round(r.avgNet))}/mes</span></div><div class="text-xs muted">${c.d}</div><div class="flex gap-4 mt-1 text-xs"><span>PB: <strong>${typeof r.pb==='number'?r.pb+'m':r.pb}</strong></span><span>Cash 60m: <strong class="green">${$(Math.round(r.cash60))}</strong></span><span>ROI Y1: <strong class="green">${(r.roi1*100).toFixed(1)}%</strong></span></div></div>`;
+  });
+  h+='</div>';
+  document.getElementById('st-content').innerHTML=h;
+}
+
+// ════════════════════════════════════════════
+// SUPUESTOS
+// ════════════════════════════════════════════
+function renderSup(){
+  const r=calcScenario(S);
+  // P&L 24 meses
+  let pnl='<div class="overflow-x-auto"><table><thead><tr><th>Mes</th><th>Rev</th><th>Food</th><th>Paper</th><th>Com</th><th>Mkt</th><th>Staff</th><th>Alq</th><th>Serv</th><th>Otros</th><th>EBITDA</th><th>IVA</th><th>IIBB</th><th>D/C</th><th>Gan</th><th>Net</th><th>Cash</th></tr></thead><tbody>';
+  r.months.slice(0,24).forEach(m=>{
+    pnl+=`<tr><td class="font-semibold">M${m.month} <span class="muted">${MN[m.cm]}</span></td><td>${$(Math.round(m.rev))}</td><td class="red">${$(Math.round(m.cFood))}</td><td class="red">${$(Math.round(m.cPaper))}</td><td class="red">${$(Math.round(m.cCom))}</td><td class="red">${$(Math.round(m.cMkt))}</td><td class="red">${$(Math.round(m.stCost))}</td><td class="red">${$(Math.round(m.alq))}</td><td class="red">${$(Math.round(m.serv))}</td><td class="red">${$(Math.round(m.cont+m.soft+m.seg))}</td><td style="color:${m.ebitda>=0?'#00d4aa':'#ff4444'}">${$(Math.round(m.ebitda))}</td><td class="yellow">${$(Math.round(m.iva))}</td><td class="yellow">${$(Math.round(m.iibb))}</td><td class="yellow">${$(Math.round(m.dc))}</td><td class="yellow">${$(Math.round(m.gan))}</td><td style="color:${m.net>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.net))}</td><td style="color:${m.cash>=0?'#00d4aa':'#ff4444'};font-weight:700">${$(Math.round(m.cash))}</td></tr>`;
+  });
+  pnl+='</tbody></table></div>';
+
+  document.getElementById('sup-content').innerHTML=`
+    <div><div class="stitle">1. Modelo de Covers</div><p class="text-xs muted">covers = capacidad × rotaciones_avg × 26 días × demanda_mes</p>
+    <table class="mt-2"><thead><tr><th></th>${DN.map(d=>'<th>'+d+'</th>').join('')}<th>Avg</th></tr></thead><tbody>
+    <tr><td class="green font-semibold">Cena</td>${S.rotCenaDay.map(r=>'<td>'+r.toFixed(1)+'</td>').join('')}<td class="green font-bold">${(S.rotCenaDay.reduce((a,b)=>a+b,0)/7).toFixed(2)}</td></tr>
+    <tr><td style="color:#4fc3f7" class="font-semibold">Alm</td>${S.rotAlmDay.map(r=>'<td>'+r.toFixed(1)+'</td>').join('')}<td style="color:#4fc3f7" class="font-bold">${(S.rotAlmDay.reduce((a,b)=>a+b,0)/7).toFixed(2)}</td></tr>
+    </tbody></table></div>
+
+    <div><div class="stitle">2. Estacionalidad</div><p class="text-xs muted mb-2">Solo aplica post ramp-up. Durante ramp-up: lineal 30% → demanda máx.</p>
+    <table><thead><tr>${MN.map(m=>'<th>'+m+'</th>').join('')}</tr></thead><tbody><tr>${SEASONAL.map(s=>'<td>'+(s*100).toFixed(0)+'%</td>').join('')}</tr></tbody></table></div>
+
+    <div><div class="stitle">3. Qué es input manual vs automático</div>
+    <table><thead><tr><th>Input manual (sliders)</th><th>Calcula el modelo</th></tr></thead><tbody>
+    <tr><td>Capacidad, inversión, alquiler, servicios</td><td>Covers (cap × rot × días × demanda)</td></tr>
+    <tr><td>Staff, sueldo</td><td>Revenue (covers × ticket)</td></tr>
+    <tr><td>Tickets, food cost, paper, comisiones</td><td>Impuestos (IVA débito-crédito, IIBB, Gan)</td></tr>
+    <tr><td>Demanda, ramp-up, mes apertura, % negro</td><td>Split socios (pre/post payback)</td></tr>
+    <tr><td>Rotaciones por día, marketing %</td><td>Estacionalidad (fija, post ramp-up)</td></tr>
+    <tr><td>Impuestos %, split %, compras blanco %</td><td>Ramp-up (lineal 30% → max)</td></tr>
+    </tbody></table></div>
+
+    <div><div class="stitle">4. Impuestos</div>
+    <table><thead><tr><th>Impuesto</th><th>Fórmula</th></tr></thead><tbody>
+    <tr><td>IVA a pagar</td><td>IVA débito (rev blanco × ${(S.ivaRate*100).toFixed(0)}%/1.${(S.ivaRate*100).toFixed(0)}) − IVA crédito (compras blanco × ${(S.ivaRate*100).toFixed(0)}%/1.${(S.ivaRate*100).toFixed(0)})</td></tr>
+    <tr><td>IIBB</td><td>Rev blanco neto IVA × ${(S.iibbRate*100).toFixed(1)}%</td></tr>
+    <tr><td>Déb/Créd</td><td>Rev blanco × ${(S.debCredRate*100).toFixed(1)}%</td></tr>
+    <tr><td>Ganancias</td><td>max(0, rev blanco − costos deducibles − otros imp) × ${(S.gananciasRate*100).toFixed(0)}%</td></tr>
+    </tbody></table></div>
+
+    <div><div class="stitle">5. Split Socios</div>
+    <table><thead><tr><th>Fase</th><th>Inversor</th><th>Operador</th></tr></thead><tbody>
+    <tr><td>Pre-payback</td><td class="font-bold">${(S.splitPreInv*100).toFixed(0)}%</td><td>${((1-S.splitPreInv)*100).toFixed(0)}%</td></tr>
+    <tr><td>Post-payback</td><td>${(S.splitPostInv*100).toFixed(0)}%</td><td class="font-bold">${((1-S.splitPostInv)*100).toFixed(0)}%</td></tr>
+    </tbody></table></div>
+
+    <div><div class="stitle">6. Ramp-up</div><p class="text-xs muted">Lineal de 30% a demanda máxima en ${S.rampupMeses} meses. Sin estacionalidad durante el ramp-up. Apertura: ${MN[S.mesApertura-1]}. Marketing alto (${(S.mktRampup*100).toFixed(0)}%) durante ramp-up, después ${(S.mktDespues*100).toFixed(0)}%.</p></div>
+
+    <div><div class="stitle">7. P&L Mensual — Primeros 24 meses</div><p class="text-xs muted mb-2">Todos los números en USD constantes.</p>${pnl}</div>
+
+    <div><div class="stitle">8. Limitaciones</div><ul class="text-xs muted space-y-1 list-disc pl-5">
+    <li>Sin inflación — todo en USD constantes</li>
+    <li>Estacionalidad es estimación para Buenos Aires</li>
+    <li>No modela eventos únicos (pandemia, obra, competencia nueva)</li>
+    <li>Staff es costo fijo mensual — no modela part-time ni flexibilidad</li>
+    <li>Rotaciones por día son estimaciones — no hay data pública de BA</li>
+    </ul></div>
+  `;
+}
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded',()=>{
+  setSliders(DEFAULTS);
+  S={...DEFAULTS};
+  renderDash();
+});
+</script>
+</body>
+</html>

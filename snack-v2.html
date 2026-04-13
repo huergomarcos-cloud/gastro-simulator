@@ -83,7 +83,6 @@
       <div class="sg"><label>Ramp-up <span class="sv" id="v-rampupMeses"></span> meses</label><input type="range" id="s-rampupMeses" min="3" max="18" step="1"></div>
       <div class="sg"><label>Apertura: <span class="sv" id="v-mesApertura"></span></label><input type="range" id="s-mesApertura" min="1" max="12" step="1"></div>
       <div class="sg"><label>% Negro <span class="sv" id="v-pctNegro"></span>%</label><input type="range" id="s-pctNegro" min="0" max="50" step="5"></div>
-      <div class="sg"><label>% Compras Blanco <span class="sv" id="v-pctComprasBlanco"></span>%</label><input type="range" id="s-pctComprasBlanco" min="0" max="100" step="5"></div>
 
       <div class="stitle mt-2">Fijos Menores</div>
       <div class="sg"><label>Contador $<span class="sv" id="v-contador"></span></label><input type="range" id="s-contador" min="200" max="1000" step="50"></div>
@@ -191,7 +190,7 @@ const SEASONAL=[0.55,0.60,0.90,0.90,0.90,0.95,0.95,0.95,0.95,0.95,1.00,1.05];
 
 // ─── calcScenario ───
 function calcScenario(p){
-  const {cap,rotCenaDay,rotAlmDay,ticketCena,ticketAlm,foodCost,paperCost,comisionPago,mktRampup,mktDespues,staffCena,staffAlm,sueldo,alquiler,servicios,contador,software,seguros,demandaMax,rampupMeses,mesApertura,pctNegro,pctComprasBlanco,inversion,ivaRate,iibbRate,debCredRate,gananciasRate,splitPreInv,splitPostInv,rotScale}=p;
+  const {cap,rotCenaDay,rotAlmDay,ticketCena,ticketAlm,foodCost,paperCost,comisionPago,mktRampup,mktDespues,staffCena,staffAlm,sueldo,alquiler,servicios,contador,software,seguros,demandaMax,rampupMeses,mesApertura,pctNegro,inversion,ivaRate,iibbRate,debCredRate,gananciasRate,splitPreInv,splitPostInv,rotScale}=p;
   const pctBlanco=1-pctNegro,sc=rotScale??1;
   const rC=rotCenaDay.map(r=>r*sc),rA=rotAlmDay.map(r=>r*sc);
   // Promedio semanal (sobre 7 días) × semanas/mes (~4.33)
@@ -211,45 +210,63 @@ function calcScenario(p){
     dem=Math.max(0,Math.min(1,dem));
     const cm=(mesApertura-1+m)%12;
 
+    // ── Covers & Revenue ──
     const cvC=cap*rcAvg*DAYS_OP*dem,cvA=cap*raAvg*DAYS_OP*dem,cvT=cvC+cvA;
     const rC2=cvC*ticketCena,rA2=cvA*ticketAlm,rev=rC2+rA2;
     const revB=rev*pctBlanco,revN=rev*pctNegro;
 
+    // ── Estado de Resultados (sobre blanco) ──
+    // Ingresos blancos
+    const ingBlanco=revB;
+
+    // Costos (todos contra blanco)
     const cFood=rev*foodCost,cPaper=rev*paperCost;
     const cCom=revB*comisionPago;
     const mR=m<rampupMeses?mktRampup:mktDespues;
     const cMkt=rev*mR;
     const totVar=cFood+cPaper+cCom+cMkt;
     const totCost=totVar+fijos;
-    const ebitda=rev-totCost;
 
-    // Impuestos
+    // EBITDA = ingresos blancos - todos los costos
+    const ebitda=ingBlanco-totCost;
+
+    // Impuestos operativos (sobre blanco)
+    const iibb=revB/(1+ivaRate)*iibbRate;
     const ivaD=revB*ivaRate/(1+ivaRate);
-    const compCred=(cFood+cPaper)*pctComprasBlanco+servicios+contador+software+seguros;
+    const compCred=(cFood+cPaper)+servicios+contador+software+seguros;
     const ivaC=compCred*ivaRate/(1+ivaRate);
     const iva=Math.max(0,ivaD-ivaC);
-    const iibb=revB/(1+ivaRate)*iibbRate;
     const dc=revB*debCredRate;
-    const costDed=(cFood+cPaper)*pctComprasBlanco+cCom+cMkt+stCost+alquiler+servicios+contador+software+seguros;
-    const baseG=revB-costDed-iva-iibb-dc;
-    const gan=Math.max(0,baseG)*gananciasRate;
-    const totImp=iva+iibb+dc+gan;
+    const totImpOp=iibb+iva+dc;
 
-    const net=ebitda-totImp;
+    // Resultado pre-ganancias
+    const resPreGan=ebitda-totImpOp;
+
+    // Ganancias (35% sobre resultado pre-gan si positivo)
+    const gan=Math.max(0,resPreGan)*gananciasRate;
+
+    const totImp=totImpOp+gan;
+
+    // Net income blanco
+    const netBlanco=resPreGan-gan;
+
+    // Net income total = blanco + negro
+    const net=netBlanco+revN;
+
     cash+=net;
     const pre=cashI<0;const si=pre?splitPreInv:splitPostInv;
     cashI+=net*si;cashO+=net*(1-si);
     if(pb===null&&cashI>=0)pb=m+1;
 
-    months.push({month:m+1,cm,dem,cvC,cvA,cvT,rC:rC2,rA:rA2,rev,revB,revN,cFood,cPaper,cCom,cMkt,totVar,stCost,alq:alquiler,serv:servicios,cont:contador,soft:software,seg:seguros,fijos,totCost,ebitda,iva,iibb,dc,gan,totImp,net,cash,cashI,cashO});
+    months.push({month:m+1,cm,dem,cvC,cvA,cvT,rC:rC2,rA:rA2,rev,revB,revN,ingBlanco,cFood,cPaper,cCom,cMkt,totVar,stCost,alq:alquiler,serv:servicios,cont:contador,soft:software,seg:seguros,fijos,totCost,ebitda,iibb,iva,dc,totImpOp,resPreGan,gan,totImp,netBlanco,net,cash,cashI,cashO});
   }
 
   const l12=months.slice(-12);
   const avgRev=l12.reduce((s,m)=>s+m.rev,0)/12;
   const avgEb=l12.reduce((s,m)=>s+m.ebitda,0)/12;
   const avgNet=l12.reduce((s,m)=>s+m.net,0)/12;
-  const avgNetNeg=l12.reduce((s,m)=>s+m.ebitda*pctNegro,0)/12;
-  const avgNetBl=avgNet-avgNetNeg;
+  const avgNetBl=l12.reduce((s,m)=>s+m.netBlanco,0)/12;
+  const avgNetNeg=l12.reduce((s,m)=>s+m.revN,0)/12;
   const y1Net=months.slice(0,12).reduce((s,m)=>s+m.net,0);
   const roi1=y1Net/inversion;
   const cash60=months[MONTHS-1].cash;
@@ -269,7 +286,7 @@ function calcScenario(p){
 
   // Break-even
   let beCov=0;
-  for(let c=1;c<500;c++){const tr=c*tPond;const tv=tr*(foodCost+paperCost+comisionPago*pctBlanco+mktDespues);if(tr-tv>=fijos/DAYS_OP){beCov=c;break;}}
+  for(let c=1;c<500;c++){const tr=c*tPond;const tv=tr*(foodCost+paperCost+comisionPago*(1-pctNegro)+mktDespues);if(tr-tv>=fijos/DAYS_OP){beCov=c;break;}}
 
   return{months,pb:pb??'>60',avgRev,avgEb,avgNet,avgNetBl,avgNetNeg,roi1,cash60,minCash,minCashM:minCashM?minCashM.month:1,inversion,stTotal,stCost,fijos,tPond,cVarCub,margCub,prime,labPct,alqPct,beCov,rcAvg,raAvg,DAYS_OP,p};
 }
@@ -298,13 +315,13 @@ let CI={};function dc(id){if(CI[id]){CI[id].destroy();delete CI[id]}}
 function ratioColor(v,g,y){return v<=g?'#00d4aa':v<=y?'#ffa726':'#ff4444'}
 
 // ─── STATE ───
-const DEFAULTS={cap:30,rotCenaDay:[0,0.9,0.9,1.8,2.7,2.4,2.1],rotAlmDay:[0,0.3,0.6,0.9,1.5,1.2,0.9],ticketCena:38,ticketAlm:22,foodCost:0.25,paperCost:0.025,comisionPago:0.012,mktRampup:0.05,mktDespues:0.03,staffCena:9,staffAlm:5,sueldo:1150,alquiler:3400,servicios:1350,contador:500,software:300,seguros:300,demandaMax:0.90,rampupMeses:9,mesApertura:3,pctNegro:0.20,pctComprasBlanco:0.80,inversion:225000,ivaRate:0.21,iibbRate:0.035,debCredRate:0.012,gananciasRate:0.35,splitPreInv:0.80,splitPostInv:0.25};
+const DEFAULTS={cap:30,rotCenaDay:[0,0.9,0.9,1.8,2.7,2.4,2.1],rotAlmDay:[0,0.3,0.6,0.9,1.5,1.2,0.9],ticketCena:38,ticketAlm:22,foodCost:0.25,paperCost:0.025,comisionPago:0.012,mktRampup:0.05,mktDespues:0.03,staffCena:9,staffAlm:5,sueldo:1150,alquiler:3400,servicios:1350,contador:500,software:300,seguros:300,demandaMax:0.90,rampupMeses:9,mesApertura:3,pctNegro:0.20,inversion:225000,ivaRate:0.21,iibbRate:0.035,debCredRate:0.012,gananciasRate:0.35,splitPreInv:0.80,splitPostInv:0.25};
 
 let S={...DEFAULTS};
 let scenCache=[];
 
 // ─── SLIDER MAP ───
-const SM={cap:{k:'cap'},inversion:{k:'inversion'},alquiler:{k:'alquiler'},servicios:{k:'servicios'},staffCena:{k:'staffCena'},staffAlm:{k:'staffAlm'},sueldo:{k:'sueldo'},ticketCena:{k:'ticketCena'},ticketAlm:{k:'ticketAlm'},foodCost:{k:'foodCost',s:100},paperCost:{k:'paperCost',s:100},comisionPago:{k:'comisionPago',s:100},mktRampup:{k:'mktRampup',s:100},mktDespues:{k:'mktDespues',s:100},demandaMax:{k:'demandaMax',s:100},rampupMeses:{k:'rampupMeses'},mesApertura:{k:'mesApertura'},pctNegro:{k:'pctNegro',s:100},pctComprasBlanco:{k:'pctComprasBlanco',s:100},contador:{k:'contador'},software:{k:'software'},seguros:{k:'seguros'},ivaRate:{k:'ivaRate',s:100},iibbRate:{k:'iibbRate',s:100},debCredRate:{k:'debCredRate',s:100},gananciasRate:{k:'gananciasRate',s:100},splitPreInv:{k:'splitPreInv',s:100},splitPostInv:{k:'splitPostInv',s:100}};
+const SM={cap:{k:'cap'},inversion:{k:'inversion'},alquiler:{k:'alquiler'},servicios:{k:'servicios'},staffCena:{k:'staffCena'},staffAlm:{k:'staffAlm'},sueldo:{k:'sueldo'},ticketCena:{k:'ticketCena'},ticketAlm:{k:'ticketAlm'},foodCost:{k:'foodCost',s:100},paperCost:{k:'paperCost',s:100},comisionPago:{k:'comisionPago',s:100},mktRampup:{k:'mktRampup',s:100},mktDespues:{k:'mktDespues',s:100},demandaMax:{k:'demandaMax',s:100},rampupMeses:{k:'rampupMeses'},mesApertura:{k:'mesApertura'},pctNegro:{k:'pctNegro',s:100},contador:{k:'contador'},software:{k:'software'},seguros:{k:'seguros'},ivaRate:{k:'ivaRate',s:100},iibbRate:{k:'iibbRate',s:100},debCredRate:{k:'debCredRate',s:100},gananciasRate:{k:'gananciasRate',s:100},splitPreInv:{k:'splitPreInv',s:100},splitPostInv:{k:'splitPostInv',s:100}};
 
 function setSliders(p){
   for(const[id,c]of Object.entries(SM)){
@@ -396,8 +413,8 @@ function renderDash(){
   const pAvg=k=>Math.round(l12.reduce((s,m)=>s+m[k],0)/12);
   const pnlRows=[
     {l:'Revenue Total',v:pAvg('rev'),bold:true,c:'#00d4aa'},
-    {l:'  Revenue Cena',v:pAvg('rC'),indent:true},
-    {l:'  Revenue Almuerzo',v:pAvg('rA'),indent:true},
+    {l:'  Ingresos Blancos ('+((1-S.pctNegro)*100).toFixed(0)+'%)',v:pAvg('ingBlanco'),indent:true},
+    {l:'  Ingresos Negro ('+((S.pctNegro)*100).toFixed(0)+'%)',v:pAvg('revN'),indent:true,c:'#888'},
     {l:'',sep:true},
     {l:'Costos Variables',v:pAvg('totVar'),bold:true,c:'#ff6b6b',neg:true},
     {l:'  Food Cost',v:pAvg('cFood'),indent:true,neg:true},
@@ -414,16 +431,22 @@ function renderDash(){
     {l:'  Seguros',v:S.seguros,indent:true,neg:true},
     {l:'',sep:true},
     {l:'EBITDA',v:pAvg('ebitda'),bold:true,c:pAvg('ebitda')>=0?'#00d4aa':'#ff4444'},
+    {l:'  (Ing. Blancos - Costos)',v:null,pct:'',indent:true},
     {l:'',sep:true},
-    {l:'Impuestos',v:pAvg('totImp'),bold:true,c:'#ffa726',neg:true},
-    {l:'  IVA a pagar (débito - crédito)',v:pAvg('iva'),indent:true,neg:true},
+    {l:'Impuestos Operativos',v:pAvg('totImpOp'),bold:true,c:'#ffa726',neg:true},
     {l:'  IIBB',v:pAvg('iibb'),indent:true,neg:true},
+    {l:'  IVA Neto (débito - crédito)',v:pAvg('iva'),indent:true,neg:true},
     {l:'  Déb/Créd Bancarios',v:pAvg('dc'),indent:true,neg:true},
-    {l:'  Ganancias',v:pAvg('gan'),indent:true,neg:true},
     {l:'',sep:true},
-    {l:'NET INCOME',v:pAvg('net'),bold:true,c:pAvg('net')>=0?'#00d4aa':'#ff4444',big:true},
-    {l:'  % sobre Revenue',v:null,pct:pAvg('rev')>0?(pAvg('net')/pAvg('rev')*100).toFixed(1)+'%':'—'},
-    {l:'  Impuestos / Revenue',v:null,pct:pAvg('rev')>0?(pAvg('totImp')/pAvg('rev')*100).toFixed(1)+'%':'—'},
+    {l:'RESULTADO PRE-GANANCIAS',v:pAvg('resPreGan'),bold:true,c:pAvg('resPreGan')>=0?'#00d4aa':'#ff4444'},
+    {l:'',sep:true},
+    {l:'  Imp. Ganancias (35%)',v:pAvg('gan'),neg:true,c:'#ffa726'},
+    {l:'',sep:true},
+    {l:'NET INCOME BLANCO',v:pAvg('netBlanco'),bold:true,c:pAvg('netBlanco')>=0?'#00d4aa':'#ff4444'},
+    {l:'',sep:true},
+    {l:'(+) Ingresos Negro',v:pAvg('revN'),c:'#888'},
+    {l:'',sep:true},
+    {l:'NET INCOME TOTAL',v:pAvg('net'),bold:true,c:pAvg('net')>=0?'#00d4aa':'#ff4444',big:true},
   ];
   let pnlH='<table>';
   pnlRows.forEach(r=>{

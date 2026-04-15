@@ -227,8 +227,15 @@
 
       <!-- INVERSIÓN -->
       <div class="pn">
-        <div class="st">Inversi&oacute;n / Split</div>
-        <div class="sr"><label>Inversi&oacute;n Total</label><input type="range" id="inv" min="50000" max="500000" step="5000" value="200000"><span class="v" id="inv_v"></span></div>
+        <div class="st">Inversi&oacute;n (desglose)</div>
+        <div class="sr"><label>Equip. cocina (5a)</label><input type="range" id="invCocina" min="0" max="200000" step="5000" value="80000"><span class="v" id="invCocina_v"></span></div>
+        <div class="sr"><label>Mobiliario/barra (10a)</label><input type="range" id="invMob" min="0" max="150000" step="5000" value="40000"><span class="v" id="invMob_v"></span></div>
+        <div class="sr"><label>Obra civil (10a)</label><input type="range" id="invObra" min="0" max="200000" step="5000" value="50000"><span class="v" id="invObra_v"></span></div>
+        <div class="sr"><label>Branding/dise&ntilde;o (3a)</label><input type="range" id="invBrand" min="0" max="50000" step="1000" value="15000"><span class="v" id="invBrand_v"></span></div>
+        <div class="sr"><label>Habilitaciones (5a)</label><input type="range" id="invHab" min="0" max="50000" step="1000" value="15000"><span class="v" id="invHab_v"></span></div>
+        <div class="text-[10px] text-slate-400 mt-1">Total: <span id="invTotal_v" style="font-weight:700;color:#f1f5f9">$200K</span> · Amort/mes: <span id="amortMes_v" style="font-weight:700;color:#fbbf24">—</span></div>
+
+        <div class="st" style="margin-top:10px">Split</div>
         <div class="sr"><label>Split Pre-Payback</label><input type="range" id="spPre" min="50" max="100" step="5" value="80"><span class="v" id="spPre_v"></span></div>
         <div class="sr"><label>Split Post-Payback</label><input type="range" id="spPost" min="0" max="50" step="5" value="25"><span class="v" id="spPost_v"></span></div>
         <div class="sr"><label>Mes Apertura</label><input type="range" id="mAp" min="1" max="12" value="1"><span class="v" id="mAp_v"></span></div>
@@ -591,7 +598,7 @@ function inp() {
   const rC = Array.from({length:7},(_,i)=>+($ (`rC${i}`).value)||0);
   const rF = Array.from({length:7},(_,i)=>+($ (`rF${i}`).value)||0);
   const seas = Array.from({length:12},(_,i)=>(+($ (`s${i}`).value)||100)/100);
-  return {
+  const o = {
     cap: +$('cap').value,
     tAlm: $('tAlm').checked, tCena: $('tCena').checked, tAfter: $('tAfter').checked,
     rA, rC, rF, seas,
@@ -605,9 +612,14 @@ function inp() {
     cnt: +$('cnt').value, sft: +$('sft').value,
     fex: +$('fex').value, fexC: +$('fexC').value/100,
     iibb: +$('iibb').value/100, dbc: +$('dbc').value/100, gan: +$('gan').value/100,
-    inv: +$('inv').value, spPre: +$('spPre').value/100, spPost: +$('spPost').value/100,
+    invCocina: +$('invCocina').value, invMob: +$('invMob').value, invObra: +$('invObra').value,
+    invBrand: +$('invBrand').value, invHab: +$('invHab').value,
+    spPre: +$('spPre').value/100, spPost: +$('spPost').value/100,
     mAp: +$('mAp').value,
   };
+  o.inv = o.invCocina + o.invMob + o.invObra + o.invBrand + o.invHab;
+  o.amortMes = o.invCocina/(5*12) + o.invMob/(10*12) + o.invObra/(10*12) + o.invBrand/(3*12) + o.invHab/(5*12);
+  return o;
 }
 
 // ===== ENGINE =====
@@ -674,6 +686,11 @@ function calcMonth(p, mi) {
   const fexIva = p.fex * IVA / (1 + IVA);
   const fexCosto = fexIva * p.fexC;
 
+  // Amortización (deducible de Ganancias, NO es salida de caja)
+  const amortMes = (mi < 36 ? p.invBrand / 36 : 0) +
+    (mi < 60 ? (p.invCocina + p.invHab) / 60 : 0) +
+    (mi < 120 ? (p.invMob + p.invObra) / 120 : 0);
+
   // Ganancias
   const revBlNeto = revBl / (1 + IVA);
   const gastosDeducibles =
@@ -687,9 +704,13 @@ function calcMonth(p, mi) {
     p.sft / (1 + IVA) +
     proc +
     p.fex / (1 + IVA) +
-    iibb + debCred;
+    iibb + debCred +
+    amortMes;
   const baseGan = revBlNeto - gastosDeducibles;
-  const impGan = Math.max(0, baseGan) * p.gan;
+  // impGan se calcula en calc60 para aplicar quebranto
+  const impGanSinQuebranto = Math.max(0, baseGan) * p.gan;
+
+  const impGan = impGanSinQuebranto; // default, calc60 may override with quebranto
 
   // RESULTADO REAL
   const totImp = ivaPagar + iibb + debCred + impGan + fexCosto;
@@ -719,7 +740,7 @@ function calcMonth(p, mi) {
     staffCount, labor, laborBl, laborNg, occ, opex, mktg, proc, totGastosOp, sga,
     ebitda, ebitdaM,
     ivaDb, ivaCr, ivaPagar, iibb, debCred,
-    fexIva, fexCosto,
+    fexIva, fexCosto, amortMes,
     revBlNeto, gastosDeducibles, baseGan, impGan,
     totImp, netoReal, netMargin,
     revContable, gastosContables, resultadoContable,
@@ -729,19 +750,49 @@ function calcMonth(p, mi) {
 
 function calc60(p) {
   const ms = []; let cashAcum = -p.inv, payback = null, invAcum = 0, invPayback = null, opAcum = 0;
+  let quebranto = 0; // pérdida acumulada que se arrastra
+
   for (let i = 0; i < 60; i++) {
     const m = calcMonth(p, i);
-    cashAcum += m.cashMes;
-    // El inversor cobra su % mientras no recuperó SU inversión
+
+    // Quebranto fiscal: si baseGan es negativa, se acumula.
+    // Si es positiva, se compensa con quebranto acumulado.
+    let baseGanConQuebranto = m.baseGan;
+    if (baseGanConQuebranto < 0) {
+      quebranto += Math.abs(baseGanConQuebranto);
+      baseGanConQuebranto = 0;
+    } else if (quebranto > 0) {
+      const compensar = Math.min(quebranto, baseGanConQuebranto);
+      baseGanConQuebranto -= compensar;
+      quebranto -= compensar;
+    }
+
+    // Recalcular impGan con quebranto aplicado
+    const impGan = Math.max(0, baseGanConQuebranto) * p.gan;
+
+    // Recalcular resultado con impGan corregido
+    const totImp = m.ivaPagar + m.iibb + m.debCred + impGan + m.fexCosto;
+    const netoReal = m.ebitda - totImp;
+    const netMargin = m.revBruto > 0 ? netoReal / m.revBruto : 0;
+    const cashBlImp = m.ivaPagar + m.iibb + m.debCred + impGan;
+    const cashBlNeto = m.cashBlIn - m.cashBlCmv - m.cashBlOp - cashBlImp;
+    const cashMes = m.cashNgNeto + cashBlNeto - m.fexCosto;
+    const resultadoContable = m.revContable - m.gastosContables - impGan;
+
+    cashAcum += cashMes;
     const invRecuperado = invAcum >= p.inv;
     const sp = invRecuperado ? p.spPost : p.spPre;
-    const invSh = m.cashMes > 0 ? m.cashMes * sp : 0;
-    const opSh = m.cashMes - invSh;
+    const invSh = cashMes > 0 ? cashMes * sp : 0;
+    const opSh = cashMes - invSh;
     invAcum += invSh;
     opAcum += opSh;
     if (payback === null && cashAcum >= 0) payback = i + 1;
     if (invPayback === null && invAcum >= p.inv) invPayback = i + 1;
-    ms.push({ ...m, mn: i+1, cashAcum, invRecuperado, sp, invSh, opSh, invAcum, opAcum });
+    ms.push({
+      ...m, impGan, totImp, netoReal, netMargin, cashBlImp, cashBlNeto, cashMes, resultadoContable,
+      baseGanConQuebranto, quebranto,
+      mn: i+1, cashAcum, invRecuperado, sp, invSh, opSh, invAcum, opAcum
+    });
   }
   return { ms, payback, invPayback };
 }
@@ -792,8 +843,10 @@ function renderReal(m) {
   h += r('    ↳ Crédito', m.ivaCr, 'ind pct');
   h += r('  IIBB', -m.iibb, 'ind');
   h += r('  Déb/Créd Bancarios', -m.debCred, 'ind');
+  h += r('  Amortización inversión', -m.amortMes, 'ind');
   h += r('  Imp. Ganancias', -m.impGan, 'ind');
   h += r('    ↳ Base imponible', m.baseGan, 'ind pct');
+  h += r('    ↳ Amort. deducida', -m.amortMes, 'ind pct');
   if(m.fexCosto > 0) h += r('  Costo facturas extra', -m.fexCosto, 'ind');
   h += r('Total Impuestos', -m.totImp, 'sub');
 
@@ -825,6 +878,7 @@ function renderContable(m) {
   h += r('  Processing', -m.proc, 'ind');
   if(inp().fex > 0) h += r('  Facturas extra (neto IVA)', -(inp().fex/(1+IVA)), 'ind');
   h += r('  IIBB + Déb/Créd', -(m.iibb + m.debCred), 'ind');
+  h += r('  Amortización inversión', -m.amortMes, 'ind');
   h += r('Total Gastos Deducibles', -m.gastosDeducibles, 'sub');
 
   h += `<tr><td colspan="2" class="st">RESULTADO CONTABLE</td></tr>`;
@@ -1790,7 +1844,13 @@ function update() {
   $('iibb_v').textContent = `${(p.iibb*100).toFixed(1)}%`;
   $('dbc_v').textContent = `${(p.dbc*100).toFixed(1)}%`;
   $('gan_v').textContent = `${Math.round(p.gan*100)}%`;
-  $('inv_v').textContent = fK(p.inv);
+  $('invCocina_v').textContent = fK(p.invCocina);
+  $('invMob_v').textContent = fK(p.invMob);
+  $('invObra_v').textContent = fK(p.invObra);
+  $('invBrand_v').textContent = fK(p.invBrand);
+  $('invHab_v').textContent = fK(p.invHab);
+  $('invTotal_v').textContent = fK(p.inv);
+  $('amortMes_v').textContent = `${fK(p.amortMes)}/mes`;
   $('spPre_v').textContent = `${Math.round(p.spPre*100)}%`;
   $('spPost_v').textContent = `${Math.round(p.spPost*100)}%`;
   $('mAp_v').textContent = MN[p.mAp-1];

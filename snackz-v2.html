@@ -87,12 +87,12 @@
       <!-- TURNOS -->
       <div class="pn">
         <div class="st">Operaci&oacute;n</div>
-        <div class="sr"><label>Capacidad</label><input type="range" id="cap" min="10" max="80" value="28"><span class="v" id="cap_v"></span></div>
+        <div class="sr"><label>Capacidad</label><input type="range" id="cap" min="10" max="80" value="35"><span class="v" id="cap_v"></span></div>
 
         <!-- ALMUERZO -->
         <div class="tg">
           <label>Almuerzo</label>
-          <label class="toggle-switch"><input type="checkbox" id="tAlm" checked onchange="update()"><span class="toggle-slider"></span></label>
+          <label class="toggle-switch"><input type="checkbox" id="tAlm" onchange="update()"><span class="toggle-slider"></span></label>
         </div>
         <div id="almBlock">
           <div class="dg">
@@ -166,7 +166,7 @@
       <div class="pn">
         <div class="st">Pricing (IVA incluido)</div>
         <div class="sr"><label>Ticket Almuerzo</label><input type="range" id="tkA" min="5" max="60" value="18"><span class="v" id="tkA_v"></span></div>
-        <div class="sr"><label>Ticket Cena</label><input type="range" id="tkC" min="10" max="80" value="35"><span class="v" id="tkC_v"></span></div>
+        <div class="sr"><label>Ticket Cena</label><input type="range" id="tkC" min="10" max="80" value="42"><span class="v" id="tkC_v"></span></div>
         <div class="sr"><label>Ticket After</label><input type="range" id="tkF" min="5" max="60" value="25"><span class="v" id="tkF_v"></span></div>
         <div class="sr"><label>% Covers en Negro</label><input type="range" id="pNeg" min="0" max="60" value="20"><span class="v" id="pNeg_v"></span></div>
         <div class="sr"><label>Desc. pago Negro</label><input type="range" id="dNeg" min="0" max="25" step="1" value="10"><span class="v" id="dNeg_v"></span></div>
@@ -177,7 +177,7 @@
         <div class="st">Costos Variables</div>
         <div class="sr"><label>Food Cost</label><input type="range" id="fc" min="15" max="45" step="0.5" value="25"><span class="v" id="fc_v"></span></div>
         <div class="sr"><label>Paper Cost</label><input type="range" id="pc" min="0" max="8" step="0.5" value="2.5"><span class="v" id="pc_v"></span></div>
-        <div class="sr"><label>% MP c/ factura</label><input type="range" id="cmpB" min="0" max="100" step="5" value="40"><span class="v" id="cmpB_v"></span></div>
+        <div class="sr"><label>% MP c/ factura</label><input type="range" id="cmpB" min="0" max="100" step="5" value="100"><span class="v" id="cmpB_v"></span></div>
         <div class="text-[10px] text-slate-500">Solo food + paper. Alquiler, servicios, MKT, SG&A son 100% factura.</div>
       </div>
 
@@ -185,7 +185,7 @@
       <div class="pn">
         <div class="st">Staff</div>
         <div class="sr"><label>Staff Almuerzo</label><input type="range" id="sA" min="0" max="15" value="3"><span class="v" id="sA_v"></span></div>
-        <div class="sr"><label>Staff Cena</label><input type="range" id="sC" min="1" max="20" value="6"><span class="v" id="sC_v"></span></div>
+        <div class="sr"><label>Staff Cena</label><input type="range" id="sC" min="1" max="20" value="12"><span class="v" id="sC_v"></span></div>
         <div class="sr"><label>Staff After</label><input type="range" id="sF" min="0" max="15" value="4"><span class="v" id="sF_v"></span></div>
         <div class="sr"><label>Costo / empleado</label><input type="range" id="sue" min="500" max="3000" step="50" value="1150"><span class="v" id="sue_v"></span></div>
         <div class="tg">
@@ -211,7 +211,7 @@
       <!-- FACTURAS EXTRA -->
       <div class="pn">
         <div class="st">Facturas Extra (optim. fiscal)</div>
-        <div class="sr"><label>$ Facturas / mes</label><input type="range" id="fex" min="0" max="15000" step="500" value="0"><span class="v" id="fex_v"></span></div>
+        <div class="sr"><label>$ Facturas / mes</label><input type="range" id="fex" min="0" max="15000" step="500" value="5000"><span class="v" id="fex_v"></span></div>
         <div class="sr"><label>Costo (% del IVA)</label><input type="range" id="fexC" min="0" max="100" step="5" value="50"><span class="v" id="fexC_v"></span></div>
         <div class="text-[10px] text-slate-500 mt-1" id="fexInfo"></div>
       </div>
@@ -228,11 +228,11 @@
       <!-- INVERSIÓN -->
       <div class="pn">
         <div class="st">Inversi&oacute;n (desglose)</div>
-        <div class="sr"><label>Equip. cocina (5a)</label><input type="range" id="invCocina" min="0" max="200000" step="5000" value="80000"><span class="v" id="invCocina_v"></span></div>
-        <div class="sr"><label>Mobiliario/barra (10a)</label><input type="range" id="invMob" min="0" max="150000" step="5000" value="40000"><span class="v" id="invMob_v"></span></div>
-        <div class="sr"><label>Obra civil (10a)</label><input type="range" id="invObra" min="0" max="200000" step="5000" value="50000"><span class="v" id="invObra_v"></span></div>
-        <div class="sr"><label>Branding/dise&ntilde;o (3a)</label><input type="range" id="invBrand" min="0" max="50000" step="1000" value="15000"><span class="v" id="invBrand_v"></span></div>
-        <div class="sr"><label>Habilitaciones (5a)</label><input type="range" id="invHab" min="0" max="50000" step="1000" value="15000"><span class="v" id="invHab_v"></span></div>
+        <div class="sr"><label>Equip. cocina (5a)</label><input type="range" id="invCocina" min="0" max="200000" step="5000" value="55000"><span class="v" id="invCocina_v"></span></div>
+        <div class="sr"><label>Mobiliario/barra (10a)</label><input type="range" id="invMob" min="0" max="150000" step="5000" value="15000"><span class="v" id="invMob_v"></span></div>
+        <div class="sr"><label>Obra civil (10a)</label><input type="range" id="invObra" min="0" max="200000" step="5000" value="150000"><span class="v" id="invObra_v"></span></div>
+        <div class="sr"><label>Branding/dise&ntilde;o (3a)</label><input type="range" id="invBrand" min="0" max="50000" step="1000" value="10000"><span class="v" id="invBrand_v"></span></div>
+        <div class="sr"><label>Habilitaciones (5a)</label><input type="range" id="invHab" min="0" max="50000" step="1000" value="5000"><span class="v" id="invHab_v"></span></div>
         <div class="text-[10px] text-slate-400 mt-1">Total: <span id="invTotal_v" style="font-weight:700;color:#f1f5f9">$200K</span> · Amort/mes: <span id="amortMes_v" style="font-weight:700;color:#fbbf24">—</span></div>
 
         <div class="st" style="margin-top:10px">Split</div>

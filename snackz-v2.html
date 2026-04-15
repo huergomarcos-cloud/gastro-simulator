@@ -73,6 +73,7 @@
       <button class="tab" onclick="showTab('inversor',this)">Inversor</button>
       <button class="tab" onclick="showTab('operador',this)">Operador</button>
       <button class="tab" onclick="showTab('reco',this)">Recomendaciones</button>
+      <button class="tab" onclick="showTab('estrategias',this)">Estrategias</button>
       <button class="tab" onclick="showTab('manual',this)">Manual</button>
       <button class="tab" onclick="exportExcel()" style="background:#065f46;color:#4ade80">Excel</button>
     </div>
@@ -266,6 +267,11 @@
       <div id="vReco" class="pn" style="display:none">
         <div class="text-[10px] text-slate-500 mb-2">Recomendaciones — Análisis McKinsey</div>
         <div id="recoContent"></div>
+      </div>
+
+      <div id="vEstrategias" class="pn" style="display:none;max-height:calc(100vh - 140px);overflow-y:auto">
+        <div class="text-[10px] text-slate-500 mb-2">Playbook Comercial — Estrategias para maximizar revenue</div>
+        <div id="estratContent"></div>
       </div>
 
       <div id="vManual" class="pn" style="display:none;max-height:calc(100vh - 140px);overflow-y:auto">
@@ -1213,10 +1219,282 @@ function renderReco(avg, data, p) {
   $('recoContent').innerHTML = h;
 }
 
+// ===== RENDER ESTRATEGIAS =====
+function renderEstrategias(avg, data, p) {
+  const {ms} = data;
+  const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  // Identify weakest days (lowest cena rotations)
+  const cenaRots = p.rC.map((r,i) => ({day: i, name: dayNames[i], rot: r})).filter(d => d.day > 0);
+  const sorted = [...cenaRots].sort((a,b) => a.rot - b.rot);
+  const weakDays = sorted.filter(d => d.rot > 0).slice(0, 2);
+  const weakDayNames = weakDays.map(d => d.name).join(' y ');
+  const weakAvgRot = weakDays.reduce((s,d) => s+d.rot, 0) / (weakDays.length||1);
+
+  // Sim helper
+  const sim = (changes) => {
+    const p2 = {...p, ...changes};
+    const avg2 = {};
+    const ms2 = Array.from({length:12},(_,i)=>calcMonth(p2,i));
+    const nk = Object.keys(ms2[0]).filter(k=>typeof ms2[0][k]==='number');
+    for(const k of nk) avg2[k] = ms2.reduce((s,m)=>s+m[k],0)/12;
+    return avg2;
+  };
+
+  const section = (emoji, title) => `<div style="margin-top:20px;margin-bottom:10px;padding:10px 14px;background:#162032;border-radius:6px;border-left:3px solid #fbbf24"><span style="font-size:16px">${emoji}</span> <span style="font-size:14px;font-weight:800;color:#f1f5f9">${title}</span></div>`;
+
+  const card = (title, desc, mechanism, impact, numbers) => `
+    <div style="background:#1a2332;border-radius:8px;padding:14px 16px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:6px">${title}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">${desc}</div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:4px">MECÁNICA</div>
+      <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px;padding-left:10px;border-left:2px solid #334155">${mechanism}</div>
+      <div style="font-size:10px;color:#64748b;margin-bottom:4px">IMPACTO FINANCIERO</div>
+      <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px;padding-left:10px;border-left:2px solid #334155">${impact}</div>
+      ${numbers ? `<div style="display:flex;gap:12px;margin-top:8px">${numbers}</div>` : ''}
+    </div>`;
+
+  const metric = (label, value, color='#f1f5f9') => `<div style="background:#0f172a;border-radius:6px;padding:8px 12px;text-align:center;flex:1"><div style="font-size:9px;color:#64748b;text-transform:uppercase">${label}</div><div style="font-size:16px;font-weight:800;color:${color};margin-top:2px">${value}</div></div>`;
+
+  let h = '';
+
+  // ========== ESTRATEGIA 1: DADO ==========
+  h += section('🎲', 'NOCHE DEL DADO — Llenar días flojos');
+
+  const diceDiscount = 1/6; // 16.67%
+  const diceRotBoost = 0.5; // estimated extra rotations on weak days
+  const diceNewRots = p.rC.map((r,i) => {
+    if (weakDays.some(d => d.day === i)) return r + diceRotBoost;
+    return r;
+  });
+  const simDice = sim({rC: diceNewRots});
+  const diceRevIncrease = simDice.revBruto - avg.revBruto;
+  const diceCostDiscount = weakDays.length * p.cap * diceRotBoost * 4.33 * p.tkC * diceDiscount * (avg.se || 0.88);
+  const diceNet = diceRevIncrease - diceCostDiscount;
+
+  h += card(
+    `Noche del Dado — ${weakDayNames}`,
+    `Los días más flojos (${weakDayNames}: rotación ${weakAvgRot.toFixed(1)}), al final de la cena cada mesa tira un dado. Si sale el número del día (mostrado en pantalla), no pagan. Probabilidad: 1/6 = 16.7% de descuento promedio.`,
+    `Al terminar de comer, el mozo trae el dado con la cuenta. El cliente tira. Si coincide con el número en la pantalla LED, la mesa no paga. Genera: contenido viral (la gente filma), boca a boca, motivo para venir un martes.<br><br>
+    Variantes: Solo aplica al plato principal (no bebidas), o descuento 50% en vez de 100%, o "tirás y si sale par, postre gratis".`,
+    `El descuento real es ~16.7% sobre las mesas que tiran (todas). Pero el objetivo es subir la rotación de ${weakAvgRot.toFixed(1)} a ${(weakAvgRot+diceRotBoost).toFixed(1)} esos días.<br><br>
+    Revenue extra por más gente: <strong style="color:#4ade80">${fK(diceRevIncrease)}/mes</strong><br>
+    Costo del descuento (16.7% de las cenas nuevas): <strong style="color:#f87171">${fK(-diceCostDiscount)}/mes</strong><br>
+    <strong>Neto: <span style="color:${diceNet>0?'#4ade80':'#f87171'}">${fK(diceNet)}/mes</span></strong>`,
+    metric('Rot. actual', weakAvgRot.toFixed(1), '#f87171') +
+    metric('Rot. estimada', (weakAvgRot+diceRotBoost).toFixed(1), '#4ade80') +
+    metric('Desc. promedio', '16.7%', '#fbbf24') +
+    metric('Neto anual', fK(diceNet*12), diceNet>0?'#4ade80':'#f87171')
+  );
+
+  // ========== ESTRATEGIA 2: AFTER HOUR ==========
+  h += section('🍸', 'AFTER HOUR — Activar la barra post-cena');
+
+  const afterDays = [3,4,5]; // Mié, Jue, Vie
+  const afterRotsNew = p.rF.map((r,i) => afterDays.includes(i) ? Math.max(r, 1.2) : r);
+  const simAfter = sim({tAfter: true, rF: afterRotsNew, sF: 2});
+  const afterDelta = simAfter.netoReal - avg.netoReal;
+  const afterRev = simAfter.revBruto - avg.revBruto;
+  const afterStaffCost = 2 * p.sue;
+
+  h += card(
+    'After Hour — Mié/Jue/Vie 00:00-02:00',
+    'Activar la barra después de la cena con cócteles + picadas/tapas fríos. Mínimo personal (2 personas), carta reducida. El cliente de cena se queda y viene gente nueva.',
+    `Carta reducida: 5-6 cócteles signature + 3 picadas frías (no necesitás cocina caliente).<br>
+    Staff: 1 bartender + 1 runner/cobrador. Pueden ser los mismos de cena que se quedan 2hs más.<br>
+    Música ambiente, luces bajas, vibe distinta al servicio de cena.<br>
+    Ticket after: $${p.tkF} promedio (más bebida, menos comida → food cost más bajo).`,
+    `Revenue extra: <strong style="color:#4ade80">${fK(afterRev)}/mes</strong><br>
+    Staff adicional (2 personas): <strong style="color:#f87171">${fK(-afterStaffCost)}/mes</strong><br>
+    <strong>Impacto neto en resultado: <span style="color:${afterDelta>0?'#4ade80':'#f87171'}">${fK(afterDelta)}/mes</span></strong>`,
+    metric('Rev extra', fK(afterRev), '#4ade80') +
+    metric('Staff extra', '2', '#fbbf24') +
+    metric('Costo staff', fK(afterStaffCost), '#f87171') +
+    metric('Neto anual', fK(afterDelta*12), afterDelta>0?'#4ade80':'#f87171')
+  );
+
+  // ========== ESTRATEGIA 3: MENÚ ALMUERZO FIJO ==========
+  h += section('🍜', 'MENÚ EJECUTIVO ALMUERZO — Volumen con operación simple');
+
+  const lunchRotBoost = p.rA.map((r,i) => i >= 1 && i <= 5 ? Math.max(r, 0.9) : r);
+  const simLunch = sim({tAlm: true, rA: lunchRotBoost, sA: 2, tkA: 15});
+  const lunchDelta = simLunch.netoReal - avg.netoReal;
+  const lunchRev = simLunch.revBruto - avg.revBruto;
+
+  h += card(
+    'Menú ejecutivo $15 — Mar a Sáb',
+    'Un plato único rotativo tipo ramen/curry/bowl. Operación mínima: 1 cocinero + 1 mozo. Pre-producción a la mañana, servicio rápido. Ideal para oficinistas de la zona.',
+    `Menú fijo rotativo: Lunes ramen, Martes curry katsu, Miércoles pad thai, etc.<br>
+    Todo se pre-produce a la mañana. Servicio en 5 minutos desde que se sienta.<br>
+    Staff mínimo: 2 personas. Un cocinero que arma los platos + un mozo que cobra y sirve.<br>
+    Rotación alta porque es rápido: la gente viene, come en 30 min y se va.<br>
+    Food cost más controlado porque es un solo plato con insumos planificados (menos merma).`,
+    `Revenue extra: <strong style="color:#4ade80">${fK(lunchRev)}/mes</strong><br>
+    Staff: 2 personas × $${p.sue.toLocaleString()} = <strong style="color:#f87171">${fK(-2*p.sue)}/mes</strong><br>
+    <strong>Impacto neto: <span style="color:${lunchDelta>0?'#4ade80':'#f87171'}">${fK(lunchDelta)}/mes</span></strong><br>
+    <span style="color:#94a3b8;font-size:10px">Bonus: aprovechás el local que está cerrado al mediodía. Costo marginal del espacio = $0.</span>`,
+    metric('Ticket', '$15', '#38bdf8') +
+    metric('Staff', '2', '#fbbf24') +
+    metric('Food cost', '~20%', '#4ade80') +
+    metric('Neto anual', fK(lunchDelta*12), lunchDelta>0?'#4ade80':'#f87171')
+  );
+
+  // ========== ESTRATEGIA 4: OMAKASE / EXPERIENCIA PREMIUM ==========
+  h += section('🏮', 'NOCHE OMAKASE — Ticket alto, experiencia exclusiva');
+
+  const omakaseCovers = p.cap * 0.6; // 60% del local
+  const omakaseTicket = p.tkC * 2.2;
+  const omakaseRevMonth = omakaseCovers * omakaseTicket * 4.33; // 1 noche/semana
+  const omakaseFoodCost = omakaseRevMonth * 0.30; // food cost más alto, producto premium
+  const omakaseGross = omakaseRevMonth - omakaseFoodCost;
+  // Reemplaza una noche normal
+  const normalNightRev = p.cap * (weakDays.length > 0 ? weakDays[0].rot : 1) * p.tkC * 4.33;
+  const normalNightGross = normalNightRev * (1 - p.fc - p.pc);
+  const omakaseDelta = omakaseGross - normalNightGross;
+
+  h += card(
+    'Noche Omakase — 1 vez por semana',
+    `Un día de la semana (sugerido: ${weakDays.length > 0 ? weakDays[0].name : 'Mar'}), cerrás el local para una experiencia omakase de 8-10 pasos. Ticket alto ($${Math.round(omakaseTicket)}), cupo limitado (${Math.round(omakaseCovers)} personas), reserva previa.`,
+    `Menú cerrado de 8-10 pasos, el chef decide. Reserva obligatoria con seña.<br>
+    Incluye maridaje de sake/cócteles. El cliente no elige, solo disfruta.<br>
+    Cupo: ${Math.round(omakaseCovers)} personas (60% del local, mesas más espaciadas).<br>
+    Se cobra 100% por adelantado → cash flow garantizado, cero no-shows.<br>
+    Contenido para IG: cada omakase es "content" (plating especial, historia detrás de cada paso).`,
+    `Revenue omakase: <strong style="color:#4ade80">${fK(omakaseRevMonth)}/mes</strong> (4 noches)<br>
+    Revenue normal que reemplazás: <strong style="color:#f87171">${fK(-normalNightRev)}/mes</strong><br>
+    Gross profit extra: <strong style="color:#4ade80">${fK(omakaseDelta)}/mes</strong> (food cost 30% pero ticket 2x)<br>
+    <span style="color:#94a3b8;font-size:10px">Bonus: posiciona la marca como premium, genera PR y boca a boca.</span>`,
+    metric('Ticket', `$${Math.round(omakaseTicket)}`, '#fbbf24') +
+    metric('Cupo', `${Math.round(omakaseCovers)} pax`, '#38bdf8') +
+    metric('Food cost', '30%', '#f87171') +
+    metric('GP extra/mes', fK(omakaseDelta), omakaseDelta>0?'#4ade80':'#f87171')
+  );
+
+  // ========== ESTRATEGIA 5: DELIVERY / DARK KITCHEN ==========
+  h += section('📦', 'DELIVERY LIMITADO — Revenue sin ocupar mesas');
+
+  const deliveryOrders = 12; // per day, 5 days
+  const deliveryTicket = p.tkC * 0.8;
+  const deliveryRev = deliveryOrders * deliveryTicket * 22;
+  const deliveryFC = deliveryRev * (p.fc + 0.05); // food cost + packaging
+  const deliveryComm = deliveryRev * 0.25; // rappi/pedidosya
+  const deliveryNet = deliveryRev - deliveryFC - deliveryComm;
+
+  h += card(
+    'Delivery — 10-15 pedidos/día, carta reducida',
+    'Activar delivery con 3-4 items que viajan bien (gyozas, karaage, bowls). No necesitás staff extra si lo hacés en horarios bajos de cocina.',
+    `Carta delivery: máximo 4-5 items que se banquen el viaje (nada crudo, nada que se humedezca).<br>
+    Plataformas: PedidosYa + Rappi. Comisión ~25% pero no ocupás mesa.<br>
+    Horario: solo almuerzo o pre-cena (18-20hs) cuando la cocina está libre.<br>
+    Packaging: sumar ~5% al food cost por envases.<br>
+    Revenue 100% blanco (plataformas depositan, todo facturado).`,
+    `Revenue estimado (${deliveryOrders} pedidos/día): <strong style="color:#4ade80">${fK(deliveryRev)}/mes</strong><br>
+    Food cost + packaging (${Math.round((p.fc+0.05)*100)}%): <strong style="color:#f87171">${fK(-deliveryFC)}/mes</strong><br>
+    Comisión plataformas (25%): <strong style="color:#f87171">${fK(-deliveryComm)}/mes</strong><br>
+    <strong>Neto: <span style="color:${deliveryNet>0?'#4ade80':'#f87171'}">${fK(deliveryNet)}/mes</span></strong><br>
+    <span style="color:#94a3b8;font-size:10px">Ojo: este revenue es 100% blanco → paga todos los impuestos. Pero no ocupa mesas ni staff extra.</span>`,
+    metric('Pedidos/día', deliveryOrders, '#38bdf8') +
+    metric('Ticket', `$${Math.round(deliveryTicket)}`, '#fbbf24') +
+    metric('Comisión', '25%', '#f87171') +
+    metric('Neto anual', fK(deliveryNet*12), deliveryNet>0?'#4ade80':'#f87171')
+  );
+
+  // ========== ESTRATEGIA 6: EVENTOS PRIVADOS ==========
+  h += section('🎉', 'EVENTOS PRIVADOS — Lunes o pre-apertura');
+
+  const eventTicket = p.tkC * 1.5;
+  const eventCovers = p.cap;
+  const eventRevMonth = eventTicket * eventCovers * 2; // 2 eventos/mes
+  const eventCost = eventRevMonth * (p.fc + 0.05);
+  const eventNet = eventRevMonth - eventCost;
+
+  h += card(
+    'Eventos privados — Lunes (día cerrado) + domingos al mediodía',
+    'El local está cerrado los lunes. Se ofrece para eventos privados (cumples, corporativos, degustaciones) con menú cerrado y precio por persona.',
+    `Menú cerrado de 5-6 pasos + bebidas incluidas. Precio fijo por persona ($${Math.round(eventTicket)}).<br>
+    Mínimo: ${Math.round(p.cap * 0.5)} personas. Máximo: ${p.cap} personas.<br>
+    Se cobra 50% de seña y 50% el día del evento.<br>
+    Lunes: el local está muerto, costo marginal del espacio = $0.<br>
+    Domingos al mediodía: brunch con sake/mimosas, target familias y grupos.<br>
+    2 eventos/mes = revenue extra sin tocar la operación normal.`,
+    `Revenue estimado (2 eventos/mes × ${eventCovers} pax × $${Math.round(eventTicket)}): <strong style="color:#4ade80">${fK(eventRevMonth)}/mes</strong><br>
+    Costos (food + extra): <strong style="color:#f87171">${fK(-eventCost)}/mes</strong><br>
+    <strong>Neto: <span style="color:#4ade80">${fK(eventNet)}/mes</span></strong><br>
+    <span style="color:#94a3b8;font-size:10px">Bonus: el que viene a un evento privado vuelve como cliente regular. Es marketing gratuito.</span>`,
+    metric('Eventos/mes', '2', '#38bdf8') +
+    metric('Ticket', `$${Math.round(eventTicket)}`, '#fbbf24') +
+    metric('Cupo', `${eventCovers}`, '#38bdf8') +
+    metric('Neto anual', fK(eventNet*12), '#4ade80')
+  );
+
+  // ========== ESTRATEGIA 7: PROGRAMA REGULARES ==========
+  h += section('💳', 'CLUB DE REGULARES — Frecuencia + ticket');
+
+  h += card(
+    'Tarjeta de regularidad — 10ma cena gratis',
+    'Tarjeta física o digital: cada cena suma un sello. A la 10ma, la cena es gratis. Costo: 10% de descuento pero aumenta frecuencia.',
+    `Tarjeta simple: 10 casilleros, cada visita se sella uno.<br>
+    Al completar 10, la cena 11 es bonificada (la persona, no la mesa).<br>
+    Variante premium: a las 5 visitas, un cóctel gratis. A las 10, la cena gratis. A las 20, omakase gratis.<br>
+    Digital: QR que escanean al llegar, se trackea automáticamente.<br>
+    El que tiene la tarjeta avanzada SIEMPRE elige Snackz sobre la competencia.`,
+    `Costo real: ~10% de descuento sobre los regulares (1 de cada 10 cenas gratis)<br>
+    Pero un regular que viene 2x/mes pasa a venir 3x/mes → <strong style="color:#4ade80">+50% de frecuencia</strong><br>
+    El descuento se absorbe con el volumen extra.<br>
+    <span style="color:#94a3b8;font-size:10px">Los programas de loyalty tienen ROI probado de 3-5x en gastro. El costo es bajo y predecible.</span>`,
+    metric('Descuento', '10%', '#fbbf24') +
+    metric('Freq. boost', '+50%', '#4ade80') +
+    metric('Costo real', 'Bajo', '#4ade80') +
+    metric('Retención', 'Alta', '#4ade80')
+  );
+
+  // ========== ESTRATEGIA 8: ESTACIONALIDAD ==========
+  h += section('❄️', 'MENÚ ESTACIONAL — Ramen de invierno, rolls de verano');
+
+  h += card(
+    'Carta estacional — Rotar cada 3 meses',
+    'Adaptar la carta a la estación. Invierno: ramen, gyozas, platos calientes. Verano: rolls fríos, ceviches nikkei, cócteles refrescantes. Genera novedad y optimiza food cost.',
+    `4 cartas al año (Otoño/Invierno/Primavera/Verano).<br>
+    Invierno (May-Ago): ramen como estrella → ticket sube (el ramen se percibe premium), food cost baja (caldo es barato).<br>
+    Verano (Nov-Feb): rolls y ceviches → food cost sube un poco pero el ticket también.<br>
+    Cada cambio de carta = excusa para comunicar en IG → contenido "nuevo" 4 veces/año.<br>
+    Los ingredientes de estación son más baratos y de mejor calidad.`,
+    `Food cost invierno: <strong style="color:#4ade80">-2-3pp</strong> (caldos, fideos, proteínas baratas)<br>
+    Ticket percibido: <strong style="color:#4ade80">+$2-3</strong> (el ramen se vende premium)<br>
+    Reducción de merma: <strong style="color:#4ade80">~15%</strong> (comprás lo que hay, no forzás ingredientes off-season)<br>
+    <span style="color:#94a3b8;font-size:10px">Es la estrategia más fácil de implementar y la que más impacta el posicionamiento de marca.</span>`,
+    metric('Cartas/año', '4', '#38bdf8') +
+    metric('FC invierno', `${Math.round((p.fc-0.025)*100)}%`, '#4ade80') +
+    metric('Ticket boost', '+$2-3', '#4ade80') +
+    metric('Merma', '-15%', '#4ade80')
+  );
+
+  // ========== RESUMEN ==========
+  h += section('📊', 'RESUMEN — Revenue potencial combinado');
+
+  const totalExtra = (diceNet > 0 ? diceNet : 0) + (afterDelta > 0 ? afterDelta : 0) + (lunchDelta > 0 ? lunchDelta : 0) + (deliveryNet > 0 ? deliveryNet : 0) + (eventNet > 0 ? eventNet : 0);
+
+  h += `<div style="background:#1a2332;border-radius:8px;padding:14px 16px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+    <tr><td style="color:#64748b;padding:4px 8px;font-size:9px;text-transform:uppercase">Estrategia</td><td style="color:#64748b;text-align:right;padding:4px 8px;font-size:9px;text-transform:uppercase">Neto/mes</td><td style="color:#64748b;text-align:right;padding:4px 8px;font-size:9px;text-transform:uppercase">Neto/año</td><td style="color:#64748b;text-align:right;padding:4px 8px;font-size:9px;text-transform:uppercase">Dificultad</td></tr>
+    <tr><td style="color:#f1f5f9;padding:4px 8px">🎲 Noche del Dado</td><td style="text-align:right;padding:4px 8px;color:${diceNet>0?'#4ade80':'#f87171'}">${fK(diceNet)}</td><td style="text-align:right;padding:4px 8px;color:${diceNet>0?'#4ade80':'#f87171'}">${fK(diceNet*12)}</td><td style="text-align:right;padding:4px 8px;color:#4ade80">Fácil</td></tr>
+    <tr><td style="color:#f1f5f9;padding:4px 8px">🍸 After Hour</td><td style="text-align:right;padding:4px 8px;color:${afterDelta>0?'#4ade80':'#f87171'}">${fK(afterDelta)}</td><td style="text-align:right;padding:4px 8px;color:${afterDelta>0?'#4ade80':'#f87171'}">${fK(afterDelta*12)}</td><td style="text-align:right;padding:4px 8px;color:#fbbf24">Media</td></tr>
+    <tr><td style="color:#f1f5f9;padding:4px 8px">🍜 Menú Almuerzo</td><td style="text-align:right;padding:4px 8px;color:${lunchDelta>0?'#4ade80':'#f87171'}">${fK(lunchDelta)}</td><td style="text-align:right;padding:4px 8px;color:${lunchDelta>0?'#4ade80':'#f87171'}">${fK(lunchDelta*12)}</td><td style="text-align:right;padding:4px 8px;color:#4ade80">Fácil</td></tr>
+    <tr><td style="color:#f1f5f9;padding:4px 8px">🏮 Omakase semanal</td><td style="text-align:right;padding:4px 8px;color:${omakaseDelta>0?'#4ade80':'#f87171'}">${fK(omakaseDelta)}</td><td style="text-align:right;padding:4px 8px;color:${omakaseDelta>0?'#4ade80':'#f87171'}">${fK(omakaseDelta*12)}</td><td style="text-align:right;padding:4px 8px;color:#fbbf24">Media</td></tr>
+    <tr><td style="color:#f1f5f9;padding:4px 8px">📦 Delivery</td><td style="text-align:right;padding:4px 8px;color:${deliveryNet>0?'#4ade80':'#f87171'}">${fK(deliveryNet)}</td><td style="text-align:right;padding:4px 8px;color:${deliveryNet>0?'#4ade80':'#f87171'}">${fK(deliveryNet*12)}</td><td style="text-align:right;padding:4px 8px;color:#fbbf24">Media</td></tr>
+    <tr><td style="color:#f1f5f9;padding:4px 8px">🎉 Eventos privados</td><td style="text-align:right;padding:4px 8px;color:#4ade80">${fK(eventNet)}</td><td style="text-align:right;padding:4px 8px;color:#4ade80">${fK(eventNet*12)}</td><td style="text-align:right;padding:4px 8px;color:#4ade80">Fácil</td></tr>
+    <tr style="border-top:2px solid #38bdf8"><td style="color:#38bdf8;font-weight:800;padding:6px 8px">TOTAL POTENCIAL</td><td style="text-align:right;padding:6px 8px;color:#4ade80;font-weight:800">${fK(totalExtra)}</td><td style="text-align:right;padding:6px 8px;color:#4ade80;font-weight:800">${fK(totalExtra*12)}</td><td></td></tr>
+    </table>
+    <div style="font-size:10px;color:#94a3b8;margin-top:8px">* Estimaciones basadas en tus parámetros actuales. Los números reales dependen de la ejecución. No todas se pueden implementar juntas desde el día 1 — priorizar por facilidad.</div>
+  </div>`;
+
+  $('estratContent').innerHTML = h;
+}
+
 // ===== TABS =====
 function showTab(t, btn) {
-  ['vReal','vContable','vCash','vInversor','vOperador','vReco','vManual'].forEach(v => $(v).style.display = 'none');
-  $({real:'vReal',contable:'vContable',cash:'vCash',inversor:'vInversor',operador:'vOperador',reco:'vReco',manual:'vManual'}[t]).style.display = '';
+  ['vReal','vContable','vCash','vInversor','vOperador','vReco','vEstrategias','vManual'].forEach(v => $(v).style.display = 'none');
+  $({real:'vReal',contable:'vContable',cash:'vCash',inversor:'vInversor',operador:'vOperador',reco:'vReco',estrategias:'vEstrategias',manual:'vManual'}[t]).style.display = '';
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
   if(btn) btn.classList.add('on');
 }
@@ -1283,6 +1561,7 @@ function update() {
   renderInversor(avg, data, p);
   renderOperador(avg, data, p);
   renderReco(avg, data, p);
+  renderEstrategias(avg, data, p);
 
   // KPIs
   $('k_rev').textContent = fK(avg.revBruto); $('k_rev').className='kv';

@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snackz V2 — P&L Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+    .sr { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .sr label { min-width: 130px; font-size: 11px; color: #94a3b8; }
+    .sr input[type=range] { flex: 1; accent-color: #38bdf8; height: 5px; }
+    .sr .v { min-width: 55px; text-align: right; font-size: 12px; font-weight: 600; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+    .st { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin: 10px 0 4px; font-weight: 700; }
+    .pnl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .pnl td { padding: 2px 6px; }
+    .pnl .l { color: #94a3b8; }
+    .pnl .val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+    .pnl .sub { border-top: 1px solid #334155; font-weight: 700; color: #f1f5f9; }
+    .pnl .tot { border-top: 2px solid #38bdf8; font-weight: 800; color: #38bdf8; font-size: 13px; }
+    .pnl .neg { color: #f87171; }
+    .pnl .pos { color: #4ade80; }
+    .pnl .pct { color: #64748b; font-size: 10px; }
+    .pnl .ind { padding-left: 18px; }
+    .kpi { background: #1e293b; border-radius: 8px; padding: 10px 14px; text-align: center; }
+    .kpi .kl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
+    .kpi .kv { font-size: 20px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .tab { padding: 5px 14px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; border: none; background: transparent; color: #64748b; }
+    .tab.on { background: #1e293b; color: #38bdf8; }
+    .dg { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 6px; }
+    .dg .dl { font-size: 9px; color: #64748b; text-align: center; }
+    .dg input { width: 100%; text-align: center; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; padding: 3px 1px; font-size: 11px; }
+    .sg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-bottom: 6px; }
+    .sg .ml { font-size: 8px; color: #64748b; text-align: center; }
+    .sg input { width: 100%; text-align: center; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; padding: 2px 1px; font-size: 10px; }
+    .pn { background: #1e293b; border-radius: 8px; padding: 12px; }
+    .tg { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .tg label { font-size: 11px; color: #94a3b8; min-width: 130px; }
+    .tg input[type=checkbox] { accent-color: #38bdf8; }
+    .tg .badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .tg .badge.on { background: #065f46; color: #4ade80; }
+    .tg .badge.off { background: #7f1d1d; color: #f87171; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .cf { width: 100%; border-collapse: collapse; font-size: 10px; }
+    .cf th { text-align: left; color: #64748b; font-size: 9px; text-transform: uppercase; padding: 3px 5px; border-bottom: 1px solid #334155; position: sticky; top: 0; background: #1e293b; }
+    .cf td { padding: 2px 5px; font-variant-numeric: tabular-nums; }
+    .cf tr:hover { background: #334155; }
+    .toggle-switch { position: relative; width: 36px; height: 20px; cursor: pointer; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #334155; border-radius: 10px; transition: .2s; }
+    .toggle-slider:before { content: ''; position: absolute; height: 16px; width: 16px; left: 2px; bottom: 2px; background: #94a3b8; border-radius: 50%; transition: .2s; }
+    .toggle-switch input:checked + .toggle-slider { background: #065f46; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); background: #4ade80; }
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-[1600px] mx-auto p-3">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-3">
+    <div>
+      <h1 class="text-lg font-bold text-white">SNACKZ <span class="text-xs text-slate-500 font-normal">V2</span></h1>
+      <p class="text-[10px] text-slate-500">P&L Real + Contable + Cash Flow | SAS Argentina</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="tab on" onclick="showTab('real',this)">P&L Real</button>
+      <button class="tab" onclick="showTab('contable',this)">Contable</button>
+      <button class="tab" onclick="showTab('cash',this)">Cash Flow</button>
+      <button class="tab" onclick="showTab('inversor',this)">Inversor</button>
+      <button class="tab" onclick="showTab('operador',this)">Operador</button>
+      <button class="tab" onclick="showTab('reco',this)">Recomendaciones</button>
+      <button class="tab" onclick="showTab('manual',this)">Manual</button>
+      <button class="tab" onclick="exportExcel()" style="background:#065f46;color:#4ade80">Excel</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-[360px_1fr] gap-3">
+    <!-- LEFT: INPUTS -->
+    <div class="space-y-2 max-h-[calc(100vh-70px)] overflow-y-auto pr-1">
+
+      <!-- TURNOS -->
+      <div class="pn">
+        <div class="st">Operaci&oacute;n</div>
+        <div class="sr"><label>Capacidad</label><input type="range" id="cap" min="10" max="80" value="28"><span class="v" id="cap_v"></span></div>
+
+        <!-- ALMUERZO -->
+        <div class="tg">
+          <label>Almuerzo</label>
+          <label class="toggle-switch"><input type="checkbox" id="tAlm" checked onchange="update()"><span class="toggle-slider"></span></label>
+        </div>
+        <div id="almBlock">
+          <div class="dg">
+            <div class="dl">L</div><div class="dl">M</div><div class="dl">X</div><div class="dl">J</div><div class="dl">V</div><div class="dl">S</div><div class="dl">D</div>
+            <input type="number" id="rA0" min="0" max="5" step="0.1" value="0" disabled style="opacity:.3">
+            <input type="number" id="rA1" min="0" max="5" step="0.1" value="0.5">
+            <input type="number" id="rA2" min="0" max="5" step="0.1" value="0.6">
+            <input type="number" id="rA3" min="0" max="5" step="0.1" value="0.8">
+            <input type="number" id="rA4" min="0" max="5" step="0.1" value="0.7">
+            <input type="number" id="rA5" min="0" max="5" step="0.1" value="0.5">
+            <input type="number" id="rA6" min="0" max="5" step="0.1" value="0.6">
+          </div>
+        </div>
+
+        <!-- CENA -->
+        <div class="tg">
+          <label>Cena</label>
+          <label class="toggle-switch"><input type="checkbox" id="tCena" checked onchange="update()"><span class="toggle-slider"></span></label>
+        </div>
+        <div id="cenaBlock">
+          <div class="dg">
+            <div class="dl">L</div><div class="dl">M</div><div class="dl">X</div><div class="dl">J</div><div class="dl">V</div><div class="dl">S</div><div class="dl">D</div>
+            <input type="number" id="rC0" min="0" max="5" step="0.1" value="0" disabled style="opacity:.3">
+            <input type="number" id="rC1" min="0" max="5" step="0.1" value="0.8">
+            <input type="number" id="rC2" min="0" max="5" step="0.1" value="1.0">
+            <input type="number" id="rC3" min="0" max="5" step="0.1" value="1.8">
+            <input type="number" id="rC4" min="0" max="5" step="0.1" value="2.8">
+            <input type="number" id="rC5" min="0" max="5" step="0.1" value="2.5">
+            <input type="number" id="rC6" min="0" max="5" step="0.1" value="1.5">
+          </div>
+        </div>
+
+        <!-- AFTER -->
+        <div class="tg">
+          <label>After</label>
+          <label class="toggle-switch"><input type="checkbox" id="tAfter" onchange="update()"><span class="toggle-slider"></span></label>
+        </div>
+        <div id="afterBlock" style="display:none">
+          <div class="dg">
+            <div class="dl">L</div><div class="dl">M</div><div class="dl">X</div><div class="dl">J</div><div class="dl">V</div><div class="dl">S</div><div class="dl">D</div>
+            <input type="number" id="rF0" min="0" max="5" step="0.1" value="0" disabled style="opacity:.3">
+            <input type="number" id="rF1" min="0" max="5" step="0.1" value="0">
+            <input type="number" id="rF2" min="0" max="5" step="0.1" value="0">
+            <input type="number" id="rF3" min="0" max="5" step="0.1" value="0.5">
+            <input type="number" id="rF4" min="0" max="5" step="0.1" value="1.5">
+            <input type="number" id="rF5" min="0" max="5" step="0.1" value="1.5">
+            <input type="number" id="rF6" min="0" max="5" step="0.1" value="0.5">
+          </div>
+        </div>
+
+        <div class="st">Estacionalidad (%)</div>
+        <div class="sg">
+          <div><div class="ml">Ene</div><input type="number" id="s0" value="55" min="0" max="200" step="5"></div>
+          <div><div class="ml">Feb</div><input type="number" id="s1" value="65" min="0" max="200" step="5"></div>
+          <div><div class="ml">Mar</div><input type="number" id="s2" value="85" min="0" max="200" step="5"></div>
+          <div><div class="ml">Abr</div><input type="number" id="s3" value="90" min="0" max="200" step="5"></div>
+          <div><div class="ml">May</div><input type="number" id="s4" value="95" min="0" max="200" step="5"></div>
+          <div><div class="ml">Jun</div><input type="number" id="s5" value="100" min="0" max="200" step="5"></div>
+        </div>
+        <div class="sg">
+          <div><div class="ml">Jul</div><input type="number" id="s6" value="105" min="0" max="200" step="5"></div>
+          <div><div class="ml">Ago</div><input type="number" id="s7" value="100" min="0" max="200" step="5"></div>
+          <div><div class="ml">Sep</div><input type="number" id="s8" value="95" min="0" max="200" step="5"></div>
+          <div><div class="ml">Oct</div><input type="number" id="s9" value="90" min="0" max="200" step="5"></div>
+          <div><div class="ml">Nov</div><input type="number" id="s10" value="95" min="0" max="200" step="5"></div>
+          <div><div class="ml">Dic</div><input type="number" id="s11" value="80" min="0" max="200" step="5"></div>
+        </div>
+      </div>
+
+      <!-- PRICING -->
+      <div class="pn">
+        <div class="st">Pricing (IVA incluido)</div>
+        <div class="sr"><label>Ticket Almuerzo</label><input type="range" id="tkA" min="5" max="60" value="18"><span class="v" id="tkA_v"></span></div>
+        <div class="sr"><label>Ticket Cena</label><input type="range" id="tkC" min="10" max="80" value="35"><span class="v" id="tkC_v"></span></div>
+        <div class="sr"><label>Ticket After</label><input type="range" id="tkF" min="5" max="60" value="25"><span class="v" id="tkF_v"></span></div>
+        <div class="sr"><label>% Covers en Negro</label><input type="range" id="pNeg" min="0" max="60" value="20"><span class="v" id="pNeg_v"></span></div>
+        <div class="sr"><label>Desc. pago Negro</label><input type="range" id="dNeg" min="0" max="25" step="1" value="10"><span class="v" id="dNeg_v"></span></div>
+      </div>
+
+      <!-- CMV -->
+      <div class="pn">
+        <div class="st">Costos Variables</div>
+        <div class="sr"><label>Food Cost</label><input type="range" id="fc" min="15" max="45" step="0.5" value="25"><span class="v" id="fc_v"></span></div>
+        <div class="sr"><label>Paper Cost</label><input type="range" id="pc" min="0" max="8" step="0.5" value="2.5"><span class="v" id="pc_v"></span></div>
+        <div class="sr"><label>% MP c/ factura</label><input type="range" id="cmpB" min="0" max="100" step="5" value="40"><span class="v" id="cmpB_v"></span></div>
+        <div class="text-[10px] text-slate-500">Solo food + paper. Alquiler, servicios, MKT, SG&A son 100% factura.</div>
+      </div>
+
+      <!-- STAFF -->
+      <div class="pn">
+        <div class="st">Staff</div>
+        <div class="sr"><label>Staff Almuerzo</label><input type="range" id="sA" min="0" max="15" value="3"><span class="v" id="sA_v"></span></div>
+        <div class="sr"><label>Staff Cena</label><input type="range" id="sC" min="1" max="20" value="6"><span class="v" id="sC_v"></span></div>
+        <div class="sr"><label>Staff After</label><input type="range" id="sF" min="0" max="15" value="4"><span class="v" id="sF_v"></span></div>
+        <div class="sr"><label>Costo / empleado</label><input type="range" id="sue" min="500" max="3000" step="50" value="1150"><span class="v" id="sue_v"></span></div>
+        <div class="tg">
+          <label>Dependencia 50/50</label>
+          <label class="toggle-switch"><input type="checkbox" id="tMono" onchange="update()"><span class="toggle-slider"></span></label>
+          <span class="text-[10px] text-slate-500" id="staffModeLabel">Monotributistas</span>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-1" id="staffInfo"></div>
+      </div>
+
+      <!-- FIJOS -->
+      <div class="pn">
+        <div class="st">Costos Fijos (c/ factura)</div>
+        <div class="sr"><label>Alquiler</label><input type="range" id="alq" min="1000" max="8000" step="100" value="3500"><span class="v" id="alq_v"></span></div>
+        <div class="sr"><label>Servicios</label><input type="range" id="srv" min="200" max="3000" step="50" value="800"><span class="v" id="srv_v"></span></div>
+        <div class="sr"><label>OPEX / Mant.</label><input type="range" id="opx" min="0" max="8" step="0.5" value="2"><span class="v" id="opx_v"></span></div>
+        <div class="sr"><label>Marketing</label><input type="range" id="mkt" min="0" max="10" step="0.5" value="3"><span class="v" id="mkt_v"></span></div>
+        <div class="sr"><label>Processing</label><input type="range" id="prc" min="0" max="5" step="0.1" value="1.5"><span class="v" id="prc_v"></span></div>
+        <div class="sr"><label>Est. Contable</label><input type="range" id="cnt" min="100" max="1500" step="50" value="500"><span class="v" id="cnt_v"></span></div>
+        <div class="sr"><label>Software / Misc</label><input type="range" id="sft" min="50" max="1000" step="50" value="300"><span class="v" id="sft_v"></span></div>
+      </div>
+
+      <!-- FACTURAS EXTRA -->
+      <div class="pn">
+        <div class="st">Facturas Extra (optim. fiscal)</div>
+        <div class="sr"><label>$ Facturas / mes</label><input type="range" id="fex" min="0" max="15000" step="500" value="0"><span class="v" id="fex_v"></span></div>
+        <div class="sr"><label>Costo (% del IVA)</label><input type="range" id="fexC" min="0" max="100" step="5" value="50"><span class="v" id="fexC_v"></span></div>
+        <div class="text-[10px] text-slate-500 mt-1" id="fexInfo"></div>
+      </div>
+
+      <!-- IMPUESTOS -->
+      <div class="pn">
+        <div class="st">Impuestos</div>
+        <div class="sr"><label>IVA</label><span class="v" style="flex:1;text-align:center;color:#64748b">21% (fijo)</span></div>
+        <div class="sr"><label>IIBB</label><input type="range" id="iibb" min="0" max="8" step="0.1" value="3.5"><span class="v" id="iibb_v"></span></div>
+        <div class="sr"><label>D&eacute;b/Cr&eacute;d Banc.</label><input type="range" id="dbc" min="0" max="3" step="0.1" value="1.2"><span class="v" id="dbc_v"></span></div>
+        <div class="sr"><label>Ganancias SAS</label><input type="range" id="gan" min="0" max="45" value="35"><span class="v" id="gan_v"></span></div>
+      </div>
+
+      <!-- INVERSIÓN -->
+      <div class="pn">
+        <div class="st">Inversi&oacute;n / Split</div>
+        <div class="sr"><label>Inversi&oacute;n Total</label><input type="range" id="inv" min="50000" max="500000" step="5000" value="200000"><span class="v" id="inv_v"></span></div>
+        <div class="sr"><label>Split Pre-Payback</label><input type="range" id="spPre" min="50" max="100" step="5" value="80"><span class="v" id="spPre_v"></span></div>
+        <div class="sr"><label>Split Post-Payback</label><input type="range" id="spPost" min="0" max="50" step="5" value="25"><span class="v" id="spPost_v"></span></div>
+        <div class="sr"><label>Mes Apertura</label><input type="range" id="mAp" min="1" max="12" value="1"><span class="v" id="mAp_v"></span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: OUTPUT -->
+    <div class="space-y-3">
+      <div class="grid grid-cols-5 gap-2">
+        <div class="kpi"><div class="kl">Rev Bruto/mes</div><div class="kv" id="k_rev">—</div></div>
+        <div class="kpi"><div class="kl">EBITDA/mes</div><div class="kv" id="k_ebitda">—</div></div>
+        <div class="kpi"><div class="kl">Neto Real/mes</div><div class="kv" id="k_neto">—</div></div>
+        <div class="kpi"><div class="kl">Net Margin</div><div class="kv" id="k_margin">—</div></div>
+        <div class="kpi"><div class="kl">Payback Inv.</div><div class="kv" id="k_payback">—</div></div>
+      </div>
+
+      <div id="vReal" class="pn"><div class="text-[10px] text-slate-500 mb-1">P&L Real (caja) — Promedio mensual anual</div><table class="pnl" id="tReal"></table></div>
+      <div id="vContable" class="pn" style="display:none"><div class="text-[10px] text-slate-500 mb-1">P&L Contable (AFIP) — Lo que declara la SAS</div><table class="pnl" id="tContable"></table></div>
+      <div id="vCash" class="pn" style="display:none">
+        <div style="height:280px;margin-bottom:12px"><canvas id="chart60"></canvas></div>
+        <div style="max-height:380px;overflow-y:auto"><table class="cf" id="tCash"></table></div>
+      </div>
+
+      <div id="vInversor" class="pn" style="display:none">
+        <div class="text-[10px] text-slate-500 mb-2">Visión Inversor — Retorno sobre inversión</div>
+        <div class="grid grid-cols-4 gap-2 mb-4" id="invKpis"></div>
+        <div style="height:250px;margin-bottom:12px"><canvas id="chartInv"></canvas></div>
+        <table class="pnl" id="tInversor"></table>
+      </div>
+
+      <div id="vOperador" class="pn" style="display:none">
+        <div class="text-[10px] text-slate-500 mb-2">Visión Operador — Unit Economics & Eficiencia</div>
+        <div class="grid grid-cols-4 gap-2 mb-4" id="opKpis"></div>
+        <table class="pnl" id="tOperador"></table>
+      </div>
+
+      <div id="vReco" class="pn" style="display:none">
+        <div class="text-[10px] text-slate-500 mb-2">Recomendaciones — Análisis McKinsey</div>
+        <div id="recoContent"></div>
+      </div>
+
+      <div id="vManual" class="pn" style="display:none;max-height:calc(100vh - 140px);overflow-y:auto">
+        <style>
+          .man h2 { font-size:14px; font-weight:800; color:#38bdf8; margin:20px 0 8px; padding-bottom:4px; border-bottom:1px solid #334155; }
+          .man h2:first-child { margin-top:0; }
+          .man h3 { font-size:12px; font-weight:700; color:#f1f5f9; margin:14px 0 6px; }
+          .man p, .man li { font-size:11px; color:#cbd5e1; line-height:1.6; }
+          .man ul { padding-left:16px; margin:4px 0; }
+          .man li { margin-bottom:3px; }
+          .man code { background:#334155; padding:1px 5px; border-radius:3px; font-size:10px; color:#fbbf24; }
+          .man .formula { background:#162032; border-left:3px solid #38bdf8; padding:8px 12px; margin:6px 0; border-radius:4px; font-size:11px; color:#e2e8f0; font-family:monospace; line-height:1.7; }
+          .man .note { background:#1a2332; border-left:3px solid #fbbf24; padding:6px 12px; margin:6px 0; border-radius:4px; font-size:10px; color:#fbbf24; }
+          .man table { width:100%; border-collapse:collapse; margin:8px 0; font-size:10px; }
+          .man th { text-align:left; color:#64748b; padding:4px 8px; border-bottom:1px solid #334155; font-size:9px; text-transform:uppercase; }
+          .man td { padding:4px 8px; color:#cbd5e1; border-bottom:1px solid #1e293b; }
+          .man td:first-child { color:#f1f5f9; font-weight:600; }
+        </style>
+        <div class="man">
+
+<h2>1. Estructura General</h2>
+<p>Este simulador modela la operación financiera de un restaurante bajo una <strong>SAS (Sociedad por Acciones Simplificada)</strong> en Argentina. Proyecta 60 meses a valores constantes (sin inflación). Opera con dos realidades paralelas:</p>
+<ul>
+  <li><strong>P&L Real (caja)</strong> — Toda la plata que entra y sale, incluyendo lo que no se declara (negro). Es la verdad financiera del negocio.</li>
+  <li><strong>P&L Contable (AFIP)</strong> — Lo que la SAS declara fiscalmente. Solo incluye ingresos facturados y gastos con comprobante. De acá salen los impuestos.</li>
+</ul>
+
+<h2>2. Inputs — Qué controla cada slider</h2>
+
+<h3>2.1 Operación</h3>
+<table>
+  <tr><th>Input</th><th>Qué hace</th><th>Cómo impacta</th></tr>
+  <tr><td>Capacidad</td><td>Cantidad de lugares/pax del local</td><td>Multiplica las rotaciones para calcular covers. Más pax = más revenue potencial pero más staff necesitás.</td></tr>
+  <tr><td>Rotaciones (×7 por turno)</td><td>Cuántas veces se llena cada lugar por día de la semana</td><td>Directamente proporcional al revenue. Lun=0 (cerrado). Cada turno (Almuerzo/Cena/After) tiene su grilla independiente.</td></tr>
+  <tr><td>Toggle Alm/Cena/After</td><td>Activa o desactiva un turno completo</td><td>Si apagás un turno, sus covers, revenue Y su staff asociado desaparecen. Sirve para comparar combinaciones.</td></tr>
+  <tr><td>Estacionalidad (×12)</td><td>Factor multiplicador por mes del año</td><td>100% = mes normal. 55% (Ene) = solo la mitad de los covers. Afecta revenue y costos variables proporcionalmente.</td></tr>
+  <tr><td>Mes Apertura</td><td>En qué mes del año abrís</td><td>Alinea la estacionalidad con la proyección. Si abrís en Julio (105%), el mes 1 es fuerte.</td></tr>
+</table>
+
+<h3>2.2 Pricing</h3>
+<table>
+  <tr><th>Input</th><th>Qué hace</th><th>Cómo impacta</th></tr>
+  <tr><td>Ticket Almuerzo/Cena/After</td><td>Precio promedio por persona, <strong>IVA incluido</strong></td><td>El revenue bruto es covers × ticket. El IVA ya está adentro: de $35, $28.93 es neto y $6.07 es IVA débito.</td></tr>
+  <tr><td>% Covers en Negro</td><td>Qué porcentaje de clientes paga en efectivo sin factura</td><td>Esos covers no generan IVA débito, ni IIBB, ni entran en la base de Ganancias. Baja la carga fiscal.</td></tr>
+  <tr><td>Descuento Negro</td><td>Descuento que se hace por pagar en efectivo</td><td>El cover negro paga menos: ticket × (1 - descuento). Es el "costo" de cobrar en negro. Revenue negro es menor que blanco.</td></tr>
+</table>
+
+<div class="formula">
+Revenue Blanco = covers × (1 - %negro) × ticket<br>
+Revenue Negro = covers × %negro × ticket × (1 - descuento)<br>
+Revenue Bruto = Blanco + Negro
+</div>
+
+<h3>2.3 Costos Variables</h3>
+<table>
+  <tr><th>Input</th><th>Qué hace</th><th>Cómo impacta</th></tr>
+  <tr><td>Food Cost %</td><td>Costo de materia prima como % del revenue bruto</td><td>Se calcula sobre el revenue BRUTO (blanco + negro) porque los insumos se gastan para todos los covers, facturen o no.</td></tr>
+  <tr><td>Paper Cost %</td><td>Descartables/packaging como % del revenue bruto</td><td>Igual que food cost.</td></tr>
+  <tr><td>% MP c/ factura</td><td>Qué porcentaje de las compras de materia prima (food + paper) tienen factura</td><td>Solo aplica a food + paper. Los demás gastos (alquiler, servicios, MKT, SG&A) son siempre 100% con factura. A mayor %, más IVA crédito y más deducción de Ganancias.</td></tr>
+</table>
+
+<div class="formula">
+CMV = Revenue Bruto × (Food% + Paper%)<br>
+CMV con factura = CMV × % MP con factura<br>
+Gross Profit = Revenue Bruto - CMV
+</div>
+
+<div class="note">El % MP con factura es la palanca fiscal más importante del negocio. Subir de 40% a 70% baja IVA y Ganancias significativamente.</div>
+
+<h3>2.4 Staff</h3>
+<table>
+  <tr><th>Input</th><th>Qué hace</th><th>Cómo impacta</th></tr>
+  <tr><td>Staff Alm/Cena/After</td><td>Cantidad de empleados por turno</td><td>Solo se cuentan los de turnos activos. Equipos separados, sin overlap.</td></tr>
+  <tr><td>Costo / empleado</td><td>Costo total empresa por persona (incluye todo)</td><td>Es el costo real, no el sueldo de bolsillo.</td></tr>
+  <tr><td>Toggle Dependencia / Monotributo</td><td>Cómo está contratado el staff</td><td>Cambia el tratamiento fiscal:</td></tr>
+</table>
+
+<div class="formula">
+<strong>Dependencia 50/50:</strong><br>
+  Labor Blanco (50%) → deducible de Ganancias, NO genera IVA crédito<br>
+  Labor Negro (50%) → NO deducible, no existe fiscalmente<br>
+<br>
+<strong>Monotributistas:</strong><br>
+  Labor 100% con factura → deducible de Ganancias, NO genera IVA crédito<br>
+  (Monotributistas no cobran IVA, por eso no hay crédito fiscal)
+</div>
+
+<h3>2.5 Costos Fijos</h3>
+<p>Todos estos gastos son <strong>100% con factura</strong>. Generan IVA crédito fiscal y son deducibles de Ganancias.</p>
+<table>
+  <tr><th>Input</th><th>Tipo</th><th>Base de cálculo</th></tr>
+  <tr><td>Alquiler</td><td>$ fijo/mes</td><td>—</td></tr>
+  <tr><td>Servicios</td><td>$ fijo/mes</td><td>—</td></tr>
+  <tr><td>OPEX / Mant.</td><td>% del revenue bruto</td><td>Revenue Bruto × %</td></tr>
+  <tr><td>Marketing</td><td>% del revenue bruto</td><td>Revenue Bruto × %</td></tr>
+  <tr><td>Processing</td><td>% del revenue <strong>blanco</strong></td><td>Solo se paga comisión sobre lo que pasa por Posnet/MP. Lo que cobrás en negro no tiene comisión.</td></tr>
+  <tr><td>Est. Contable</td><td>$ fijo/mes</td><td>—</td></tr>
+  <tr><td>Software/Misc</td><td>$ fijo/mes</td><td>—</td></tr>
+</table>
+
+<h3>2.6 Facturas Extra (optimización fiscal)</h3>
+<p>Simula la compra de facturas para bajar la carga impositiva. Es una práctica común en Argentina.</p>
+<table>
+  <tr><th>Input</th><th>Qué hace</th></tr>
+  <tr><td>$ Facturas / mes</td><td>Monto bruto (IVA incluido) de facturas que se consiguen por mes</td></tr>
+  <tr><td>Costo (% del IVA)</td><td>Lo que pagás al proveedor de la factura. Se calcula como % del IVA de esa factura.</td></tr>
+</table>
+
+<div class="formula">
+IVA de la factura = Monto × 21% / 1.21<br>
+Costo real = IVA de la factura × %costo<br>
+<br>
+Beneficios:<br>
+  1. Suma IVA crédito → baja el IVA a pagar<br>
+  2. Suma gasto deducible → baja la base de Ganancias<br>
+<br>
+Ejemplo: $5,000 de facturas extra, costo 50% del IVA:<br>
+  IVA crédito ganado: $5,000 × 21/121 = $868<br>
+  Ahorro Ganancias: ($5,000/1.21) × 35% = $1,446<br>
+  Costo: $868 × 50% = $434<br>
+  Beneficio neto: $868 + $1,446 - $434 = $1,880/mes
+</div>
+
+<h3>2.7 Impuestos</h3>
+<table>
+  <tr><th>Impuesto</th><th>Base</th><th>Alícuota</th><th>Qué es</th></tr>
+  <tr><td>IVA</td><td>Revenue Blanco</td><td>21% (fijo)</td><td>IVA Débito - IVA Crédito. Solo pagás la diferencia.</td></tr>
+  <tr><td>IIBB</td><td>Revenue Blanco bruto</td><td>Slider (3.5%)</td><td>Ingresos Brutos. Se calcula sobre el total facturado SIN descontar IVA.</td></tr>
+  <tr><td>Déb/Créd</td><td>Revenue Blanco</td><td>Slider (1.2%)</td><td>Impuesto ley 25.413 sobre movimientos bancarios. Distinto al processing.</td></tr>
+  <tr><td>Ganancias</td><td>Utilidad contable</td><td>Slider (35%)</td><td>Se paga sobre la ganancia de la SAS, deduciendo solo gastos con comprobante.</td></tr>
+</table>
+
+<h2>3. Cómo se calculan los impuestos (detalle)</h2>
+
+<h3>3.1 IVA</h3>
+<div class="formula">
+IVA Débito = Revenue Blanco / 1.21 × 0.21<br>
+  (lo que le "cobraste" de IVA a tus clientes)<br>
+<br>
+IVA Crédito = IVA de tus gastos con factura:<br>
+  + CMV con factura × 21/121<br>
+  + Alquiler × 21/121<br>
+  + Servicios × 21/121<br>
+  + OPEX × 21/121<br>
+  + Marketing × 21/121<br>
+  + Contable × 21/121<br>
+  + Software × 21/121<br>
+  + Facturas extra × 21/121<br>
+  (Staff NO genera IVA crédito, ni en dependencia ni monotributo)<br>
+<br>
+IVA a pagar = MAX(0, Débito - Crédito)
+</div>
+
+<h3>3.2 Ganancias</h3>
+<div class="formula">
+Base Ganancias = Revenue Blanco neto IVA - Gastos Deducibles<br>
+<br>
+Revenue Blanco neto IVA = Revenue Blanco / 1.21<br>
+<br>
+Gastos Deducibles (solo lo que tiene comprobante):<br>
+  + CMV con factura / 1.21 (neto de IVA)<br>
+  + Labor Blanco (recibo de sueldo, sin IVA)<br>
+  + Alquiler / 1.21<br>
+  + Servicios / 1.21<br>
+  + OPEX / 1.21<br>
+  + Marketing / 1.21<br>
+  + Contable / 1.21<br>
+  + Software / 1.21<br>
+  + Processing (comisión bancaria, sin IVA)<br>
+  + Facturas extra / 1.21<br>
+  + IIBB + Déb/Créd (impuestos son deducibles)<br>
+<br>
+Imp. Ganancias = MAX(0, Base) × 35%<br>
+  (si la base es negativa, no se paga)
+</div>
+
+<div class="note">Lo que NO se puede deducir: food/paper sin factura (la parte negra del CMV) y la parte en negro del sueldo (50% si es dependencia). Esa plata se gastó pero AFIP no la ve.</div>
+
+<h2>4. Las 3 vistas</h2>
+
+<h3>4.1 P&L Real (caja)</h3>
+<p>Muestra el promedio mensual de los 12 meses del año (con estacionalidad). Es la realidad del negocio:</p>
+<div class="formula">
+Revenue Bruto (blanco + negro)<br>
+- CMV (food + paper, sobre todo el revenue)<br>
+= Gross Profit<br>
+- Gastos Operativos (labor total + alquiler + servicios + OPEX + MKT + processing)<br>
+- SG&A (contable + software)<br>
+= EBITDA<br>
+- Impuestos (IVA + IIBB + Déb/Créd + Ganancias + costo facturas extra)<br>
+= RESULTADO NETO REAL
+</div>
+
+<h3>4.2 P&L Contable (AFIP)</h3>
+<p>Lo que la SAS declara. Solo ve la plata en blanco:</p>
+<div class="formula">
+Revenue Blanco neto IVA<br>
+- Gastos Deducibles (solo con comprobante, neto IVA)<br>
+= Base Imponible Ganancias<br>
+- Imp. Ganancias<br>
+= Resultado Contable
+</div>
+
+<h3>4.3 Cash Flow</h3>
+<p>Proyección mes a mes de 60 meses. Muestra:</p>
+<div class="formula">
+Cash Negro = Rev Negro - CMV × %negro<br>
+Cash Blanco = Rev Blanco - CMV × %blanco - Gastos Op - SG&A - Impuestos<br>
+Cash Total Mes = Cash Negro + Cash Blanco - Costo Facturas Extra<br>
+Cash Acumulado = Σ Cash Total - Inversión Inicial
+</div>
+
+<h2>5. Inversor vs Operador</h2>
+
+<h3>5.1 Mecánica del split</h3>
+<div class="formula">
+Mientras el inversor NO recuperó su inversión (pre-recupero):<br>
+  Inversor cobra = Cash Total Mes × Split Pre% (ej: 80%)<br>
+  Operador cobra = Cash Total Mes × (1 - Split Pre%) (ej: 20%)<br>
+<br>
+Una vez que el inversor acumuló ≥ Inversión Total (post-recupero):<br>
+  Inversor cobra = Cash Total Mes × Split Post% (ej: 25%)<br>
+  Operador cobra = Cash Total Mes × (1 - Split Post%) (ej: 75%)<br>
+<br>
+Payback Inversor = mes en que Inversor Acumulado ≥ Inversión Total<br>
+  (distinto del payback del negocio, porque el inversor no cobra el 100%)
+</div>
+
+<h3>5.2 KPIs del inversor</h3>
+<table>
+  <tr><th>KPI</th><th>Qué mide</th></tr>
+  <tr><td>Recupera en</td><td>Mes en que el inversor cobró ≥ inversión</td></tr>
+  <tr><td>Múltiplo 5A</td><td>Total cobrado en 5 años / Inversión. Ej: 2.5x = por cada $1 invertido, cobró $2.50</td></tr>
+  <tr><td>ROI Año 1</td><td>Lo que cobra el inversor en los primeros 12 meses / Inversión</td></tr>
+  <tr><td>Yield Anual</td><td>Promedio anual cobrado / Inversión. Es el "rendimiento" promedio.</td></tr>
+</table>
+
+<h2>6. Operador — Unit Economics</h2>
+<table>
+  <tr><th>Métrica</th><th>Qué mide</th><th>Benchmark gastro</th></tr>
+  <tr><td>Revenue / cover</td><td>Ticket promedio ponderado real (blanco + negro)</td><td>Depende del formato</td></tr>
+  <tr><td>Gross Profit / cover</td><td>Lo que queda después de insumos, por persona</td><td>—</td></tr>
+  <tr><td>Break-even covers</td><td>Covers mínimos para cubrir costos fijos</td><td>Ideal: &lt;75% de tus covers actuales</td></tr>
+  <tr><td>Labor %</td><td>Nómina / Revenue</td><td>25-33% ideal, &gt;35% peligroso</td></tr>
+  <tr><td>Prime Cost</td><td>(CMV + Labor) / Revenue</td><td>&lt;60% ideal, &gt;65% peligroso</td></tr>
+  <tr><td>Rev / Empleado</td><td>Eficiencia de la nómina</td><td>A mayor mejor</td></tr>
+</table>
+
+<h2>7. Conexiones clave — Si muevo X, qué pasa con Y</h2>
+<table>
+  <tr><th>Si movés...</th><th>Sube</th><th>Baja</th><th>No cambia</th></tr>
+  <tr><td>↑ Capacidad</td><td>Covers, Revenue, CMV variable</td><td>—</td><td>Costos fijos (pero necesitás más staff)</td></tr>
+  <tr><td>↑ Rotaciones</td><td>Covers, Revenue, CMV</td><td>—</td><td>Staff, alquiler, fijos</td></tr>
+  <tr><td>↑ Ticket</td><td>Revenue, CMV ($), impuestos</td><td>—</td><td>Covers, staff, fijos. Gross margin % no cambia.</td></tr>
+  <tr><td>↑ % Negro</td><td>Cash negro neto</td><td>Revenue bruto (por descuento), IVA, IIBB, Ganancias, Processing</td><td>CMV, staff, fijos</td></tr>
+  <tr><td>↑ Descuento Negro</td><td>—</td><td>Revenue negro (el cliente paga menos)</td><td>Impuestos (ya no se factura)</td></tr>
+  <tr><td>↑ Food Cost %</td><td>CMV, IVA crédito (si con factura)</td><td>Gross Profit, EBITDA, Neto</td><td>Revenue</td></tr>
+  <tr><td>↑ % MP c/ factura</td><td>IVA crédito, deducción Ganancias</td><td>IVA a pagar, Imp. Ganancias</td><td>CMV total, EBITDA (mismo gasto real)</td></tr>
+  <tr><td>↑ Staff</td><td>Labor, costos fijos</td><td>EBITDA, Neto</td><td>Revenue (salvo que más staff = más covers)</td></tr>
+  <tr><td>↑ Facturas extra</td><td>IVA crédito, deducción Gan.</td><td>IVA a pagar, Imp. Ganancias</td><td>EBITDA (el costo de la factura baja el neto)</td></tr>
+  <tr><td>Toggle Monotributo</td><td>Labor deducible (100% vs 50%)</td><td>Imp. Ganancias</td><td>IVA crédito (monotrib no tiene IVA)</td></tr>
+  <tr><td>↑ Split Pre-Payback</td><td>Cash del inversor</td><td>Cash del operador pre-recupero</td><td>Total del negocio, impuestos</td></tr>
+</table>
+
+<h2>8. Processing vs Déb/Créd — No es lo mismo</h2>
+<p>Estos dos conceptos se confunden seguido:</p>
+<table>
+  <tr><th></th><th>Processing</th><th>Déb/Créd Bancarios</th></tr>
+  <tr><td>Qué es</td><td>Comisión de MercadoPago / Posnet</td><td>Impuesto ley 25.413 sobre movimientos bancarios</td></tr>
+  <tr><td>Quién lo cobra</td><td>El procesador de pagos</td><td>AFIP (a través del banco)</td></tr>
+  <tr><td>Dónde va en el P&L</td><td>Cost of Revenue (gasto operativo)</td><td>Impuestos</td></tr>
+  <tr><td>Base</td><td>% del Revenue Blanco</td><td>% del Revenue Blanco</td></tr>
+  <tr><td>Genera IVA crédito?</td><td>No (es comisión financiera)</td><td>No (es impuesto)</td></tr>
+  <tr><td>Deducible de Ganancias?</td><td>Sí</td><td>Sí</td></tr>
+</table>
+
+<h2>9. Glosario</h2>
+<table>
+  <tr><th>Término</th><th>Definición</th></tr>
+  <tr><td>Cover</td><td>Una persona que consume (= 1 ticket)</td></tr>
+  <tr><td>Rotación</td><td>Cuántas veces se ocupa un lugar en un turno. 2.0 = cada lugar se usa 2 veces.</td></tr>
+  <tr><td>Revenue Bruto</td><td>Todo lo que entra (blanco + negro), lo que realmente cobra el negocio</td></tr>
+  <tr><td>Revenue Blanco</td><td>Lo facturado. Sobre esto se calculan los impuestos.</td></tr>
+  <tr><td>CMV</td><td>Costo de Mercadería Vendida (food + paper)</td></tr>
+  <tr><td>Gross Profit</td><td>Revenue - CMV. Lo que queda después de pagar la materia prima.</td></tr>
+  <tr><td>EBITDA</td><td>Earnings Before Interest, Taxes, Depreciation & Amortization. La ganancia operativa antes de impuestos.</td></tr>
+  <tr><td>Prime Cost</td><td>CMV + Labor. Los dos costos más grandes de un restaurante. Debe ser &lt;60%.</td></tr>
+  <tr><td>Break-even</td><td>Punto de equilibrio: cuántos covers necesitás para cubrir los costos fijos.</td></tr>
+  <tr><td>Payback Inversor</td><td>Mes en que el inversor acumuló en cobros ≥ su inversión original.</td></tr>
+  <tr><td>Múltiplo</td><td>Total cobrado / Inversión. 2x = cobró el doble de lo que puso.</td></tr>
+  <tr><td>Base Imponible</td><td>El monto sobre el que se calcula un impuesto.</td></tr>
+  <tr><td>IVA Crédito Fiscal</td><td>El IVA que pagaste en tus compras con factura. Se resta del IVA que cobraste.</td></tr>
+</table>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n < 0 ? `-$${Math.abs(n).toLocaleString('en',{maximumFractionDigits:0})}` : `$${n.toLocaleString('en',{maximumFractionDigits:0})}`;
+const fK = n => { const a=Math.abs(n),s=n<0?'-':''; if(a>=1e6) return `${s}$${(a/1e6).toFixed(1)}M`; if(a>=1e3) return `${s}$${(a/1e3).toFixed(a>=1e4?0:1)}K`; return `${s}$${a.toFixed(0)}`; };
+const fP = n => `${n.toFixed(1)}%`;
+const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const IVA = 0.21;
+
+function inp() {
+  const rA = Array.from({length:7},(_,i)=>+($ (`rA${i}`).value)||0);
+  const rC = Array.from({length:7},(_,i)=>+($ (`rC${i}`).value)||0);
+  const rF = Array.from({length:7},(_,i)=>+($ (`rF${i}`).value)||0);
+  const seas = Array.from({length:12},(_,i)=>(+($ (`s${i}`).value)||100)/100);
+  return {
+    cap: +$('cap').value,
+    tAlm: $('tAlm').checked, tCena: $('tCena').checked, tAfter: $('tAfter').checked,
+    rA, rC, rF, seas,
+    tkA: +$('tkA').value, tkC: +$('tkC').value, tkF: +$('tkF').value,
+    pNeg: +$('pNeg').value/100, dNeg: +$('dNeg').value/100,
+    fc: +$('fc').value/100, pc: +$('pc').value/100, cmpB: +$('cmpB').value/100,
+    sA: +$('sA').value, sC: +$('sC').value, sF: +$('sF').value,
+    sue: +$('sue').value, mono: $('tMono').checked,
+    alq: +$('alq').value, srv: +$('srv').value,
+    opx: +$('opx').value/100, mkt: +$('mkt').value/100, prc: +$('prc').value/100,
+    cnt: +$('cnt').value, sft: +$('sft').value,
+    fex: +$('fex').value, fexC: +$('fexC').value/100,
+    iibb: +$('iibb').value/100, dbc: +$('dbc').value/100, gan: +$('gan').value/100,
+    inv: +$('inv').value, spPre: +$('spPre').value/100, spPost: +$('spPost').value/100,
+    mAp: +$('mAp').value,
+  };
+}
+
+// ===== ENGINE =====
+function calcMonth(p, mi) {
+  const cm = (p.mAp - 1 + mi) % 12;
+  const se = p.seas[cm];
+
+  // COVERS per turno
+  const covT = (rot, on) => on ? p.cap * rot.reduce((a,b)=>a+b,0) * 4.33 * se : 0;
+  const cvA = covT(p.rA, p.tAlm), cvC = covT(p.rC, p.tCena), cvF = covT(p.rF, p.tAfter);
+  const cvTot = cvA + cvC + cvF;
+
+  // REVENUE
+  const revTurno = (cv, tk) => {
+    const bl = cv * (1 - p.pNeg) * tk;
+    const ng = cv * p.pNeg * tk * (1 - p.dNeg);
+    return { bl, ng };
+  };
+  const rA = revTurno(cvA, p.tkA), rC = revTurno(cvC, p.tkC), rF = revTurno(cvF, p.tkF);
+  const revBl = rA.bl + rC.bl + rF.bl;
+  const revNg = rA.ng + rC.ng + rF.ng;
+  const revBruto = revBl + revNg;
+
+  // CMV
+  const foodCost = revBruto * p.fc;
+  const paperCost = revBruto * p.pc;
+  const cmv = foodCost + paperCost;
+  const cmvFact = cmv * p.cmpB;
+  const grossProfit = revBruto - cmv;
+  const grossMargin = revBruto > 0 ? grossProfit / revBruto : 0;
+
+  // GASTOS OPERATIVOS
+  const staffCount = (p.tAlm ? p.sA : 0) + (p.tCena ? p.sC : 0) + (p.tAfter ? p.sF : 0);
+  const labor = staffCount * p.sue;
+  const laborBl = p.mono ? labor : labor * 0.5;
+  const laborNg = p.mono ? 0 : labor * 0.5;
+  const occ = p.alq + p.srv;
+  const opex = revBruto * p.opx;
+  const mktg = revBruto * p.mkt;
+  const proc = revBl * p.prc;
+  const totGastosOp = labor + occ + opex + mktg + proc;
+
+  // SG&A
+  const sga = p.cnt + p.sft;
+
+  // EBITDA
+  const ebitda = grossProfit - totGastosOp - sga;
+  const ebitdaM = revBruto > 0 ? ebitda / revBruto : 0;
+
+  // IMPUESTOS
+  // IVA
+  const ivaDb = revBl / (1 + IVA) * IVA;
+  const ivaCrGastos = (cmvFact + p.alq + p.srv + mktg + opex + p.sft + p.cnt + p.fex);
+  const ivaCr = ivaCrGastos * IVA / (1 + IVA);
+  const ivaPagar = Math.max(0, ivaDb - ivaCr);
+
+  // IIBB
+  const iibb = revBl * p.iibb;
+
+  // Déb/Créd
+  const debCred = revBl * p.dbc;
+
+  // Facturas extra
+  const fexIva = p.fex * IVA / (1 + IVA);
+  const fexCosto = fexIva * p.fexC;
+
+  // Ganancias
+  const revBlNeto = revBl / (1 + IVA);
+  const gastosDeducibles =
+    cmvFact / (1 + IVA) +
+    laborBl +
+    p.alq / (1 + IVA) +
+    p.srv / (1 + IVA) +
+    opex / (1 + IVA) +
+    mktg / (1 + IVA) +
+    p.cnt / (1 + IVA) +
+    p.sft / (1 + IVA) +
+    proc +
+    p.fex / (1 + IVA) +
+    iibb + debCred;
+  const baseGan = revBlNeto - gastosDeducibles;
+  const impGan = Math.max(0, baseGan) * p.gan;
+
+  // RESULTADO REAL
+  const totImp = ivaPagar + iibb + debCred + impGan + fexCosto;
+  const netoReal = ebitda - totImp;
+  const netMargin = revBruto > 0 ? netoReal / revBruto : 0;
+
+  // P&L CONTABLE
+  const revContable = revBlNeto;
+  const gastosContables = gastosDeducibles;
+  const resultadoContable = revContable - gastosContables - impGan;
+
+  // CASH FLOW
+  const cashNgIn = revNg;
+  const cashNgCmv = cmv * p.pNeg;
+  const cashNgNeto = cashNgIn - cashNgCmv;
+  const cashBlIn = revBl;
+  const cashBlCmv = cmv * (1 - p.pNeg);
+  const cashBlOp = labor + occ + opex + mktg + proc + sga;
+  const cashBlImp = ivaPagar + iibb + debCred + impGan;
+  const cashBlNeto = cashBlIn - cashBlCmv - cashBlOp - cashBlImp;
+  const cashMes = cashNgNeto + cashBlNeto - fexCosto;
+
+  return {
+    cm, se, cvA, cvC, cvF, cvTot,
+    revBl, revNg, revBruto,
+    foodCost, paperCost, cmv, cmvFact, grossProfit, grossMargin,
+    staffCount, labor, laborBl, laborNg, occ, opex, mktg, proc, totGastosOp, sga,
+    ebitda, ebitdaM,
+    ivaDb, ivaCr, ivaPagar, iibb, debCred,
+    fexIva, fexCosto,
+    revBlNeto, gastosDeducibles, baseGan, impGan,
+    totImp, netoReal, netMargin,
+    revContable, gastosContables, resultadoContable,
+    cashNgIn, cashNgCmv, cashNgNeto, cashBlIn, cashBlCmv, cashBlOp, cashBlImp, cashBlNeto, cashMes
+  };
+}
+
+function calc60(p) {
+  const ms = []; let cashAcum = -p.inv, payback = null, invAcum = 0, invPayback = null, opAcum = 0;
+  for (let i = 0; i < 60; i++) {
+    const m = calcMonth(p, i);
+    cashAcum += m.cashMes;
+    // El inversor cobra su % mientras no recuperó SU inversión
+    const invRecuperado = invAcum >= p.inv;
+    const sp = invRecuperado ? p.spPost : p.spPre;
+    const invSh = m.cashMes > 0 ? m.cashMes * sp : 0;
+    const opSh = m.cashMes - invSh;
+    invAcum += invSh;
+    opAcum += opSh;
+    if (payback === null && cashAcum >= 0) payback = i + 1;
+    if (invPayback === null && invAcum >= p.inv) invPayback = i + 1;
+    ms.push({ ...m, mn: i+1, cashAcum, invRecuperado, sp, invSh, opSh, invAcum, opAcum });
+  }
+  return { ms, payback, invPayback };
+}
+
+// ===== RENDER P&L REAL =====
+function renderReal(m) {
+  const r = (l,v,cls='',money=true) => {
+    const val = money ? fmt(Math.round(v)) : fP(v*100);
+    const cc = money && v<0 ? 'neg' : money && v>0 && cls.includes('tot') ? 'pos' : '';
+    return `<tr><td class="l ${cls}">${l}</td><td class="val ${cc} ${cls}">${val}</td></tr>`;
+  };
+  let h = '';
+  h += `<tr><td colspan="2" class="st">REVENUE</td></tr>`;
+  h += `<tr><td class="l ind">Covers Total</td><td class="val">${Math.round(m.cvTot).toLocaleString()}</td></tr>`;
+  if(m.cvA>0) h += `<tr><td class="l ind" style="padding-left:26px">Almuerzo</td><td class="val pct">${Math.round(m.cvA).toLocaleString()}</td></tr>`;
+  if(m.cvC>0) h += `<tr><td class="l ind" style="padding-left:26px">Cena</td><td class="val pct">${Math.round(m.cvC).toLocaleString()}</td></tr>`;
+  if(m.cvF>0) h += `<tr><td class="l ind" style="padding-left:26px">After</td><td class="val pct">${Math.round(m.cvF).toLocaleString()}</td></tr>`;
+  h += r('Rev Bruto Total', m.revBruto, 'sub');
+  h += r('  Rev. Blanco (facturado)', m.revBl, 'ind');
+  h += r('  Rev. Negro (efectivo)', m.revNg, 'ind');
+
+  h += `<tr><td colspan="2" class="st">COSTO MERCADERÍA</td></tr>`;
+  h += r('  Food Cost', -m.foodCost, 'ind');
+  h += r('  Paper Cost', -m.paperCost, 'ind');
+  h += r('Total CMV', -m.cmv, 'sub');
+  h += r('Gross Profit', m.grossProfit, 'sub');
+  h += r('  Gross Margin', m.grossMargin, 'ind pct', false);
+
+  h += `<tr><td colspan="2" class="st">GASTOS OPERATIVOS</td></tr>`;
+  h += r('  Crew Labor', -m.labor, 'ind');
+  h += r('    ↳ Blanco (deducible)', -m.laborBl, 'ind pct');
+  h += r('    ↳ Negro (no deducible)', -m.laborNg, 'ind pct');
+  h += r('  Occupancy', -m.occ, 'ind');
+  h += r('  OPEX / Mant.', -m.opex, 'ind');
+  h += r('  Marketing', -m.mktg, 'ind');
+  h += r('  Processing', -m.proc, 'ind');
+  h += r('Total Gastos Op.', -m.totGastosOp, 'sub');
+
+  h += `<tr><td colspan="2" class="st">SG&A</td></tr>`;
+  h += r('  Contable + Software', -m.sga, 'ind');
+
+  h += r('EBITDA', m.ebitda, 'sub');
+  h += r('  EBITDA Margin', m.ebitdaM, 'ind pct', false);
+
+  h += `<tr><td colspan="2" class="st">IMPUESTOS</td></tr>`;
+  h += r('  IVA a pagar', -m.ivaPagar, 'ind');
+  h += r('    ↳ Débito', -m.ivaDb, 'ind pct');
+  h += r('    ↳ Crédito', m.ivaCr, 'ind pct');
+  h += r('  IIBB', -m.iibb, 'ind');
+  h += r('  Déb/Créd Bancarios', -m.debCred, 'ind');
+  h += r('  Imp. Ganancias', -m.impGan, 'ind');
+  h += r('    ↳ Base imponible', m.baseGan, 'ind pct');
+  if(m.fexCosto > 0) h += r('  Costo facturas extra', -m.fexCosto, 'ind');
+  h += r('Total Impuestos', -m.totImp, 'sub');
+
+  h += `<tr><td colspan="2" class="st">RESULTADO</td></tr>`;
+  h += r('RESULTADO NETO REAL', m.netoReal, 'tot');
+  h += r('  Net Margin', m.netMargin, 'ind pct', false);
+
+  $('tReal').innerHTML = h;
+}
+
+// ===== RENDER P&L CONTABLE =====
+function renderContable(m) {
+  const r = (l,v,cls='') => {
+    const cc = v<0?'neg':v>0&&cls.includes('tot')?'pos':'';
+    return `<tr><td class="l ${cls}">${l}</td><td class="val ${cc} ${cls}">${fmt(Math.round(v))}</td></tr>`;
+  };
+  let h = '';
+  h += `<tr><td colspan="2" class="st">REVENUE CONTABLE (neto IVA)</td></tr>`;
+  h += r('Revenue Blanco neto IVA', m.revContable, 'sub');
+
+  h += `<tr><td colspan="2" class="st">GASTOS DEDUCIBLES</td></tr>`;
+  h += r('  CMV con factura (neto IVA)', -(m.cmvFact/(1+IVA)), 'ind');
+  h += r('  Labor en blanco', -m.laborBl, 'ind');
+  h += r('  Alquiler (neto IVA)', -(m.occ > 0 ? (inp().alq/(1+IVA)) : 0), 'ind');
+  h += r('  Servicios (neto IVA)', -(inp().srv/(1+IVA)), 'ind');
+  h += r('  OPEX (neto IVA)', -(m.opex/(1+IVA)), 'ind');
+  h += r('  Marketing (neto IVA)', -(m.mktg/(1+IVA)), 'ind');
+  h += r('  SG&A (neto IVA)', -(m.sga/(1+IVA)), 'ind');
+  h += r('  Processing', -m.proc, 'ind');
+  if(inp().fex > 0) h += r('  Facturas extra (neto IVA)', -(inp().fex/(1+IVA)), 'ind');
+  h += r('  IIBB + Déb/Créd', -(m.iibb + m.debCred), 'ind');
+  h += r('Total Gastos Deducibles', -m.gastosDeducibles, 'sub');
+
+  h += `<tr><td colspan="2" class="st">RESULTADO CONTABLE</td></tr>`;
+  h += r('Base Imponible Ganancias', m.baseGan, 'sub');
+  h += r('  Imp. Ganancias (35%)', -m.impGan, 'ind');
+  h += r('RESULTADO CONTABLE', m.resultadoContable, 'tot');
+
+  $('tContable').innerHTML = h;
+}
+
+// ===== RENDER CASH FLOW =====
+let ch = null;
+function renderCash(data) {
+  const {ms, payback} = data;
+  let h = '<thead><tr><th>#</th><th>Mes</th><th>Rev Bruto</th><th>EBITDA</th><th>Impuestos</th><th>Neto Real</th><th>CF Negro</th><th>CF Blanco</th><th>Cash Acum</th><th>Inversor</th><th>Operador</th></tr></thead><tbody>';
+  for (const m of ms) {
+    const pb = m.mn === payback;
+    h += `<tr ${pb?'style="background:#1e3a2f"':''}>
+      <td>${m.mn}</td><td>${MN[m.cm]}</td>
+      <td>${fK(m.revBruto)}</td>
+      <td class="${m.ebitda<0?'neg':'pos'}">${fK(m.ebitda)}</td>
+      <td class="neg">${fK(-m.totImp)}</td>
+      <td class="${m.netoReal<0?'neg':'pos'}">${fK(m.netoReal)}</td>
+      <td class="pos">${fK(m.cashNgNeto)}</td>
+      <td class="${m.cashBlNeto<0?'neg':'pos'}">${fK(m.cashBlNeto)}</td>
+      <td class="${m.cashAcum<0?'neg':'pos'}">${fK(m.cashAcum)}</td>
+      <td>${fK(m.invSh)}</td>
+      <td class="${m.opSh<0?'neg':'pos'}">${fK(m.opSh)}</td>
+    </tr>`;
+  }
+  h += '</tbody>';
+  $('tCash').innerHTML = h;
+
+  if (ch) ch.destroy();
+  ch = new Chart($('chart60'), {
+    type: 'line',
+    data: {
+      labels: ms.map(m=>`${m.mn}`),
+      datasets: [
+        {label:'Cash Acum.', data:ms.map(m=>Math.round(m.cashAcum)), borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,.1)', fill:true, tension:.3, pointRadius:0},
+        {label:'Neto/mes', data:ms.map(m=>Math.round(m.netoReal)), borderColor:'#4ade80', borderDash:[4,4], tension:.3, pointRadius:0},
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{labels:{color:'#94a3b8',font:{size:10}}} },
+      scales: {
+        x:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#64748b',font:{size:9},callback:v=>fK(v)},grid:{color:'#1e293b'}}
+      }
+    }
+  });
+}
+
+// ===== RENDER INVERSOR =====
+let chInv = null;
+function renderInversor(avg, data, p) {
+  const {ms, payback, invPayback} = data;
+
+  // KPIs inversor
+  const totalInv60 = ms.reduce((s,m)=>s+m.invSh, 0);
+  const roiYear1 = ms.slice(0,12).reduce((s,m)=>s+m.invSh,0);
+  const roiYear1Pct = p.inv > 0 ? (roiYear1 / p.inv) * 100 : 0;
+  const multiple = p.inv > 0 ? totalInv60 / p.inv : 0;
+  const avgMonthlyPre = invPayback ? ms.slice(0,invPayback).reduce((s,m)=>s+m.invSh,0)/invPayback : 0;
+  const avgMonthlyPost = invPayback && invPayback < 60 ? ms.slice(invPayback).reduce((s,m)=>s+m.invSh,0) / (60 - invPayback) : 0;
+  const yieldAnual = p.inv > 0 ? (totalInv60 / 5) / p.inv * 100 : 0;
+
+  const kpi = (label, value, color='') => `<div class="kpi"><div class="kl">${label}</div><div class="kv ${color}">${value}</div></div>`;
+  $('invKpis').innerHTML =
+    kpi('Recupera en', invPayback ? `M${invPayback}` : 'N/A', invPayback?'pos':'neg') +
+    kpi('Múltiplo 5A', `${multiple.toFixed(1)}x`, multiple>1?'pos':'neg') +
+    kpi('ROI Año 1', fP(roiYear1Pct), roiYear1Pct>0?'pos':'neg') +
+    kpi('Yield Anual', fP(yieldAnual), yieldAnual>20?'pos':yieldAnual>0?'':'neg');
+
+  // Tabla inversor
+  const r = (l,v,cls='') => `<tr><td class="l ${cls}">${l}</td><td class="val ${v<0?'neg':'pos'} ${cls}">${fmt(Math.round(v))}</td></tr>`;
+  const totalOp60 = ms.reduce((s,m)=>s+m.opSh, 0);
+  let h = '';
+  h += `<tr><td colspan="2" class="st">INVERSIÓN</td></tr>`;
+  h += r('Capital invertido', -p.inv, 'sub');
+  h += `<tr><td class="l ind">Split pre-recupero (inversor cobra)</td><td class="val">${fP(p.spPre*100)}</td></tr>`;
+  h += `<tr><td class="l ind">Split post-recupero (inversor cobra)</td><td class="val">${fP(p.spPost*100)}</td></tr>`;
+  h += `<tr><td class="l sub">Inversor recupera inversión en</td><td class="val ${invPayback?'pos':'neg'} sub">${invPayback ? `Mes ${invPayback}` : 'No recupera en 5 años'}</td></tr>`;
+
+  h += `<tr><td colspan="2" class="st">RETORNO INVERSOR POR AÑO</td></tr>`;
+  const years = [12, 24, 36, 48, 60];
+  for (const y of years) {
+    const total = ms.slice(0, y).reduce((s,m)=>s+m.invSh, 0);
+    const net = total - p.inv;
+    const recovered = total >= p.inv;
+    h += `<tr><td class="l ind">Año ${y/12} — inversor cobró</td><td class="val ${net<0?'neg':'pos'}">${fmt(Math.round(total))} <span class="pct">(${recovered?'ganancia ':'falta '}${net>=0?'+':''}${fmt(Math.round(net))})</span></td></tr>`;
+  }
+
+  h += `<tr><td colspan="2" class="st">OPERADOR — TU PLATA</td></tr>`;
+  for (const y of years) {
+    const total = ms.slice(0, y).reduce((s,m)=>s+m.opSh, 0);
+    h += `<tr><td class="l ind">Año ${y/12} — operador cobró</td><td class="val ${total<0?'neg':'pos'}">${fmt(Math.round(total))}</td></tr>`;
+  }
+
+  h += `<tr><td colspan="2" class="st">FLUJO MENSUAL PROMEDIO</td></tr>`;
+  h += r('Inversor pre-recupero', avgMonthlyPre, 'ind');
+  h += r('Inversor post-recupero', avgMonthlyPost, 'ind');
+  h += `<tr><td class="l ind">Operador pre-recupero</td><td class="val">${fmt(Math.round(invPayback ? ms.slice(0,invPayback).reduce((s,m)=>s+m.opSh,0)/invPayback : 0))}</td></tr>`;
+  h += `<tr><td class="l ind">Operador post-recupero</td><td class="val pos">${fmt(Math.round(invPayback && invPayback<60 ? ms.slice(invPayback).reduce((s,m)=>s+m.opSh,0)/(60-invPayback) : 0))}</td></tr>`;
+
+  h += `<tr><td colspan="2" class="st">RESUMEN 5 AÑOS</td></tr>`;
+  h += r('Inversor total cobrado', totalInv60, 'sub');
+  h += r('Inversor ganancia neta', totalInv60 - p.inv, 'sub');
+  h += `<tr><td class="l sub">Múltiplo sobre inversión</td><td class="val ${multiple>=1?'pos':'neg'} sub">${multiple.toFixed(2)}x</td></tr>`;
+  h += r('Operador total cobrado', totalOp60, 'sub');
+
+  $('tInversor').innerHTML = h;
+
+  // Chart
+  if (chInv) chInv.destroy();
+  chInv = new Chart($('chartInv'), {
+    type: 'line',
+    data: {
+      labels: ms.map(m=>`${m.mn}`),
+      datasets: [
+        {label:'Inversor Acum.', data:ms.map(m=>Math.round(m.invAcum)), borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,.1)', fill:true, tension:.3, pointRadius:0},
+        {label:'Inversión ($'+fK(p.inv)+')', data:ms.map(()=>p.inv), borderColor:'#f87171', borderDash:[6,3], tension:0, pointRadius:0},
+        {label:'Operador Acum.', data:ms.map(m=>Math.round(m.opAcum)), borderColor:'#4ade80', borderDash:[4,4], tension:.3, pointRadius:0},
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#64748b',font:{size:9},callback:v=>fK(v)},grid:{color:'#1e293b'}}
+      }
+    }
+  });
+}
+
+// ===== RENDER OPERADOR =====
+function renderOperador(avg, data, p) {
+  const {ms, payback} = data;
+  const staffAct = (p.tAlm?p.sA:0)+(p.tCena?p.sC:0)+(p.tAfter?p.sF:0);
+
+  // Unit economics
+  const revPerCover = avg.cvTot > 0 ? avg.revBruto / avg.cvTot : 0;
+  const cmvPerCover = avg.cvTot > 0 ? avg.cmv / avg.cvTot : 0;
+  const gpPerCover = revPerCover - cmvPerCover;
+  const netoPerCover = avg.cvTot > 0 ? avg.netoReal / avg.cvTot : 0;
+  const revPerStaff = staffAct > 0 ? avg.revBruto / staffAct : 0;
+  const coversPerStaff = staffAct > 0 ? avg.cvTot / staffAct : 0;
+  const laborPct = avg.revBruto > 0 ? avg.labor / avg.revBruto * 100 : 0;
+
+  // Break-even
+  const costosFijos = avg.labor + avg.occ + avg.sga;
+  const ticketPonderado = avg.cvTot > 0 ? avg.revBruto / avg.cvTot : 1;
+  const contribucionPorCover = ticketPonderado * (1 - p.fc - p.pc);
+  const breakEvenCovers = contribucionPorCover > 0 ? costosFijos / contribucionPorCover : Infinity;
+  const breakEvenOcupacion = avg.cvTot > 0 ? breakEvenCovers / avg.cvTot * 100 : 0;
+
+  // Operador cash
+  const opYear1 = ms.slice(0,12).reduce((s,m)=>s+m.opSh,0);
+  const opYear2 = ms.slice(12,24).reduce((s,m)=>s+m.opSh,0);
+  const opTotal = ms.reduce((s,m)=>s+m.opSh,0);
+  const opMonthlyAvg = opTotal / 60;
+
+  // Cost structure
+  const totalCosts = avg.cmv + avg.totGastosOp + avg.sga;
+  const cmvPct = totalCosts > 0 ? avg.cmv / totalCosts * 100 : 0;
+  const laborPctCost = totalCosts > 0 ? avg.labor / totalCosts * 100 : 0;
+  const occPct = totalCosts > 0 ? avg.occ / totalCosts * 100 : 0;
+  const otherPct = 100 - cmvPct - laborPctCost - occPct;
+
+  const kpi = (label, value, color='') => `<div class="kpi"><div class="kl">${label}</div><div class="kv ${color}">${value}</div></div>`;
+  $('opKpis').innerHTML =
+    kpi('Break-even', `${Math.round(breakEvenCovers)} cov.`, breakEvenCovers<avg.cvTot?'pos':'neg') +
+    kpi('Rev / Empleado', fK(revPerStaff)) +
+    kpi('Labor %', fP(laborPct), laborPct<30?'pos':laborPct<35?'':'neg') +
+    kpi('Cov / Empleado', `${Math.round(coversPerStaff)}`);
+
+  let h = '';
+  h += `<tr><td colspan="2" class="st">UNIT ECONOMICS (por cover)</td></tr>`;
+  h += `<tr><td class="l ind">Revenue / cover</td><td class="val">${fmt(Math.round(revPerCover))}</td></tr>`;
+  h += `<tr><td class="l ind">CMV / cover</td><td class="val neg">${fmt(-Math.round(cmvPerCover))}</td></tr>`;
+  h += `<tr><td class="l sub">Gross Profit / cover</td><td class="val pos sub">${fmt(Math.round(gpPerCover))}</td></tr>`;
+  h += `<tr><td class="l ind">Neto / cover (después de todo)</td><td class="val ${netoPerCover<0?'neg':'pos'}">${fmt(Math.round(netoPerCover))}</td></tr>`;
+
+  h += `<tr><td colspan="2" class="st">BREAK-EVEN</td></tr>`;
+  h += `<tr><td class="l ind">Costos fijos mensuales</td><td class="val">${fmt(Math.round(costosFijos))}</td></tr>`;
+  h += `<tr><td class="l ind">Contribución / cover</td><td class="val">${fmt(Math.round(contribucionPorCover))}</td></tr>`;
+  h += `<tr><td class="l sub">Covers para break-even</td><td class="val sub">${Math.round(breakEvenCovers).toLocaleString()}</td></tr>`;
+  h += `<tr><td class="l ind">Covers actuales / mes</td><td class="val">${Math.round(avg.cvTot).toLocaleString()}</td></tr>`;
+  h += `<tr><td class="l ind">Margen de seguridad</td><td class="val ${avg.cvTot>breakEvenCovers?'pos':'neg'}">${avg.cvTot>breakEvenCovers?'+':''}${Math.round(avg.cvTot-breakEvenCovers)} covers (${fP(breakEvenOcupacion)})</td></tr>`;
+
+  h += `<tr><td colspan="2" class="st">ESTRUCTURA DE COSTOS</td></tr>`;
+  h += `<tr><td class="l ind">CMV (food + paper)</td><td class="val">${fP(cmvPct)} del total</td></tr>`;
+  h += `<tr><td class="l ind">Labor</td><td class="val">${fP(laborPctCost)} del total</td></tr>`;
+  h += `<tr><td class="l ind">Occupancy</td><td class="val">${fP(occPct)} del total</td></tr>`;
+  h += `<tr><td class="l ind">Otros (OPEX+Mkt+Proc+SGA)</td><td class="val">${fP(otherPct)} del total</td></tr>`;
+
+  h += `<tr><td colspan="2" class="st">EFICIENCIA</td></tr>`;
+  h += `<tr><td class="l ind">Revenue / empleado</td><td class="val">${fK(revPerStaff)}</td></tr>`;
+  h += `<tr><td class="l ind">Covers / empleado</td><td class="val">${Math.round(coversPerStaff)}</td></tr>`;
+  h += `<tr><td class="l ind">Labor % del revenue</td><td class="val ${laborPct<30?'pos':laborPct<35?'':'neg'}">${fP(laborPct)}</td></tr>`;
+  h += `<tr><td class="l ind">Prime cost (CMV+Labor) %</td><td class="val ${(laborPct+p.fc*100+p.pc*100)<60?'pos':'neg'}">${fP(laborPct+p.fc*100+p.pc*100)}</td></tr>`;
+
+  h += `<tr><td colspan="2" class="st">CASH OPERADOR</td></tr>`;
+  h += `<tr><td class="l ind">Año 1</td><td class="val ${opYear1<0?'neg':'pos'}">${fmt(Math.round(opYear1))}</td></tr>`;
+  h += `<tr><td class="l ind">Año 2</td><td class="val ${opYear2<0?'neg':'pos'}">${fmt(Math.round(opYear2))}</td></tr>`;
+  h += `<tr><td class="l sub">Total 5 años</td><td class="val ${opTotal<0?'neg':'pos'} sub">${fmt(Math.round(opTotal))}</td></tr>`;
+  h += `<tr><td class="l ind">Promedio mensual</td><td class="val">${fmt(Math.round(opMonthlyAvg))}</td></tr>`;
+
+  $('tOperador').innerHTML = h;
+}
+
+// ===== RENDER RECOMENDACIONES =====
+function renderReco(avg, data, p) {
+  const {ms, payback} = data;
+  const staffAct = (p.tAlm?p.sA:0)+(p.tCena?p.sC:0)+(p.tAfter?p.sF:0);
+  const laborPct = avg.revBruto > 0 ? avg.labor / avg.revBruto * 100 : 0;
+  const primeCost = laborPct + p.fc*100 + p.pc*100;
+  const costosFijos = avg.labor + avg.occ + avg.sga;
+  const ticketPond = avg.cvTot > 0 ? avg.revBruto / avg.cvTot : 1;
+  const contribCover = ticketPond * (1 - p.fc - p.pc);
+  const breakEven = contribCover > 0 ? costosFijos / contribCover : Infinity;
+  const margenSeg = avg.cvTot > 0 ? (avg.cvTot - breakEven) / avg.cvTot * 100 : 0;
+  const ivaEfectivo = avg.revBl > 0 ? avg.ivaPagar / avg.revBl * 100 : 0;
+  const cargaFiscalTotal = avg.revBruto > 0 ? avg.totImp / avg.revBruto * 100 : 0;
+
+  // Simulate scenarios
+  const sim = (changes) => {
+    const p2 = {...p, ...changes};
+    const avg2 = {};
+    const annualMs2 = Array.from({length:12},(_,i)=>calcMonth(p2,i));
+    const nk = Object.keys(annualMs2[0]).filter(k=>typeof annualMs2[0][k]==='number');
+    for(const k of nk) avg2[k] = annualMs2.reduce((s,m)=>s+m[k],0)/12;
+    return avg2;
+  };
+
+  let h = '';
+
+  // Header style
+  const section = (icon, title) => `<div style="margin-top:16px;margin-bottom:8px;padding:8px 12px;background:#162032;border-radius:6px;border-left:3px solid #38bdf8"><span style="font-size:14px">${icon}</span> <span style="font-size:13px;font-weight:700;color:#f1f5f9">${title}</span></div>`;
+
+  const card = (priority, title, current, action, impact, delta) => {
+    const colors = {ALTA:'#f87171',MEDIA:'#fbbf24',BAJA:'#4ade80'};
+    return `<div style="background:#1a2332;border-radius:6px;padding:10px 14px;margin-bottom:6px;border-left:3px solid ${colors[priority]}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700;color:#f1f5f9">${title}</span>
+        <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${colors[priority]}22;color:${colors[priority]};font-weight:700">${priority}</span>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:3px">Actual: <span style="color:#e2e8f0">${current}</span></div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:3px">Acción: <span style="color:#e2e8f0">${action}</span></div>
+      <div style="font-size:10px;color:#94a3b8">Impacto: <span style="color:#4ade80;font-weight:600">${impact}</span>${delta?` <span style="color:#64748b">(${delta})</span>`:''}</div>
+    </div>`;
+  };
+
+  // ===== DIAGNÓSTICO =====
+  h += section('', 'DIAGNÓSTICO');
+
+  const diag = [];
+  if (avg.netMargin < 0) diag.push(`<span class="neg">El negocio pierde plata (Net Margin ${fP(avg.netMargin*100)})</span>`);
+  else if (avg.netMargin < 0.08) diag.push(`<span style="color:#fbbf24">Net Margin bajo (${fP(avg.netMargin*100)}). Target gastro: 10-15%</span>`);
+  else diag.push(`<span class="pos">Net Margin saludable (${fP(avg.netMargin*100)})</span>`);
+
+  if (primeCost > 65) diag.push(`<span class="neg">Prime Cost alto (${fP(primeCost)}). Debe ser &lt;60-65%</span>`);
+  else if (primeCost > 60) diag.push(`<span style="color:#fbbf24">Prime Cost aceptable (${fP(primeCost)}). Ideal &lt;60%</span>`);
+  else diag.push(`<span class="pos">Prime Cost controlado (${fP(primeCost)})</span>`);
+
+  if (laborPct > 35) diag.push(`<span class="neg">Labor % alto (${fP(laborPct)}). Target: 25-33%</span>`);
+  if (margenSeg < 15) diag.push(`<span class="neg">Margen de seguridad bajo (${fP(margenSeg)} sobre break-even). Riesgo operativo alto</span>`);
+  else if (margenSeg < 25) diag.push(`<span style="color:#fbbf24">Margen de seguridad justo (${fP(margenSeg)}). Ideal &gt;25%</span>`);
+
+  if (cargaFiscalTotal > 15) diag.push(`<span style="color:#fbbf24">Carga fiscal ${fP(cargaFiscalTotal)} del revenue bruto. Hay espacio para optimizar</span>`);
+
+  if (!payback) diag.push(`<span class="neg">No se recupera la inversión en 60 meses</span>`);
+  else if (payback > 24) diag.push(`<span style="color:#fbbf24">Payback largo (M${payback}). Un inversor busca &lt;18 meses</span>`);
+  else diag.push(`<span class="pos">Payback atractivo (M${payback})</span>`);
+
+  h += `<div style="padding:8px 14px">${diag.map(d=>`<div style="font-size:11px;margin-bottom:4px">• ${d}</div>`).join('')}</div>`;
+
+  // ===== PALANCAS OPERATIVAS =====
+  h += section('', 'PALANCAS OPERATIVAS');
+
+  // Ticket
+  const simTk = sim({tkC: p.tkC + 3});
+  const tkDelta = simTk.netoReal - avg.netoReal;
+  h += card('ALTA', 'Subir ticket cena +$3',
+    `$${p.tkC}`, `Subir a $${p.tkC+3}. Revisar menú, presentación, experiencia`,
+    `+${fK(tkDelta*12)}/año en resultado neto`, `+${fK(tkDelta)}/mes`);
+
+  // Food cost
+  if (p.fc > 0.22) {
+    const simFc = sim({fc: p.fc - 0.02});
+    const fcDelta = simFc.netoReal - avg.netoReal;
+    h += card('ALTA', 'Bajar food cost -2pp',
+      fP(p.fc*100), `Ingeniería de menú, renegociar proveedores, control de merma`,
+      `+${fK(fcDelta*12)}/año`, `+${fK(fcDelta)}/mes`);
+  }
+
+  // Rotaciones mid-week
+  const simRot = sim({rC: p.rC.map((r,i) => i>=1&&i<=3 ? r+0.3 : r)});
+  const rotDelta = simRot.netoReal - avg.netoReal;
+  h += card('MEDIA', 'Subir rotaciones Mar-Jue +0.3',
+    `Mar ${p.rC[1]}, Mié ${p.rC[2]}, Jue ${p.rC[3]}`,
+    `Happy hour, promos mid-week, eventos temáticos`,
+    `+${fK(rotDelta*12)}/año`, `+${fK(rotDelta)}/mes`);
+
+  // Staff
+  if (laborPct > 30 && staffAct > 3) {
+    const simStaff = (p.tCena && p.sC > 2) ? sim({sC: p.sC - 1}) : sim({sA: Math.max(0,p.sA-1)});
+    const stDelta = simStaff.netoReal - avg.netoReal;
+    h += card('MEDIA', 'Optimizar staff -1 persona',
+      `${staffAct} empleados (${fP(laborPct)} del rev)`,
+      `Evaluar si se puede cubrir con turnos rotativos o cross-training`,
+      `+${fK(stDelta*12)}/año`, `${fK(p.sue)}/mes ahorro`);
+  }
+
+  // After
+  if (!p.tAfter) {
+    const simAfter = sim({tAfter: true});
+    const afDelta = simAfter.netoReal - avg.netoReal;
+    if (afDelta > 0) {
+      h += card('MEDIA', 'Activar turno After',
+        'Desactivado', `Agregar turno after con ${p.sF} empleados. Evaluar si el formato lo permite`,
+        `+${fK(afDelta*12)}/año estimado`, `+${fK(afDelta)}/mes`);
+    }
+  }
+
+  // ===== PALANCAS FISCALES =====
+  h += section('', 'PALANCAS FISCALES');
+
+  // Compras en blanco
+  if (p.cmpB < 0.7) {
+    const simCmp = sim({cmpB: Math.min(1, p.cmpB + 0.25)});
+    const cmpDelta = simCmp.netoReal - avg.netoReal;
+    h += card('ALTA', `Subir compras con factura a ${Math.round((p.cmpB+0.25)*100)}%`,
+      `${Math.round(p.cmpB*100)}% con factura`,
+      `Buscar proveedores que facturen. Cada factura baja IVA + Ganancias`,
+      `+${fK(cmpDelta*12)}/año`, `+${fK(cmpDelta)}/mes`);
+  }
+
+  // Facturas extra
+  if (p.fex === 0) {
+    const simFex = sim({fex: 5000});
+    const fexDelta = simFex.netoReal - avg.netoReal;
+    h += card('MEDIA', 'Comprar $5,000/mes en facturas',
+      'Sin facturas extra',
+      `Costo: ${Math.round(p.fexC*100)}% del IVA. Genera crédito fiscal + deducción de Ganancias`,
+      `+${fK(fexDelta*12)}/año neto de costo`, `+${fK(fexDelta)}/mes`);
+  }
+
+  // Monotributo
+  if (!p.mono) {
+    const simMono = sim({mono: true});
+    const monoDelta = simMono.netoReal - avg.netoReal;
+    h += card('BAJA', 'Evaluar monotributistas vs dependencia',
+      'Dependencia 50/50',
+      `Monotributo: 100% deducible de Ganancias (pero sin IVA crédito, mayor riesgo laboral)`,
+      `${monoDelta>0?'+':''}${fK(monoDelta*12)}/año`, 'Riesgo laboral medio');
+  }
+
+  // Negro — evaluar subir
+  if (p.pNeg < 0.5) {
+    const simMasNeg = sim({pNeg: Math.min(0.6, p.pNeg + 0.1)});
+    const negDelta = simMasNeg.netoReal - avg.netoReal;
+    if (negDelta > 0) {
+      h += card('MEDIA', `Subir negro +10pp (a ${Math.round((p.pNeg+0.1)*100)}%)`,
+        `${Math.round(p.pNeg*100)}% negro`,
+        `Más efectivo = menos impuestos (IVA, IIBB, Ganancias). Perdés ${Math.round(p.dNeg*100)}% por descuento pero ahorrás más en fiscal`,
+        `+${fK(negDelta*12)}/año neto`, `+${fK(negDelta)}/mes`);
+    }
+  }
+
+  // ===== SENSIBILIDAD =====
+  h += section('', 'SENSIBILIDAD — ¿Qué pasa si...?');
+
+  const scenarios = [
+    ['Ticket cena +$5', sim({tkC: p.tkC+5})],
+    ['Ticket cena -$5', sim({tkC: p.tkC-5})],
+    ['Food cost +3pp', sim({fc: p.fc+0.03})],
+    ['Food cost -3pp', sim({fc: p.fc-0.03})],
+    ['1 empleado menos', sim({sC: Math.max(1,p.sC-1)})],
+    ['1 empleado más', sim({sC: p.sC+1})],
+    ['Alquiler +$1,000', sim({alq: p.alq+1000})],
+    ['100% compras c/ factura', sim({cmpB: 1})],
+    ['0% negro', sim({pNeg: 0})],
+    ['40% negro', sim({pNeg: 0.4})],
+  ];
+
+  h += `<div style="padding:0 14px"><table class="pnl" style="font-size:11px">
+    <tr><td class="l sub" style="width:200px">Escenario</td><td class="val sub">Neto/mes</td><td class="val sub">Δ vs actual</td><td class="val sub">Δ anual</td></tr>
+    <tr style="background:#162032"><td class="l" style="font-weight:700;color:#38bdf8">→ ACTUAL</td><td class="val" style="color:#38bdf8">${fK(avg.netoReal)}</td><td class="val">—</td><td class="val">—</td></tr>`;
+  for (const [name, s] of scenarios) {
+    const d = s.netoReal - avg.netoReal;
+    h += `<tr><td class="l ind">${name}</td><td class="val ${s.netoReal<0?'neg':'pos'}">${fK(s.netoReal)}</td><td class="val ${d<0?'neg':'pos'}">${d>=0?'+':''}${fK(d)}</td><td class="val ${d<0?'neg':'pos'}">${d>=0?'+':''}${fK(d*12)}</td></tr>`;
+  }
+  h += '</table></div>';
+
+  $('recoContent').innerHTML = h;
+}
+
+// ===== TABS =====
+function showTab(t, btn) {
+  ['vReal','vContable','vCash','vInversor','vOperador','vReco','vManual'].forEach(v => $(v).style.display = 'none');
+  $({real:'vReal',contable:'vContable',cash:'vCash',inversor:'vInversor',operador:'vOperador',reco:'vReco',manual:'vManual'}[t]).style.display = '';
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+}
+
+// ===== UPDATE =====
+function update() {
+  const p = inp();
+
+  // Toggle turno blocks
+  $('almBlock').style.display = p.tAlm ? '' : 'none';
+  $('cenaBlock').style.display = p.tCena ? '' : 'none';
+  $('afterBlock').style.display = p.tAfter ? '' : 'none';
+
+  // Display values
+  $('cap_v').textContent = `${p.cap} pax`;
+  $('tkA_v').textContent = `$${p.tkA}`;
+  $('tkC_v').textContent = `$${p.tkC}`;
+  $('tkF_v').textContent = `$${p.tkF}`;
+  $('pNeg_v').textContent = `${Math.round(p.pNeg*100)}%`;
+  $('dNeg_v').textContent = `${Math.round(p.dNeg*100)}%`;
+  $('fc_v').textContent = `${(p.fc*100).toFixed(1)}%`;
+  $('pc_v').textContent = `${(p.pc*100).toFixed(1)}%`;
+  $('cmpB_v').textContent = `${Math.round(p.cmpB*100)}%`;
+  $('sA_v').textContent = p.sA;
+  $('sC_v').textContent = p.sC;
+  $('sF_v').textContent = p.sF;
+  $('sue_v').textContent = `$${p.sue.toLocaleString()}`;
+  $('staffModeLabel').textContent = p.mono ? 'Monotributistas' : 'Dependencia 50/50';
+  const staffAct = (p.tAlm?p.sA:0)+(p.tCena?p.sC:0)+(p.tAfter?p.sF:0);
+  $('staffInfo').textContent = `${staffAct} activos · Nómina: ${fmt(staffAct*p.sue)} · ${p.mono?'100% factura, sin IVA cr.':'50% blanco (deduce Gan.), 50% negro'}`;
+  $('alq_v').textContent = `$${p.alq.toLocaleString()}`;
+  $('srv_v').textContent = `$${p.srv.toLocaleString()}`;
+  $('opx_v').textContent = `${(p.opx*100).toFixed(1)}%`;
+  $('mkt_v').textContent = `${(p.mkt*100).toFixed(1)}%`;
+  $('prc_v').textContent = `${(p.prc*100).toFixed(1)}%`;
+  $('cnt_v').textContent = `$${p.cnt}`;
+  $('sft_v').textContent = `$${p.sft}`;
+  $('fex_v').textContent = fK(p.fex);
+  $('fexC_v').textContent = `${Math.round(p.fexC*100)}%`;
+  const fexIva = p.fex * IVA / (1+IVA);
+  const fexCosto = fexIva * p.fexC;
+  const fexAhorroIva = fexIva;
+  const fexAhorroGan = (p.fex/(1+IVA)) * p.gan;
+  $('fexInfo').textContent = p.fex > 0 ? `IVA crédito: ${fmt(Math.round(fexAhorroIva))} · Ahorro Gan: ${fmt(Math.round(fexAhorroGan))} · Costo: ${fmt(Math.round(fexCosto))} · Neto: ${fmt(Math.round(fexAhorroIva+fexAhorroGan-fexCosto))}` : '';
+  $('iibb_v').textContent = `${(p.iibb*100).toFixed(1)}%`;
+  $('dbc_v').textContent = `${(p.dbc*100).toFixed(1)}%`;
+  $('gan_v').textContent = `${Math.round(p.gan*100)}%`;
+  $('inv_v').textContent = fK(p.inv);
+  $('spPre_v').textContent = `${Math.round(p.spPre*100)}%`;
+  $('spPost_v').textContent = `${Math.round(p.spPost*100)}%`;
+  $('mAp_v').textContent = MN[p.mAp-1];
+
+  // Calc
+  const annualMs = Array.from({length:12},(_,i)=>calcMonth(p,i));
+  const avg = {};
+  const nk = Object.keys(annualMs[0]).filter(k=>typeof annualMs[0][k]==='number');
+  for(const k of nk) avg[k] = annualMs.reduce((s,m)=>s+m[k],0)/12;
+
+  renderReal(avg);
+  renderContable(avg);
+
+  const data = calc60(p);
+  renderCash(data);
+  renderInversor(avg, data, p);
+  renderOperador(avg, data, p);
+  renderReco(avg, data, p);
+
+  // KPIs
+  $('k_rev').textContent = fK(avg.revBruto); $('k_rev').className='kv';
+  $('k_ebitda').textContent = fK(avg.ebitda); $('k_ebitda').className=`kv ${avg.ebitda<0?'neg':'pos'}`;
+  $('k_neto').textContent = fK(avg.netoReal); $('k_neto').className=`kv ${avg.netoReal<0?'neg':'pos'}`;
+  $('k_margin').textContent = fP(avg.netMargin*100); $('k_margin').className=`kv ${avg.netMargin<0?'neg':'pos'}`;
+  $('k_payback').textContent = data.invPayback?`M${data.invPayback}`:'N/A'; $('k_payback').className=`kv ${data.invPayback?'pos':'neg'}`;
+}
+
+// ===== EXCEL EXPORT (placeholder — will add formulas) =====
+async function exportExcel() {
+  alert('Export Excel — próximamente con fórmulas');
+}
+
+// ===== EVENTS =====
+document.querySelectorAll('input[type=range]').forEach(el=>el.addEventListener('input',update));
+document.querySelectorAll('.dg input, .sg input').forEach(el=>el.addEventListener('input',update));
+update();
+</script>
+</body>
+</html>

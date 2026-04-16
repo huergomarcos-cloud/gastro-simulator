@@ -36,6 +36,10 @@
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     .mc-bar { height: 4px; border-radius: 2px; transition: width .3s; }
+    .fc { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .fc label { flex: 1; font-size: 10px; color: #94a3b8; }
+    .fc input.fcIn { width: 80px; text-align: right; background: #0f172a; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; padding: 3px 6px; font-size: 11px; font-variant-numeric: tabular-nums; font-family: inherit; }
+    .fc input.fcIn:focus { border-color: #38bdf8; outline: none; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -58,13 +62,30 @@
     <!-- LEFT: Controls -->
     <div class="space-y-3" style="max-height:calc(100vh - 80px); overflow-y:auto; padding-right:6px;">
 
-      <!-- Fixed Costs -->
+      <!-- Fixed Costs Breakdown -->
       <div class="pn">
-        <div class="st">Costos Fijos (USD)</div>
-        <div class="sr">
-          <label>Total fijos</label>
-          <input type="range" id="fixedCosts" min="150000" max="350000" step="1000" value="227000" oninput="calc()">
-          <span class="v" id="fixedCosts_v"></span>
+        <div class="st">Costos Fijos — Alquileres</div>
+        <div class="fc"><label>Alquiler CHE</label><input type="number" class="fcIn" id="fc_che" value="70000" oninput="calc()"></div>
+        <div class="fc"><label>Seña Swell House</label><input type="number" class="fcIn" id="fc_swell" value="52800" oninput="calc()"></div>
+        <div class="fc"><label>Casas mono marqui tom</label><input type="number" class="fcIn" id="fc_casas" value="10000" oninput="calc()"></div>
+        <div class="st">Costos Fijos — Sueldos</div>
+        <div class="fc"><label>Staff montaña (Leila +2)</label><input type="number" class="fcIn" id="fc_staffMont" value="10000" oninput="calc()"></div>
+        <div class="fc"><label>Staff cocina</label><input type="number" class="fcIn" id="fc_staffCoc" value="12000" oninput="calc()"></div>
+        <div class="fc"><label>Equipo Swell</label><input type="number" class="fcIn" id="fc_equipoSwell" value="16000" oninput="calc()"></div>
+        <div class="st">Costos Fijos — Operaciones</div>
+        <div class="fc"><label>Gastos Operativos</label><input type="number" class="fcIn" id="fc_gastosOp" value="10000" oninput="calc()"></div>
+        <div class="fc"><label>Insumos comida</label><input type="number" class="fcIn" id="fc_insumos" value="10000" oninput="calc()"></div>
+        <div class="fc"><label>Mucamas/Blanquería</label><input type="number" class="fcIn" id="fc_mucamas" value="4000" oninput="calc()"></div>
+        <div class="fc"><label>Servicios</label><input type="number" class="fcIn" id="fc_servicios" value="7200" oninput="calc()"></div>
+        <div class="fc"><label>Leña</label><input type="number" class="fcIn" id="fc_lena" value="1500" oninput="calc()"></div>
+        <div class="fc"><label>Agua</label><input type="number" class="fcIn" id="fc_agua" value="2000" oninput="calc()"></div>
+        <div class="st">Costos Fijos — Pases & Marketing</div>
+        <div class="fc"><label>Pases vac. invierno</label><input type="number" class="fcIn" id="fc_pasesVac" value="3200" oninput="calc()"></div>
+        <div class="fc"><label>Pases gerencia</label><input type="number" class="fcIn" id="fc_pasesGer" value="3000" oninput="calc()"></div>
+        <div class="fc"><label>Marketing</label><input type="number" class="fcIn" id="fc_mkt" value="10000" oninput="calc()"></div>
+        <div style="border-top:2px solid #38bdf8; margin-top:8px; padding-top:6px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; font-weight:800; color:#38bdf8;">TOTAL FIJOS</span>
+          <span style="font-size:14px; font-weight:800; color:#38bdf8; font-variant-numeric:tabular-nums;" id="fixedTotal_v">$221,700</span>
         </div>
       </div>
 
@@ -188,6 +209,17 @@
           </div>
         </div>
         <div class="pn mt-4">
+          <div class="st">Contribución Marginal por Paquete</div>
+          <table class="pnl" id="cmTable"></table>
+        </div>
+        <div class="pn mt-4">
+          <div class="st">Break-Even Point (BEP)</div>
+          <table class="pnl" id="bepTable"></table>
+          <div class="mt-3">
+            <canvas id="chartBEP" height="180"></canvas>
+          </div>
+        </div>
+        <div class="pn mt-4">
           <div class="st">Profit vs Ocupación</div>
           <canvas id="chartLine" height="160"></canvas>
         </div>
@@ -248,11 +280,21 @@ const $ = id => document.getElementById(id);
 const fmt = n => n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:0}) : '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
 const pct = n => (n*100).toFixed(1) + '%';
 
-let chartBar, chartPie, chartLine, chartSens, chartBE, chartMC;
+let chartBar, chartPie, chartLine, chartSens, chartBE, chartMC, chartBEP;
+
+function getFixedCosts() {
+  const ids = ['fc_che','fc_swell','fc_casas','fc_staffMont','fc_staffCoc','fc_equipoSwell','fc_gastosOp','fc_insumos','fc_mucamas','fc_servicios','fc_lena','fc_agua','fc_pasesVac','fc_pasesGer','fc_mkt'];
+  const items = {};
+  let total = 0;
+  ids.forEach(id => { const v = +($(id).value || 0); items[id] = v; total += v; });
+  return { items, total };
+}
 
 function getInputs() {
+  const fc = getFixedCosts();
   return {
-    fixed: +$('fixedCosts').value,
+    fixed: fc.total,
+    fixedItems: fc.items,
     vPase: +$('vPase').value,
     vComision: +$('vComision').value,
     vTransfer: +$('vTransfer').value,
@@ -285,7 +327,7 @@ function calc() {
   const d = getInputs();
 
   // Update slider labels
-  $('fixedCosts_v').textContent = fmt(d.fixed);
+  $('fixedTotal_v').textContent = fmt(d.fixed);
   $('vPase_v').textContent = fmt(d.vPase);
   $('vComision_v').textContent = fmt(d.vComision);
   $('vTransfer_v').textContent = fmt(d.vTransfer);
@@ -339,7 +381,11 @@ function calc() {
     <tr><td class="l">Revenue Total</td><td class="val">${fmt(totalRevenue)}</td></tr>
     <tr><td class="l">Costos Variables</td><td class="val neg">${fmt(totalVar)}</td></tr>
     <tr class="sub"><td class="l">Margen de Contribución</td><td class="val">${fmt(totalMargin)}</td></tr>
-    <tr><td class="l">Costos Fijos</td><td class="val neg">${fmt(d.fixed)}</td></tr>
+    <tr><td class="l" style="font-weight:700">Costos Fijos</td><td class="val neg" style="font-weight:700">${fmt(d.fixed)}</td></tr>
+    <tr><td class="l" style="padding-left:14px;font-size:10px">Alquileres</td><td class="val neg" style="font-size:10px">${fmt((d.fixedItems.fc_che||0)+(d.fixedItems.fc_swell||0)+(d.fixedItems.fc_casas||0))}</td></tr>
+    <tr><td class="l" style="padding-left:14px;font-size:10px">Sueldos</td><td class="val neg" style="font-size:10px">${fmt((d.fixedItems.fc_staffMont||0)+(d.fixedItems.fc_staffCoc||0)+(d.fixedItems.fc_equipoSwell||0))}</td></tr>
+    <tr><td class="l" style="padding-left:14px;font-size:10px">Operaciones</td><td class="val neg" style="font-size:10px">${fmt((d.fixedItems.fc_gastosOp||0)+(d.fixedItems.fc_insumos||0)+(d.fixedItems.fc_mucamas||0)+(d.fixedItems.fc_servicios||0)+(d.fixedItems.fc_lena||0)+(d.fixedItems.fc_agua||0))}</td></tr>
+    <tr><td class="l" style="padding-left:14px;font-size:10px">Pases & Marketing</td><td class="val neg" style="font-size:10px">${fmt((d.fixedItems.fc_pasesVac||0)+(d.fixedItems.fc_pasesGer||0)+(d.fixedItems.fc_mkt||0))}</td></tr>
     <tr class="tot"><td>PROFIT</td><td class="val ${profit>=0?'pos':'neg'}">${fmt(profit)}</td></tr>
     <tr><td class="l" style="padding-top:8px">Margen Neto</td><td class="val ${profitMargin>=0?'pos':'neg'}">${pct(profitMargin)}</td></tr>
     <tr><td class="l">Ticket Promedio</td><td class="val">${fmt(avgTicket)}</td></tr>
@@ -347,6 +393,106 @@ function calc() {
     <tr><td class="l">Total Semanas</td><td class="val">${d.weeksAlta+d.weeksMedia+d.weeksBaja}</td></tr>
     <tr><td class="l">Capacidad Máxima</td><td class="val">${maxPaxTotal} pax</td></tr>
   `;
+
+  // Contribución Marginal por Paquete
+  const cvUnit = d.vPase + d.vTransfer + d.vEquipos + d.vComision;
+  const cmAlta = d.pAlta - cvUnit;
+  const cmMedia = d.pMedia - cvUnit;
+  const cmBaja = d.pBaja - cvUnit;
+  const cmPctAlta = d.pAlta > 0 ? cmAlta / d.pAlta : 0;
+  const cmPctMedia = d.pMedia > 0 ? cmMedia / d.pMedia : 0;
+  const cmPctBaja = d.pBaja > 0 ? cmBaja / d.pBaja : 0;
+
+  // BEP por temporada: cuántos pax de ESA temporada necesitarías para cubrir todos los fijos
+  const bepAlta = cmAlta > 0 ? Math.ceil(d.fixed / cmAlta) : Infinity;
+  const bepMedia = cmMedia > 0 ? Math.ceil(d.fixed / cmMedia) : Infinity;
+  const bepBaja = cmBaja > 0 ? Math.ceil(d.fixed / cmBaja) : Infinity;
+
+  // BEP ponderado (mix real de ventas)
+  const mixAlta = totalPax > 0 ? alta.pax / totalPax : 0;
+  const mixMedia = totalPax > 0 ? media.pax / totalPax : 0;
+  const mixBaja = totalPax > 0 ? baja.pax / totalPax : 0;
+  const cmPonderada = cmAlta * mixAlta + cmMedia * mixMedia + cmBaja * mixBaja;
+  const bepMix = cmPonderada > 0 ? Math.ceil(d.fixed / cmPonderada) : Infinity;
+  const bepMixOcc = maxPaxTotal > 0 ? bepMix / maxPaxTotal : 0;
+
+  // Pax en BEP por temporada (distribución proporcional al mix)
+  const bepPaxAlta = bepMix !== Infinity ? Math.round(bepMix * mixAlta) : '-';
+  const bepPaxMedia = bepMix !== Infinity ? Math.round(bepMix * mixMedia) : '-';
+  const bepPaxBaja = bepMix !== Infinity ? Math.round(bepMix * mixBaja) : '-';
+
+  $('cmTable').innerHTML = `
+    <tr>
+      <td class="l" style="font-weight:700"></td>
+      <td class="val" style="font-weight:700;color:#64748b"><span class="season-badge season-alta">Alta</span></td>
+      <td class="val" style="font-weight:700;color:#64748b"><span class="season-badge season-media">Media</span></td>
+      <td class="val" style="font-weight:700;color:#64748b"><span class="season-badge season-baja">Baja</span></td>
+    </tr>
+    <tr><td class="l">Precio de Venta</td><td class="val">${fmt(d.pAlta)}</td><td class="val">${fmt(d.pMedia)}</td><td class="val">${fmt(d.pBaja)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Pase</td><td class="val neg">${fmt(d.vPase)}</td><td class="val neg">${fmt(d.vPase)}</td><td class="val neg">${fmt(d.vPase)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Comisión</td><td class="val neg">${fmt(d.vComision)}</td><td class="val neg">${fmt(d.vComision)}</td><td class="val neg">${fmt(d.vComision)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Transfer</td><td class="val neg">${fmt(d.vTransfer)}</td><td class="val neg">${fmt(d.vTransfer)}</td><td class="val neg">${fmt(d.vTransfer)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Equipos</td><td class="val neg">${fmt(d.vEquipos)}</td><td class="val neg">${fmt(d.vEquipos)}</td><td class="val neg">${fmt(d.vEquipos)}</td></tr>
+    <tr class="sub"><td class="l">Costo Variable Unitario</td><td class="val neg">${fmt(cvUnit)}</td><td class="val neg">${fmt(cvUnit)}</td><td class="val neg">${fmt(cvUnit)}</td></tr>
+    <tr class="tot"><td>Contribución Marginal / Pax</td><td class="val pos">${fmt(cmAlta)}</td><td class="val pos">${fmt(cmMedia)}</td><td class="val pos">${fmt(cmBaja)}</td></tr>
+    <tr><td class="l">CM %</td><td class="val">${pct(cmPctAlta)}</td><td class="val">${pct(cmPctMedia)}</td><td class="val">${pct(cmPctBaja)}</td></tr>
+    <tr><td colspan="4" style="padding-top:10px;border-top:1px solid #334155"></td></tr>
+    <tr><td class="l">Pax vendidos</td><td class="val">${alta.pax}</td><td class="val">${media.pax}</td><td class="val">${baja.pax}</td></tr>
+    <tr><td class="l">CM Total Temporada</td><td class="val pos">${fmt(alta.margin)}</td><td class="val pos">${fmt(media.margin)}</td><td class="val pos">${fmt(baja.margin)}</td></tr>
+    <tr><td class="l">Mix de Ventas</td><td class="val">${pct(mixAlta)}</td><td class="val">${pct(mixMedia)}</td><td class="val">${pct(mixBaja)}</td></tr>
+  `;
+
+  const fmtBep = v => v === Infinity ? '∞' : v;
+  $('bepTable').innerHTML = `
+    <tr><td class="l" style="font-weight:700" colspan="2">Break-Even Point — Mix Ponderado</td></tr>
+    <tr><td class="l">CM Ponderada por Mix</td><td class="val pos">${fmt(cmPonderada)}</td></tr>
+    <tr><td class="l">Costos Fijos</td><td class="val neg">${fmt(d.fixed)}</td></tr>
+    <tr class="tot"><td>BEP Total</td><td class="val">${fmtBep(bepMix)} pax</td></tr>
+    <tr><td class="l">BEP como % de Capacidad</td><td class="val ${bepMixOcc<=1?'pos':'neg'}">${bepMix === Infinity ? '∞' : pct(bepMixOcc)}</td></tr>
+    <tr><td colspan="2" style="padding-top:10px;border-top:1px solid #334155"></td></tr>
+    <tr><td class="l" style="font-weight:700" colspan="2">Distribución del BEP por Temporada</td></tr>
+    <tr><td class="l"><span class="season-badge season-alta">Alta</span> pax en BEP</td><td class="val">${bepPaxAlta} / ${alta.maxPax}</td></tr>
+    <tr><td class="l"><span class="season-badge season-media">Media</span> pax en BEP</td><td class="val">${bepPaxMedia} / ${media.maxPax}</td></tr>
+    <tr><td class="l"><span class="season-badge season-baja">Baja</span> pax en BEP</td><td class="val">${bepPaxBaja} / ${baja.maxPax}</td></tr>
+    <tr><td colspan="2" style="padding-top:10px;border-top:1px solid #334155"></td></tr>
+    <tr><td class="l" style="font-weight:700" colspan="2">BEP si vendieras solo un paquete</td></tr>
+    <tr><td class="l"><span class="season-badge season-alta">Alta</span> (${fmt(cmAlta)}/pax)</td><td class="val">${fmtBep(bepAlta)} pax</td></tr>
+    <tr><td class="l"><span class="season-badge season-media">Media</span> (${fmt(cmMedia)}/pax)</td><td class="val">${fmtBep(bepMedia)} pax</td></tr>
+    <tr><td class="l"><span class="season-badge season-baja">Baja</span> (${fmt(cmBaja)}/pax)</td><td class="val">${fmtBep(bepBaja)} pax</td></tr>
+    <tr><td colspan="2" style="padding-top:10px;border-top:1px solid #334155"></td></tr>
+    <tr><td class="l">Ventas actuales</td><td class="val">${totalPax} pax</td></tr>
+    <tr><td class="l">Margen de Seguridad</td><td class="val ${totalPax>=bepMix?'pos':'neg'}">${bepMix === Infinity ? '-' : (totalPax - bepMix) + ' pax (' + pct((totalPax - bepMix) / totalPax) + ')'}</td></tr>
+  `;
+
+  // BEP Chart: revenue acumulado vs costos totales por pax vendido
+  const ctxBEP = $('chartBEP').getContext('2d');
+  if (chartBEP) chartBEP.destroy();
+  const bepRevPts = [], bepCostPts = [];
+  const stepMax = Math.max(maxPaxTotal, bepMix === Infinity ? maxPaxTotal : bepMix + 50);
+  for (let p = 0; p <= stepMax; p += Math.max(1, Math.floor(stepMax/40))) {
+    const avgPrice = cmPonderada + cvUnit; // weighted avg price
+    bepRevPts.push({ x: p, y: p * avgPrice });
+    bepCostPts.push({ x: p, y: d.fixed + p * cvUnit });
+  }
+  chartBEP = new Chart(ctxBEP, {
+    type: 'line',
+    data: {
+      datasets: [
+        { label: 'Revenue', data: bepRevPts, borderColor: '#38bdf8', pointRadius: 0, tension: 0 },
+        { label: 'Costos Totales', data: bepCostPts, borderColor: '#f87171', pointRadius: 0, tension: 0, borderDash: [5,3] },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 10 } } },
+      },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Pax vendidos', color: '#64748b' }, ticks: { color: '#94a3b8' } },
+        y: { ticks: { color: '#94a3b8', callback: v => '$'+v.toLocaleString() }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
 
   // Charts
   renderCharts(d, alta, media, baja, totalRevenue, totalVar, profit);

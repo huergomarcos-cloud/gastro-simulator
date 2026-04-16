@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snackz — P&L Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+    .slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .slider-row label { min-width: 140px; font-size: 12px; color: #94a3b8; }
+    .slider-row input[type=range] { flex: 1; accent-color: #38bdf8; height: 6px; }
+    .slider-row .val { min-width: 60px; text-align: right; font-size: 13px; font-weight: 600; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin: 12px 0 6px; font-weight: 700; }
+    .pnl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pnl-table td { padding: 3px 8px; }
+    .pnl-table .label { color: #94a3b8; }
+    .pnl-table .value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+    .pnl-table .subtotal { border-top: 1px solid #334155; font-weight: 700; color: #f1f5f9; }
+    .pnl-table .total { border-top: 2px solid #38bdf8; font-weight: 800; color: #38bdf8; font-size: 14px; }
+    .pnl-table .pct { color: #64748b; font-size: 11px; }
+    .pnl-table .indent { padding-left: 20px; }
+    .pnl-table .negative { color: #f87171; }
+    .pnl-table .positive { color: #4ade80; }
+    .kpi-card { background: #1e293b; border-radius: 8px; padding: 12px 16px; text-align: center; }
+    .kpi-card .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
+    .kpi-card .kpi-value { font-size: 22px; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .tab-btn { padding: 6px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: none; background: transparent; color: #64748b; }
+    .tab-btn.active { background: #1e293b; color: #38bdf8; }
+    .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+    .day-grid .day-label { font-size: 10px; color: #64748b; text-align: center; }
+    .day-grid input { width: 100%; text-align: center; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; padding: 4px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .season-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 8px; }
+    .season-grid .month-cell { text-align: center; }
+    .season-grid .month-label { font-size: 9px; color: #64748b; }
+    .season-grid input { width: 100%; text-align: center; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; padding: 3px 1px; font-size: 11px; }
+    .panel { background: #1e293b; border-radius: 10px; padding: 16px; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .cf-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .cf-table th { text-align: left; color: #64748b; font-size: 10px; text-transform: uppercase; padding: 4px 6px; border-bottom: 1px solid #334155; position: sticky; top: 0; background: #1e293b; }
+    .cf-table td { padding: 3px 6px; font-variant-numeric: tabular-nums; }
+    .cf-table tr:hover { background: #334155; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-[1600px] mx-auto p-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-xl font-bold text-white">SNACKZ</h1>
+        <p class="text-xs text-slate-500">P&L + Cash Flow Simulator</p>
+      </div>
+      <div class="flex gap-2">
+        <button class="tab-btn active" onclick="showTab('pnl')">P&L</button>
+        <button class="tab-btn" onclick="showTab('cashflow')">Cash Flow</button>
+        <button class="tab-btn" onclick="showTab('projection')">60 Meses</button>
+        <button class="tab-btn" onclick="exportExcel()" style="background:#065f46;color:#4ade80">📥 Excel</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-[380px_1fr] gap-4">
+      <!-- LEFT PANEL: INPUTS -->
+      <div class="space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto pr-2">
+
+        <!-- OPERACIÓN -->
+        <div class="panel">
+          <div class="section-title">Operación</div>
+          <div class="slider-row">
+            <label>Capacidad</label>
+            <input type="range" id="capacidad" min="10" max="80" step="1" value="28">
+            <span class="val" id="capacidad_v">28 pax</span>
+          </div>
+
+          <div class="section-title" style="margin-top:10px">Rotaciones Almuerzo</div>
+          <div class="day-grid">
+            <div class="day-label">Lun</div><div class="day-label">Mar</div><div class="day-label">Mié</div>
+            <div class="day-label">Jue</div><div class="day-label">Vie</div><div class="day-label">Sáb</div><div class="day-label">Dom</div>
+            <input type="number" id="rotAlm0" min="0" max="5" step="0.1" value="0" disabled style="opacity:0.3">
+            <input type="number" id="rotAlm1" min="0" max="5" step="0.1" value="0.5">
+            <input type="number" id="rotAlm2" min="0" max="5" step="0.1" value="0.6">
+            <input type="number" id="rotAlm3" min="0" max="5" step="0.1" value="0.8">
+            <input type="number" id="rotAlm4" min="0" max="5" step="0.1" value="0.7">
+            <input type="number" id="rotAlm5" min="0" max="5" step="0.1" value="0.5">
+            <input type="number" id="rotAlm6" min="0" max="5" step="0.1" value="0.6">
+          </div>
+          <div class="text-xs text-slate-500 mb-2">Prom: <span id="rotAlmProm" class="text-slate-300">—</span> · Covers/sem: <span id="coversAlmSem" class="text-slate-300">—</span></div>
+
+          <div class="section-title">Rotaciones Cena</div>
+          <div class="day-grid">
+            <div class="day-label">Lun</div><div class="day-label">Mar</div><div class="day-label">Mié</div>
+            <div class="day-label">Jue</div><div class="day-label">Vie</div><div class="day-label">Sáb</div><div class="day-label">Dom</div>
+            <input type="number" id="rotCena0" min="0" max="5" step="0.1" value="0" disabled style="opacity:0.3">
+            <input type="number" id="rotCena1" min="0" max="5" step="0.1" value="0.8">
+            <input type="number" id="rotCena2" min="0" max="5" step="0.1" value="1.0">
+            <input type="number" id="rotCena3" min="0" max="5" step="0.1" value="1.8">
+            <input type="number" id="rotCena4" min="0" max="5" step="0.1" value="2.8">
+            <input type="number" id="rotCena5" min="0" max="5" step="0.1" value="2.5">
+            <input type="number" id="rotCena6" min="0" max="5" step="0.1" value="1.5">
+          </div>
+          <div class="text-xs text-slate-500 mb-2">Prom: <span id="rotCenaProm" class="text-slate-300">—</span> · Covers/sem: <span id="coversCenaSem" class="text-slate-300">—</span></div>
+
+          <div class="section-title">Estacionalidad (%)</div>
+          <div class="season-grid">
+            <div class="month-cell"><div class="month-label">Ene</div><input type="number" id="seas0" min="0" max="200" step="5" value="55"></div>
+            <div class="month-cell"><div class="month-label">Feb</div><input type="number" id="seas1" min="0" max="200" step="5" value="65"></div>
+            <div class="month-cell"><div class="month-label">Mar</div><input type="number" id="seas2" min="0" max="200" step="5" value="85"></div>
+            <div class="month-cell"><div class="month-label">Abr</div><input type="number" id="seas3" min="0" max="200" step="5" value="90"></div>
+            <div class="month-cell"><div class="month-label">May</div><input type="number" id="seas4" min="0" max="200" step="5" value="95"></div>
+            <div class="month-cell"><div class="month-label">Jun</div><input type="number" id="seas5" min="0" max="200" step="5" value="100"></div>
+          </div>
+          <div class="season-grid">
+            <div class="month-cell"><div class="month-label">Jul</div><input type="number" id="seas6" min="0" max="200" step="5" value="105"></div>
+            <div class="month-cell"><div class="month-label">Ago</div><input type="number" id="seas7" min="0" max="200" step="5" value="100"></div>
+            <div class="month-cell"><div class="month-label">Sep</div><input type="number" id="seas8" min="0" max="200" step="5" value="95"></div>
+            <div class="month-cell"><div class="month-label">Oct</div><input type="number" id="seas9" min="0" max="200" step="5" value="90"></div>
+            <div class="month-cell"><div class="month-label">Nov</div><input type="number" id="seas10" min="0" max="200" step="5" value="95"></div>
+            <div class="month-cell"><div class="month-label">Dic</div><input type="number" id="seas11" min="0" max="200" step="5" value="80"></div>
+          </div>
+        </div>
+
+        <!-- PRICING -->
+        <div class="panel">
+          <div class="section-title">Pricing</div>
+          <div class="slider-row">
+            <label>Ticket Almuerzo</label>
+            <input type="range" id="ticketAlm" min="5" max="60" step="1" value="18">
+            <span class="val" id="ticketAlm_v">$18</span>
+          </div>
+          <div class="slider-row">
+            <label>Ticket Cena</label>
+            <input type="range" id="ticketCena" min="10" max="80" step="1" value="35">
+            <span class="val" id="ticketCena_v">$35</span>
+          </div>
+          <div class="slider-row">
+            <label>% Negro</label>
+            <input type="range" id="pctNegro" min="0" max="60" step="1" value="20">
+            <span class="val" id="pctNegro_v">20%</span>
+          </div>
+        </div>
+
+        <!-- COSTOS VARIABLES -->
+        <div class="panel">
+          <div class="section-title">Costos Variables</div>
+          <div class="slider-row">
+            <label>Food Cost</label>
+            <input type="range" id="foodCost" min="15" max="45" step="0.5" value="25">
+            <span class="val" id="foodCost_v">25%</span>
+          </div>
+          <div class="slider-row">
+            <label>Paper Cost</label>
+            <input type="range" id="paperCost" min="0" max="8" step="0.5" value="2.5">
+            <span class="val" id="paperCost_v">2.5%</span>
+          </div>
+        </div>
+
+        <!-- STAFF -->
+        <div class="panel">
+          <div class="section-title">Staff</div>
+          <div class="slider-row">
+            <label>Staff Almuerzo</label>
+            <input type="range" id="staffAlm" min="0" max="15" step="1" value="3">
+            <span class="val" id="staffAlm_v">3</span>
+          </div>
+          <div class="slider-row">
+            <label>Staff Cena</label>
+            <input type="range" id="staffCena" min="1" max="20" step="1" value="6">
+            <span class="val" id="staffCena_v">6</span>
+          </div>
+          <div class="slider-row">
+            <label>Sueldo / emp.</label>
+            <input type="range" id="sueldo" min="500" max="3000" step="50" value="1150">
+            <span class="val" id="sueldo_v">$1,150</span>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">Total staff: <span id="staffTotal" class="text-slate-300">9</span> · Nómina: <span id="nomina" class="text-slate-300">—</span></div>
+        </div>
+
+        <!-- COSTOS FIJOS -->
+        <div class="panel">
+          <div class="section-title">Costos Fijos</div>
+          <div class="slider-row">
+            <label>Alquiler</label>
+            <input type="range" id="alquiler" min="1000" max="8000" step="100" value="3500">
+            <span class="val" id="alquiler_v">$3,500</span>
+          </div>
+          <div class="slider-row">
+            <label>Servicios</label>
+            <input type="range" id="servicios" min="200" max="3000" step="50" value="800">
+            <span class="val" id="servicios_v">$800</span>
+          </div>
+          <div class="slider-row">
+            <label>OPEX / Mant.</label>
+            <input type="range" id="opexPct" min="0" max="8" step="0.5" value="2">
+            <span class="val" id="opexPct_v">2%</span>
+          </div>
+          <div class="slider-row">
+            <label>Marketing</label>
+            <input type="range" id="mktPct" min="0" max="10" step="0.5" value="3">
+            <span class="val" id="mktPct_v">3%</span>
+          </div>
+          <div class="slider-row">
+            <label>Processing</label>
+            <input type="range" id="processingPct" min="0" max="5" step="0.1" value="1.5">
+            <span class="val" id="processingPct_v">1.5%</span>
+          </div>
+        </div>
+
+        <!-- SG&A -->
+        <div class="panel">
+          <div class="section-title">SG&A</div>
+          <div class="slider-row">
+            <label>Est. Contable</label>
+            <input type="range" id="contable" min="100" max="1500" step="50" value="500">
+            <span class="val" id="contable_v">$500</span>
+          </div>
+          <div class="slider-row">
+            <label>Software / Misc</label>
+            <input type="range" id="software" min="50" max="1000" step="50" value="300">
+            <span class="val" id="software_v">$300</span>
+          </div>
+        </div>
+
+        <!-- IMPUESTOS -->
+        <div class="panel">
+          <div class="section-title">Impuestos</div>
+          <div class="slider-row">
+            <label>IVA</label>
+            <input type="range" id="ivaPct" min="0" max="30" step="0.5" value="21">
+            <span class="val" id="ivaPct_v">21%</span>
+          </div>
+          <div class="slider-row">
+            <label>IIBB</label>
+            <input type="range" id="iibbPct" min="0" max="8" step="0.1" value="3.5">
+            <span class="val" id="iibbPct_v">3.5%</span>
+          </div>
+          <div class="slider-row">
+            <label>% Compras Blanco</label>
+            <input type="range" id="comprasBlanco" min="0" max="100" step="5" value="40">
+            <span class="val" id="comprasBlanco_v">40%</span>
+          </div>
+          <div class="slider-row">
+            <label>Déb/Créd Banc.</label>
+            <input type="range" id="debCredPct" min="0" max="3" step="0.1" value="1.2">
+            <span class="val" id="debCredPct_v">1.2%</span>
+          </div>
+          <div class="slider-row">
+            <label>Ganancias</label>
+            <input type="range" id="gananciasPct" min="0" max="45" step="1" value="35">
+            <span class="val" id="gananciasPct_v">35%</span>
+          </div>
+        </div>
+
+        <!-- INVERSIÓN / SPLIT -->
+        <div class="panel">
+          <div class="section-title">Inversión / Split</div>
+          <div class="slider-row">
+            <label>Inversión Total</label>
+            <input type="range" id="inversion" min="50000" max="500000" step="5000" value="200000">
+            <span class="val" id="inversion_v">$200K</span>
+          </div>
+          <div class="slider-row">
+            <label>Split Pre-Payback</label>
+            <input type="range" id="splitPre" min="50" max="100" step="5" value="80">
+            <span class="val" id="splitPre_v">80%</span>
+          </div>
+          <div class="slider-row">
+            <label>Split Post-Payback</label>
+            <input type="range" id="splitPost" min="0" max="50" step="5" value="25">
+            <span class="val" id="splitPost_v">25%</span>
+          </div>
+          <div class="slider-row">
+            <label>Mes Apertura</label>
+            <input type="range" id="mesApertura" min="1" max="12" step="1" value="1">
+            <span class="val" id="mesApertura_v">Ene</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: OUTPUT -->
+      <div class="space-y-4">
+        <!-- KPIs -->
+        <div class="grid grid-cols-5 gap-3" id="kpis">
+          <div class="kpi-card">
+            <div class="kpi-label">Revenue/mes</div>
+            <div class="kpi-value" id="kpi_rev">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">EBITDA/mes</div>
+            <div class="kpi-value" id="kpi_ebitda">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Neto/mes</div>
+            <div class="kpi-value" id="kpi_neto">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Net Margin</div>
+            <div class="kpi-value" id="kpi_margin">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Payback</div>
+            <div class="kpi-value" id="kpi_payback">—</div>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT -->
+        <div id="tab_pnl" class="panel">
+          <div class="text-xs text-slate-500 mb-2">Promedio mensual anual (12 meses con estacionalidad)</div>
+          <table class="pnl-table" id="pnlTable"></table>
+        </div>
+
+        <div id="tab_cashflow" class="panel" style="display:none">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-300 mb-2">Cash Flow — Negro</h3>
+              <table class="pnl-table" id="cfNegroTable"></table>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-300 mb-2">Cash Flow — Blanco</h3>
+              <table class="pnl-table" id="cfBlancoTable"></table>
+            </div>
+          </div>
+          <div class="mt-4">
+            <h3 class="text-sm font-bold text-slate-300 mb-2">Cash Flow Total</h3>
+            <table class="pnl-table" id="cfTotalTable"></table>
+          </div>
+        </div>
+
+        <div id="tab_projection" class="panel" style="display:none">
+          <div style="height:300px; margin-bottom:16px">
+            <canvas id="chartProjection"></canvas>
+          </div>
+          <div style="max-height:400px; overflow-y:auto">
+            <table class="cf-table" id="projectionTable"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ===== HELPERS =====
+const $ = id => document.getElementById(id);
+const fmt = n => n < 0 ? `-$${Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:0})}` : `$${n.toLocaleString('en-US', {maximumFractionDigits:0})}`;
+const fmtK = n => { const a = Math.abs(n); const s = n < 0 ? '-' : ''; if (a >= 1e6) return `${s}$${(a/1e6).toFixed(1)}M`; if (a >= 1e3) return `${s}$${(a/1e3).toFixed(a>=1e4?0:1)}K`; return `${s}$${a.toFixed(0)}`; };
+const fmtPct = n => `${n.toFixed(1)}%`;
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// ===== INPUTS =====
+function getInputs() {
+  const rotAlm = Array.from({length:7}, (_,i) => parseFloat($(`rotAlm${i}`).value) || 0);
+  const rotCena = Array.from({length:7}, (_,i) => parseFloat($(`rotCena${i}`).value) || 0);
+  const seas = Array.from({length:12}, (_,i) => (parseFloat($(`seas${i}`).value) || 100) / 100);
+
+  return {
+    capacidad: +$('capacidad').value,
+    rotAlm, rotCena, seas,
+    ticketAlm: +$('ticketAlm').value,
+    ticketCena: +$('ticketCena').value,
+    pctNegro: +$('pctNegro').value / 100,
+    foodCost: +$('foodCost').value / 100,
+    paperCost: +$('paperCost').value / 100,
+    staffAlm: +$('staffAlm').value,
+    staffCena: +$('staffCena').value,
+    sueldo: +$('sueldo').value,
+    alquiler: +$('alquiler').value,
+    servicios: +$('servicios').value,
+    opexPct: +$('opexPct').value / 100,
+    mktPct: +$('mktPct').value / 100,
+    processingPct: +$('processingPct').value / 100,
+    contable: +$('contable').value,
+    software: +$('software').value,
+    ivaPct: +$('ivaPct').value / 100,
+    iibbPct: +$('iibbPct').value / 100,
+    comprasBlanco: +$('comprasBlanco').value / 100,
+    debCredPct: +$('debCredPct').value / 100,
+    gananciasPct: +$('gananciasPct').value / 100,
+    inversion: +$('inversion').value,
+    splitPre: +$('splitPre').value / 100,
+    splitPost: +$('splitPost').value / 100,
+    mesApertura: +$('mesApertura').value,
+  };
+}
+
+// ===== P&L ENGINE =====
+function calcMonth(inp, monthIndex) {
+  // monthIndex 0-59 → calendar month
+  const calMonth = (inp.mesApertura - 1 + monthIndex) % 12;
+  const seas = inp.seas[calMonth];
+
+  // Covers
+  const sumRotAlm = inp.rotAlm.reduce((a,b) => a+b, 0);
+  const sumRotCena = inp.rotCena.reduce((a,b) => a+b, 0);
+  const coversAlmSem = inp.capacidad * sumRotAlm;
+  const coversCenaSem = inp.capacidad * sumRotCena;
+  const coversAlm = coversAlmSem * 4.33 * seas;
+  const coversCena = coversCenaSem * 4.33 * seas;
+  const coversTotal = coversAlm + coversCena;
+
+  // Revenue
+  const revAlm = coversAlm * inp.ticketAlm;
+  const revCena = coversCena * inp.ticketCena;
+  const revTotal = revAlm + revCena;
+  const revNegro = revTotal * inp.pctNegro;
+  const revBlanco = revTotal * (1 - inp.pctNegro);
+
+  // CMV
+  const foodCost = revTotal * inp.foodCost;
+  const paperCost = revTotal * inp.paperCost;
+  const totalCMV = foodCost + paperCost;
+  const grossProfit = revTotal - totalCMV;
+  const grossMargin = revTotal > 0 ? grossProfit / revTotal : 0;
+
+  // Cost of Revenue
+  const crewLabor = (inp.staffAlm + inp.staffCena) * inp.sueldo;
+  const occupancy = inp.alquiler + inp.servicios;
+  const opex = revTotal * inp.opexPct;
+  const marketing = revTotal * inp.mktPct;
+  const processing = revBlanco * inp.processingPct;
+  const totalCostRev = crewLabor + occupancy + opex + marketing + processing;
+
+  const storeOpIncome = grossProfit - totalCostRev;
+  const storeOpMargin = revTotal > 0 ? storeOpIncome / revTotal : 0;
+
+  // SG&A
+  const totalSGA = inp.contable + inp.software;
+  const ebitda = storeOpIncome - totalSGA;
+  const ebitdaMargin = revTotal > 0 ? ebitda / revTotal : 0;
+
+  // Impuestos (solo sobre blanco)
+  const baseImp = revBlanco / (1 + inp.ivaPct);
+  const iibb = baseImp * inp.iibbPct;
+  const ivaDebito = baseImp * inp.ivaPct;
+  const costosConIVA = (foodCost + paperCost + inp.servicios + inp.software) * inp.comprasBlanco;
+  const ivaCredito = costosConIVA * inp.ivaPct / (1 + inp.ivaPct);
+  const ivaNeto = Math.max(0, ivaDebito - ivaCredito);
+  const debCred = revBlanco * inp.debCredPct;
+  const totalImpOp = iibb + ivaNeto + debCred;
+
+  const resultadoPreGan = ebitda - totalImpOp;
+  const impGanancias = Math.max(0, resultadoPreGan) * inp.gananciasPct;
+  const resultadoNeto = resultadoPreGan - impGanancias;
+  const netMargin = revTotal > 0 ? resultadoNeto / revTotal : 0;
+
+  // Cash Flow Negro
+  const cfNegroIngreso = revNegro;
+  const cfNegroGastoCMV = totalCMV * inp.pctNegro;
+  const cfNegroNeto = cfNegroIngreso - cfNegroGastoCMV;
+
+  // Cash Flow Blanco
+  const cfBlancoIngreso = revBlanco;
+  const cfBlancoGastoCMV = totalCMV * (1 - inp.pctNegro);
+  const cfBlancoGastoOp = crewLabor + occupancy + opex + marketing + processing + totalSGA;
+  const cfBlancoImp = totalImpOp + impGanancias;
+  const cfBlancoNeto = cfBlancoIngreso - cfBlancoGastoCMV - cfBlancoGastoOp - cfBlancoImp;
+
+  const cashMes = cfNegroNeto + cfBlancoNeto;
+
+  return {
+    calMonth, seas, coversAlm, coversCena, coversTotal,
+    revAlm, revCena, revTotal, revNegro, revBlanco,
+    foodCost, paperCost, totalCMV, grossProfit, grossMargin,
+    crewLabor, occupancy, opex, marketing, processing, totalCostRev,
+    storeOpIncome, storeOpMargin,
+    totalSGA, ebitda, ebitdaMargin,
+    baseImp, iibb, ivaDebito, ivaCredito, ivaNeto, debCred, totalImpOp,
+    resultadoPreGan, impGanancias, resultadoNeto, netMargin,
+    cfNegroIngreso, cfNegroGastoCMV, cfNegroNeto,
+    cfBlancoIngreso, cfBlancoGastoCMV, cfBlancoGastoOp, cfBlancoImp, cfBlancoNeto,
+    cashMes
+  };
+}
+
+function calc60Months(inp) {
+  const months = [];
+  let cashAcum = -inp.inversion;
+  let paybackMonth = null;
+  let invAcum = 0;
+
+  for (let i = 0; i < 60; i++) {
+    const m = calcMonth(inp, i);
+    cashAcum += m.cashMes;
+
+    const prePayback = invAcum < inp.inversion;
+    const splitPct = prePayback ? inp.splitPre : inp.splitPost;
+    const invShare = m.resultadoNeto > 0 ? m.resultadoNeto * splitPct : 0;
+    const opShare = m.resultadoNeto > 0 ? m.resultadoNeto * (1 - splitPct) : m.resultadoNeto;
+    invAcum += invShare;
+
+    if (paybackMonth === null && cashAcum >= 0) paybackMonth = i + 1;
+
+    months.push({
+      ...m, monthNum: i + 1, cashAcum, invShare, opShare, invAcum,
+      prePayback, splitPct
+    });
+  }
+  return { months, paybackMonth };
+}
+
+// ===== RENDER P&L =====
+function renderPnL(m) {
+  const row = (label, val, cls='', isMoney=true) => {
+    const v = isMoney ? fmt(Math.round(val)) : fmtPct(val * 100);
+    const colorCls = isMoney && val < 0 ? 'negative' : (isMoney && val > 0 && cls.includes('total') ? 'positive' : '');
+    return `<tr class="${cls}"><td class="label ${cls.includes('indent')?'indent':''}">${label}</td><td class="value ${colorCls}">${v}</td></tr>`;
+  };
+
+  let html = '';
+  // Revenue
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:8px">REVENUE</td></tr>`;
+  html += row('Covers Total', m.coversTotal, 'indent', false);
+  html += row('  Almuerzo', m.coversAlm, 'indent', false);
+  html += row('  Cena', m.coversCena, 'indent', false);
+  html += row('Revenue Total', m.revTotal, 'subtotal');
+  html += row('  Rev. Negro (efectivo)', m.revNegro, 'indent');
+  html += row('  Rev. Blanco (bancos)', m.revBlanco, 'indent');
+
+  // CMV
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">COSTO MERCADERÍA</td></tr>`;
+  html += row('  Food Cost', -m.foodCost, 'indent');
+  html += row('  Paper Cost', -m.paperCost, 'indent');
+  html += row('Total CMV', -m.totalCMV, 'subtotal');
+  html += row('Gross Profit', m.grossProfit, 'subtotal');
+  html += row('  Gross Margin', m.grossMargin, 'indent pct', false);
+
+  // Cost of Revenue
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">COST OF REVENUE</td></tr>`;
+  html += row('  Crew Labor', -m.crewLabor, 'indent');
+  html += row('  Occupancy', -m.occupancy, 'indent');
+  html += row('  OPEX / Mant.', -m.opex, 'indent');
+  html += row('  Marketing', -m.marketing, 'indent');
+  html += row('  Processing', -m.processing, 'indent');
+  html += row('Total Cost of Revenue', -m.totalCostRev, 'subtotal');
+  html += row('Store Operating Income', m.storeOpIncome, 'subtotal');
+  html += row('  Store Op. Margin', m.storeOpMargin, 'indent pct', false);
+
+  // SG&A
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">SG&A</td></tr>`;
+  html += row('  Estudio contable', -m.contable, 'indent');
+  html += row('  Software / misc', -m.software, 'indent');
+  html += row('Total SG&A', -m.totalSGA, 'subtotal');
+
+  // EBITDA
+  html += row('EBITDA', m.ebitda, 'subtotal');
+  html += row('  EBITDA Margin', m.ebitdaMargin, 'indent pct', false);
+
+  // Impuestos
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">IMPUESTOS (s/ blanco)</td></tr>`;
+  html += row('  Base Imponible', m.baseImp, 'indent');
+  html += row('  IIBB', -m.iibb, 'indent');
+  html += row('  IVA Débito', -m.ivaDebito, 'indent');
+  html += row('  IVA Crédito', m.ivaCredito, 'indent');
+  html += row('  IVA Neto', -m.ivaNeto, 'indent');
+  html += row('  Déb. y Créd. Banc.', -m.debCred, 'indent');
+  html += row('Total Imp. Operativos', -m.totalImpOp, 'subtotal');
+
+  // Resultado
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">RESULTADO</td></tr>`;
+  html += row('Resultado pre-Ganancias', m.resultadoPreGan, 'subtotal');
+  html += row('  Imp. Ganancias', -m.impGanancias, 'indent');
+  html += row('RESULTADO NETO', m.resultadoNeto, 'total');
+  html += row('  Net Margin', m.netMargin, 'indent pct', false);
+
+  // Covers info as pct display fix
+  html = html.replace(/Covers Total<\/td><td class="value ">/, 'Covers Total</td><td class="value ">');
+  // Fix covers display to show as numbers not %
+  const coversRows = [
+    {label: 'Covers Total', val: Math.round(m.coversTotal)},
+    {label: '  Almuerzo', val: Math.round(m.coversAlm)},
+    {label: '  Cena', val: Math.round(m.coversCena)},
+  ];
+
+  // Rebuild the revenue section properly
+  html = '';
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:8px">REVENUE</td></tr>`;
+  html += `<tr class="indent"><td class="label indent">Covers Total</td><td class="value">${Math.round(m.coversTotal).toLocaleString()}</td></tr>`;
+  html += `<tr class="indent"><td class="label indent" style="padding-left:30px">Almuerzo</td><td class="value" style="color:#94a3b8">${Math.round(m.coversAlm).toLocaleString()}</td></tr>`;
+  html += `<tr class="indent"><td class="label indent" style="padding-left:30px">Cena</td><td class="value" style="color:#94a3b8">${Math.round(m.coversCena).toLocaleString()}</td></tr>`;
+  html += row('Revenue Total', m.revTotal, 'subtotal');
+  html += row('  Rev. Negro (efectivo)', m.revNegro, 'indent');
+  html += row('  Rev. Blanco (bancos)', m.revBlanco, 'indent');
+
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">COSTO MERCADERÍA</td></tr>`;
+  html += row('  Food Cost', -m.foodCost, 'indent');
+  html += row('  Paper Cost', -m.paperCost, 'indent');
+  html += row('Total CMV', -m.totalCMV, 'subtotal');
+  html += row('Gross Profit', m.grossProfit, 'subtotal');
+  html += `<tr class="indent pct"><td class="label indent">  Gross Margin</td><td class="value pct">${fmtPct(m.grossMargin*100)}</td></tr>`;
+
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">COST OF REVENUE</td></tr>`;
+  html += row('  Crew Labor', -m.crewLabor, 'indent');
+  html += row('  Occupancy', -m.occupancy, 'indent');
+  html += row('  OPEX / Mant.', -m.opex, 'indent');
+  html += row('  Marketing', -m.marketing, 'indent');
+  html += row('  Processing', -m.processing, 'indent');
+  html += row('Total Cost of Revenue', -m.totalCostRev, 'subtotal');
+  html += row('Store Operating Income', m.storeOpIncome, 'subtotal');
+  html += `<tr class="indent pct"><td class="label indent">  Store Op. Margin</td><td class="value pct">${fmtPct(m.storeOpMargin*100)}</td></tr>`;
+
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">SG&A</td></tr>`;
+  html += row('  Estudio contable', -m.contable, 'indent');
+  html += row('  Software / misc', -m.software, 'indent');
+  html += row('Total SG&A', -m.totalSGA, 'subtotal');
+
+  html += row('EBITDA', m.ebitda, 'subtotal');
+  html += `<tr class="indent pct"><td class="label indent">  EBITDA Margin</td><td class="value pct">${fmtPct(m.ebitdaMargin*100)}</td></tr>`;
+
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">IMPUESTOS (s/ blanco)</td></tr>`;
+  html += row('  Base Imponible', m.baseImp, 'indent');
+  html += row('  IIBB', -m.iibb, 'indent');
+  html += row('  IVA Débito', -m.ivaDebito, 'indent');
+  html += row('  IVA Crédito', m.ivaCredito, 'indent');
+  html += row('  IVA Neto', -m.ivaNeto, 'indent');
+  html += row('  Déb. y Créd. Banc.', -m.debCred, 'indent');
+  html += row('Total Imp. Operativos', -m.totalImpOp, 'subtotal');
+
+  html += `<tr><td colspan="2" class="section-title" style="padding-top:12px">RESULTADO</td></tr>`;
+  html += row('Resultado pre-Ganancias', m.resultadoPreGan, 'subtotal');
+  html += row('  Imp. Ganancias', -m.impGanancias, 'indent');
+  html += row('RESULTADO NETO', m.resultadoNeto, 'total');
+  html += `<tr class="indent pct"><td class="label indent">  Net Margin</td><td class="value pct">${fmtPct(m.netMargin*100)}</td></tr>`;
+
+  $('pnlTable').innerHTML = html;
+}
+
+// ===== RENDER CASH FLOW =====
+function renderCashFlow(m, inp) {
+  const row = (label, val, cls='') => {
+    const colorCls = val < 0 ? 'negative' : (val > 0 ? 'positive' : '');
+    return `<tr class="${cls}"><td class="label ${cls.includes('indent')?'indent':''}">${label}</td><td class="value ${colorCls}">${fmt(Math.round(val))}</td></tr>`;
+  };
+
+  // Negro
+  let negro = '';
+  negro += row('Ingreso Negro', m.cfNegroIngreso);
+  negro += row('  CMV Negro', -m.cfNegroGastoCMV, 'indent');
+  negro += row('Cash Negro Neto', m.cfNegroNeto, 'subtotal');
+  $('cfNegroTable').innerHTML = negro;
+
+  // Blanco
+  let blanco = '';
+  blanco += row('Ingreso Blanco', m.cfBlancoIngreso);
+  blanco += row('  CMV Blanco', -m.cfBlancoGastoCMV, 'indent');
+  blanco += row('  Gastos Operativos', -m.cfBlancoGastoOp, 'indent');
+  blanco += row('  Impuestos', -m.cfBlancoImp, 'indent');
+  blanco += row('Cash Blanco Neto', m.cfBlancoNeto, 'subtotal');
+  $('cfBlancoTable').innerHTML = blanco;
+
+  // Total
+  let total = '';
+  total += row('Cash Negro', m.cfNegroNeto);
+  total += row('Cash Blanco', m.cfBlancoNeto);
+  total += row('Cash Total Mes', m.cashMes, 'subtotal');
+  $('cfTotalTable').innerHTML = total;
+}
+
+// ===== RENDER PROJECTION =====
+let projChart = null;
+function renderProjection(data) {
+  const { months, paybackMonth } = data;
+
+  // Table
+  let html = '<thead><tr><th>#</th><th>Mes</th><th>Revenue</th><th>EBITDA</th><th>Neto</th><th>CF Negro</th><th>CF Blanco</th><th>Cash Acum.</th><th>Inversor</th><th>Operador</th></tr></thead><tbody>';
+  for (const m of months) {
+    const isPayback = m.monthNum === paybackMonth;
+    const rowStyle = isPayback ? 'style="background:#1e3a2f"' : '';
+    html += `<tr ${rowStyle}>
+      <td>${m.monthNum}</td>
+      <td>${MONTHS[m.calMonth]}</td>
+      <td>${fmtK(m.revTotal)}</td>
+      <td class="${m.ebitda<0?'negative':'positive'}">${fmtK(m.ebitda)}</td>
+      <td class="${m.resultadoNeto<0?'negative':'positive'}">${fmtK(m.resultadoNeto)}</td>
+      <td class="positive">${fmtK(m.cfNegroNeto)}</td>
+      <td class="${m.cfBlancoNeto<0?'negative':'positive'}">${fmtK(m.cfBlancoNeto)}</td>
+      <td class="${m.cashAcum<0?'negative':'positive'}">${fmtK(m.cashAcum)}</td>
+      <td>${fmtK(m.invShare)}</td>
+      <td class="${m.opShare<0?'negative':'positive'}">${fmtK(m.opShare)}</td>
+    </tr>`;
+  }
+  html += '</tbody>';
+  $('projectionTable').innerHTML = html;
+
+  // Chart
+  const labels = months.map(m => `${m.monthNum}`);
+  const cashAcumData = months.map(m => Math.round(m.cashAcum));
+  const netoData = months.map(m => Math.round(m.resultadoNeto));
+  const negroData = months.map(m => Math.round(m.cfNegroNeto));
+  const blancoData = months.map(m => Math.round(m.cfBlancoNeto));
+
+  if (projChart) projChart.destroy();
+  projChart = new Chart($('chartProjection'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Cash Acumulado', data: cashAcumData, borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+        { label: 'Neto/mes', data: netoData, borderColor: '#4ade80', borderDash: [4,4], tension: 0.3, pointRadius: 0 },
+        { label: 'CF Negro', data: negroData, borderColor: '#fbbf24', borderDash: [2,2], tension: 0.3, pointRadius: 0 },
+        { label: 'CF Blanco', data: blancoData, borderColor: '#a78bfa', borderDash: [2,2], tension: 0.3, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+        annotation: paybackMonth ? {
+          annotations: { payback: { type: 'line', xMin: paybackMonth-1, xMax: paybackMonth-1, borderColor: '#4ade80', borderWidth: 2, borderDash: [6,3], label: { display: true, content: `Payback M${paybackMonth}`, color: '#4ade80', font: { size: 10 } } } }
+        } : {}
+      },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#64748b', font: { size: 10 }, callback: v => fmtK(v) }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+}
+
+// ===== TABS =====
+function showTab(tab) {
+  ['pnl','cashflow','projection'].forEach(t => {
+    $(`tab_${t}`).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// ===== UPDATE =====
+function update() {
+  const inp = getInputs();
+
+  // Update slider displays
+  $('capacidad_v').textContent = `${inp.capacidad} pax`;
+  $('ticketAlm_v').textContent = `$${inp.ticketAlm}`;
+  $('ticketCena_v').textContent = `$${inp.ticketCena}`;
+  $('pctNegro_v').textContent = `${Math.round(inp.pctNegro*100)}%`;
+  $('foodCost_v').textContent = `${(inp.foodCost*100).toFixed(1)}%`;
+  $('paperCost_v').textContent = `${(inp.paperCost*100).toFixed(1)}%`;
+  $('staffAlm_v').textContent = inp.staffAlm;
+  $('staffCena_v').textContent = inp.staffCena;
+  $('sueldo_v').textContent = `$${inp.sueldo.toLocaleString()}`;
+  $('alquiler_v').textContent = `$${inp.alquiler.toLocaleString()}`;
+  $('servicios_v').textContent = `$${inp.servicios.toLocaleString()}`;
+  $('opexPct_v').textContent = `${(inp.opexPct*100).toFixed(1)}%`;
+  $('mktPct_v').textContent = `${(inp.mktPct*100).toFixed(1)}%`;
+  $('processingPct_v').textContent = `${(inp.processingPct*100).toFixed(1)}%`;
+  $('contable_v').textContent = `$${inp.contable}`;
+  $('software_v').textContent = `$${inp.software}`;
+  $('ivaPct_v').textContent = `${(inp.ivaPct*100).toFixed(1)}%`;
+  $('iibbPct_v').textContent = `${(inp.iibbPct*100).toFixed(1)}%`;
+  $('comprasBlanco_v').textContent = `${Math.round(inp.comprasBlanco*100)}%`;
+  $('debCredPct_v').textContent = `${(inp.debCredPct*100).toFixed(1)}%`;
+  $('gananciasPct_v').textContent = `${Math.round(inp.gananciasPct*100)}%`;
+  $('inversion_v').textContent = fmtK(inp.inversion);
+  $('splitPre_v').textContent = `${Math.round(inp.splitPre*100)}%`;
+  $('splitPost_v').textContent = `${Math.round(inp.splitPost*100)}%`;
+  $('mesApertura_v').textContent = MONTHS[inp.mesApertura - 1];
+
+  // Rotation summaries
+  const sumRotAlm = inp.rotAlm.reduce((a,b)=>a+b,0);
+  const sumRotCena = inp.rotCena.reduce((a,b)=>a+b,0);
+  const diasAlm = inp.rotAlm.filter(r=>r>0).length;
+  const diasCena = inp.rotCena.filter(r=>r>0).length;
+  $('rotAlmProm').textContent = diasAlm > 0 ? (sumRotAlm/diasAlm).toFixed(2) : '0';
+  $('rotCenaProm').textContent = diasCena > 0 ? (sumRotCena/diasCena).toFixed(2) : '0';
+  $('coversAlmSem').textContent = Math.round(inp.capacidad * sumRotAlm);
+  $('coversCenaSem').textContent = Math.round(inp.capacidad * sumRotCena);
+
+  // Staff summary
+  $('staffTotal').textContent = inp.staffAlm + inp.staffCena;
+  $('nomina').textContent = fmt((inp.staffAlm + inp.staffCena) * inp.sueldo);
+
+  // Calc 60 months
+  const data = calc60Months(inp);
+
+  // Promedio anual: average de 12 meses calendario (con estacionalidad)
+  // Esto es el "mes promedio estabilizado"
+  // Promedio anual: 12 meses con estacionalidad
+  const annualMonths = Array.from({length: 12}, (_, i) => calcMonth(inp, i));
+  const avgMonth = {};
+  const numKeys = Object.keys(annualMonths[0]).filter(k => typeof annualMonths[0][k] === 'number');
+  for (const k of numKeys) {
+    avgMonth[k] = annualMonths.reduce((sum, m) => sum + m[k], 0) / 12;
+  }
+
+  renderPnL(avgMonth);
+  renderCashFlow(avgMonth, inp);
+  renderProjection(data);
+
+  // KPIs = mismo promedio anual que el P&L
+  $('kpi_rev').textContent = fmtK(avgMonth.revTotal);
+  $('kpi_rev').className = 'kpi-value';
+  $('kpi_ebitda').textContent = fmtK(avgMonth.ebitda);
+  $('kpi_ebitda').className = `kpi-value ${avgMonth.ebitda<0?'negative':'positive'}`;
+  $('kpi_neto').textContent = fmtK(avgMonth.resultadoNeto);
+  $('kpi_neto').className = `kpi-value ${avgMonth.resultadoNeto<0?'negative':'positive'}`;
+  $('kpi_margin').textContent = fmtPct(avgMonth.netMargin * 100);
+  $('kpi_margin').className = `kpi-value ${avgMonth.netMargin<0?'negative':'positive'}`;
+  $('kpi_payback').textContent = data.paybackMonth ? `M${data.paybackMonth}` : 'N/A';
+  $('kpi_payback').className = `kpi-value ${data.paybackMonth ? 'positive' : 'negative'}`;
+}
+
+// ===== EXPORT EXCEL CON FÓRMULAS + ESTILOS =====
+async function exportExcel() {
+  const inp = getInputs();
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Snackz Simulator';
+
+  // === COLORS ===
+  const CLR = {
+    dark: '0F172A',    // fondo oscuro
+    panel: '1E293B',   // fondo panel
+    border: '334155',  // bordes
+    text: 'E2E8F0',   // texto principal
+    muted: '94A3B8',   // texto secundario
+    accent: '38BDF8',  // azul
+    green: '4ADE80',   // verde
+    red: 'F87171',     // rojo
+    yellow: 'FBBF24',  // amarillo
+    section: '1A2332', // fondo sección header
+    subtotal: '162032', // fondo subtotales
+    white: 'FFFFFF',
+  };
+
+  const fontMain = { name: 'Calibri', size: 11, color: { argb: CLR.text } };
+  const fontMuted = { name: 'Calibri', size: 10, color: { argb: CLR.muted } };
+  const fontBold = { name: 'Calibri', size: 11, bold: true, color: { argb: CLR.white } };
+  const fontSection = { name: 'Calibri', size: 11, bold: true, color: { argb: CLR.accent } };
+  const fontTotal = { name: 'Calibri', size: 12, bold: true, color: { argb: CLR.green } };
+  const fillDark = { type: 'pattern', pattern: 'solid', fgColor: { argb: CLR.dark } };
+  const fillPanel = { type: 'pattern', pattern: 'solid', fgColor: { argb: CLR.panel } };
+  const fillSection = { type: 'pattern', pattern: 'solid', fgColor: { argb: CLR.section } };
+  const fillSubtotal = { type: 'pattern', pattern: 'solid', fgColor: { argb: CLR.subtotal } };
+  const borderThin = { top: {style:'thin',color:{argb:CLR.border}}, bottom: {style:'thin',color:{argb:CLR.border}}, left: {style:'thin',color:{argb:CLR.border}}, right: {style:'thin',color:{argb:CLR.border}} };
+  const numFmt$ = '#,##0';
+  const numFmtPct = '0.0%';
+
+  // Refs
+  const I = (r) => `Inputs!$B$${r}`;
+  const MESES = 12;
+
+  // ============================================================
+  // SHEET: INPUTS
+  // ============================================================
+  const wsI = wb.addWorksheet('Inputs', {
+    properties: { tabColor: { argb: CLR.accent } },
+    views: [{ showGridLines: false }]
+  });
+
+  wsI.getColumn(1).width = 28;
+  wsI.getColumn(2).width = 15;
+  wsI.getColumn(3).width = 10;
+
+  // Helper
+  const addInput = (row, label, val, unit, isFormula) => {
+    const rw = wsI.getRow(row);
+    rw.getCell(1).value = label;
+    rw.getCell(1).font = fontMain;
+    rw.getCell(1).fill = fillDark;
+    if (isFormula) {
+      rw.getCell(2).value = { formula: val };
+    } else {
+      rw.getCell(2).value = val;
+    }
+    rw.getCell(2).font = fontBold;
+    rw.getCell(2).fill = fillPanel;
+    rw.getCell(2).border = borderThin;
+    rw.getCell(2).alignment = { horizontal: 'center' };
+    if (unit) {
+      rw.getCell(3).value = unit;
+      rw.getCell(3).font = fontMuted;
+      rw.getCell(3).fill = fillDark;
+    }
+    // Format percentages
+    if (unit === '%') rw.getCell(2).numFmt = '0.0%';
+    if (unit === '$') rw.getCell(2).numFmt = numFmt$;
+  };
+
+  const addSectionI = (row, label) => {
+    const rw = wsI.getRow(row);
+    rw.getCell(1).value = label;
+    rw.getCell(1).font = fontSection;
+    rw.getCell(1).fill = fillSection;
+    rw.getCell(2).fill = fillSection;
+    rw.getCell(3).fill = fillSection;
+  };
+
+  // Header
+  addSectionI(1, 'PARÁMETROS');
+  wsI.getRow(1).getCell(2).value = 'VALOR';
+  wsI.getRow(1).getCell(2).font = fontSection;
+  wsI.getRow(1).getCell(3).value = 'UNIDAD';
+  wsI.getRow(1).getCell(3).font = fontSection;
+
+  // Inputs — Inputs!B2:B28
+  addInput(2, 'Capacidad', inp.capacidad, 'pax');
+  addInput(3, 'Σ Rot Almuerzo', 'SUM(B30:B36)', '', true);
+  addInput(4, 'Σ Rot Cena', 'SUM(B38:B44)', '', true);
+  addInput(5, 'Ticket Almuerzo', inp.ticketAlm, '$');
+  addInput(6, 'Ticket Cena', inp.ticketCena, '$');
+  addInput(7, '% Negro', inp.pctNegro, '%');
+  addInput(8, 'Food Cost %', inp.foodCost, '%');
+  addInput(9, 'Paper Cost %', inp.paperCost, '%');
+  addInput(10, 'Staff Almuerzo', inp.staffAlm, '#');
+  addInput(11, 'Staff Cena', inp.staffCena, '#');
+  addInput(12, 'Sueldo / empleado', inp.sueldo, '$');
+  addInput(13, 'Alquiler', inp.alquiler, '$');
+  addInput(14, 'Servicios', inp.servicios, '$');
+  addInput(15, 'OPEX %', inp.opexPct, '%');
+  addInput(16, 'Marketing %', inp.mktPct, '%');
+  addInput(17, 'Processing %', inp.processingPct, '%');
+  addInput(18, 'Estudio Contable', inp.contable, '$');
+  addInput(19, 'Software / Misc', inp.software, '$');
+  addInput(20, 'IVA %', inp.ivaPct, '%');
+  addInput(21, 'IIBB %', inp.iibbPct, '%');
+  addInput(22, '% Compras Blanco', inp.comprasBlanco, '%');
+  addInput(23, 'Déb/Créd %', inp.debCredPct, '%');
+  addInput(24, 'Ganancias %', inp.gananciasPct, '%');
+  addInput(25, 'Inversión Total', inp.inversion, '$');
+  addInput(26, 'Split Pre-Payback', inp.splitPre, '%');
+  addInput(27, 'Split Post-Payback', inp.splitPost, '%');
+  addInput(28, 'Mes Apertura', inp.mesApertura, '1-12');
+
+  // Rotaciones
+  const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  addSectionI(29, 'ROT ALMUERZO');
+  for (let i = 0; i < 7; i++) addInput(30+i, `  ${dayNames[i]}`, inp.rotAlm[i], '');
+  addSectionI(37, 'ROT CENA');
+  for (let i = 0; i < 7; i++) addInput(38+i, `  ${dayNames[i]}`, inp.rotCena[i], '');
+
+  // Estacionalidad
+  addSectionI(45, 'ESTACIONALIDAD');
+  for (let i = 0; i < 12; i++) addInput(46+i, `  ${MONTHS[i]}`, inp.seas[i], '%');
+
+  // Dark background for empty rows
+  for (let r = 1; r <= 57; r++) {
+    const rw = wsI.getRow(r);
+    if (!rw.getCell(1).value) {
+      rw.getCell(1).fill = fillDark;
+      rw.getCell(2).fill = fillDark;
+      rw.getCell(3).fill = fillDark;
+    }
+  }
+
+  // ============================================================
+  // SHEET: P&L
+  // ============================================================
+  const wsP = wb.addWorksheet('PnL', {
+    properties: { tabColor: { argb: CLR.green } },
+    views: [{ showGridLines: false, state: 'frozen', ySplit: 3, xSplit: 1 }]
+  });
+
+  wsP.getColumn(1).width = 32;
+  for (let i = 2; i <= 13; i++) wsP.getColumn(i).width = 15;
+
+  // Row map
+  const R = {
+    MES_NUM: 1, MES_CAL: 2, ESTAC: 3,
+    SEC_REV: 5, COVERS_ALM: 6, COVERS_CENA: 7, COVERS_TOTAL: 8,
+    REV_ALM: 10, REV_CENA: 11, REV_TOTAL: 12, REV_NEGRO: 13, REV_BLANCO: 14,
+    SEC_CMV: 16, FOOD_COST: 17, PAPER_COST: 18, TOTAL_CMV: 19, GROSS_PROFIT: 20, GROSS_MARGIN: 21,
+    SEC_COR: 23, CREW_LABOR: 24, OCCUPANCY: 25, OPEX: 26, MARKETING: 27, PROCESSING: 28,
+    TOTAL_COR: 29, STORE_OP: 30, STORE_OP_M: 31,
+    SEC_SGA: 33, CONTABLE: 34, SOFTWARE: 35, TOTAL_SGA: 36,
+    EBITDA: 38, EBITDA_M: 39,
+    SEC_IMP: 41, BASE_IMP: 42, IIBB: 43, IVA_DEB: 44, IVA_CRED: 45, IVA_NETO: 46, DEB_CRED: 47, TOTAL_IMP: 48,
+    RES_PRE_GAN: 50, IMP_GAN: 51, RES_NETO: 52, NET_MARGIN: 53,
+    SEC_CF: 55, CF_NEG_ING: 56, CF_NEG_CMV: 57, CF_NEG_NETO: 58,
+    CF_BLA_ING: 60, CF_BLA_CMV: 61, CF_BLA_OP: 62, CF_BLA_IMP: 63, CF_BLA_NETO: 64,
+    CASH_MES: 66, CASH_ACUM: 67,
+    SEC_SPLIT: 69, PRE_POST: 70, SPLIT_PCT: 71, INV_SHARE: 72, OP_SHARE: 73, INV_ACUM: 74,
+  };
+
+  // Section header rows
+  const sectionRows = [R.SEC_REV, R.SEC_CMV, R.SEC_COR, R.SEC_SGA, R.SEC_IMP, R.SEC_CF, R.SEC_SPLIT];
+  // Subtotal rows (bold, border top)
+  const subtotalRows = [R.COVERS_TOTAL, R.REV_TOTAL, R.TOTAL_CMV, R.GROSS_PROFIT, R.TOTAL_COR, R.STORE_OP, R.TOTAL_SGA, R.EBITDA, R.TOTAL_IMP, R.RES_PRE_GAN, R.CF_NEG_NETO, R.CF_BLA_NETO, R.CASH_MES, R.CASH_ACUM];
+  // Grand total rows
+  const totalRows = [R.RES_NETO];
+  // Percentage rows
+  const pctRows = [R.ESTAC, R.GROSS_MARGIN, R.STORE_OP_M, R.EBITDA_M, R.NET_MARGIN, R.SPLIT_PCT];
+  // Indent rows
+  const indentRows = [R.COVERS_ALM, R.COVERS_CENA, R.REV_ALM, R.REV_CENA, R.REV_NEGRO, R.REV_BLANCO, R.FOOD_COST, R.PAPER_COST, R.CREW_LABOR, R.OCCUPANCY, R.OPEX, R.MARKETING, R.PROCESSING, R.CONTABLE, R.SOFTWARE, R.BASE_IMP, R.IIBB, R.IVA_DEB, R.IVA_CRED, R.IVA_NETO, R.DEB_CRED, R.IMP_GAN, R.GROSS_MARGIN, R.STORE_OP_M, R.EBITDA_M, R.NET_MARGIN];
+
+  // Labels
+  const labels = {
+    [R.MES_NUM]: 'Mes #', [R.MES_CAL]: 'Mes Calendario', [R.ESTAC]: 'Estacionalidad',
+    [R.SEC_REV]: '── REVENUE ──',
+    [R.COVERS_ALM]: '  Covers Almuerzo', [R.COVERS_CENA]: '  Covers Cena', [R.COVERS_TOTAL]: 'Covers Total',
+    [R.REV_ALM]: '  Rev Almuerzo', [R.REV_CENA]: '  Rev Cena',
+    [R.REV_TOTAL]: 'Revenue Total', [R.REV_NEGRO]: '  Rev. Negro (efectivo)', [R.REV_BLANCO]: '  Rev. Blanco (bancos)',
+    [R.SEC_CMV]: '── COSTO MERCADERÍA ──',
+    [R.FOOD_COST]: '  Food Cost', [R.PAPER_COST]: '  Paper Cost',
+    [R.TOTAL_CMV]: 'Total CMV', [R.GROSS_PROFIT]: 'Gross Profit', [R.GROSS_MARGIN]: '  Gross Margin %',
+    [R.SEC_COR]: '── COST OF REVENUE ──',
+    [R.CREW_LABOR]: '  Crew Labor', [R.OCCUPANCY]: '  Occupancy (Alq+Serv)',
+    [R.OPEX]: '  OPEX / Mant.', [R.MARKETING]: '  Marketing', [R.PROCESSING]: '  Processing (s/blanco)',
+    [R.TOTAL_COR]: 'Total Cost of Revenue', [R.STORE_OP]: 'Store Operating Income', [R.STORE_OP_M]: '  Store Op. Margin %',
+    [R.SEC_SGA]: '── SG&A ──',
+    [R.CONTABLE]: '  Estudio contable', [R.SOFTWARE]: '  Software / misc', [R.TOTAL_SGA]: 'Total SG&A',
+    [R.EBITDA]: 'EBITDA', [R.EBITDA_M]: '  EBITDA Margin %',
+    [R.SEC_IMP]: '── IMPUESTOS (s/ blanco) ──',
+    [R.BASE_IMP]: '  Base Imponible', [R.IIBB]: '  IIBB',
+    [R.IVA_DEB]: '  IVA Débito', [R.IVA_CRED]: '  IVA Crédito', [R.IVA_NETO]: '  IVA Neto',
+    [R.DEB_CRED]: '  Déb. y Créd. Bancarios', [R.TOTAL_IMP]: 'Total Imp. Operativos',
+    [R.RES_PRE_GAN]: 'Resultado pre-Ganancias', [R.IMP_GAN]: '  Imp. Ganancias',
+    [R.RES_NETO]: 'RESULTADO NETO', [R.NET_MARGIN]: '  Net Margin %',
+    [R.SEC_CF]: '── CASH FLOW ──',
+    [R.CF_NEG_ING]: '  CF Negro Ingreso', [R.CF_NEG_CMV]: '  CF Negro Gasto CMV', [R.CF_NEG_NETO]: 'CF Negro Neto',
+    [R.CF_BLA_ING]: '  CF Blanco Ingreso', [R.CF_BLA_CMV]: '  CF Blanco Gasto CMV',
+    [R.CF_BLA_OP]: '  CF Blanco Gastos Op.', [R.CF_BLA_IMP]: '  CF Blanco Impuestos', [R.CF_BLA_NETO]: 'CF Blanco Neto',
+    [R.CASH_MES]: 'Cash Total Mes', [R.CASH_ACUM]: 'Cash Acumulado',
+    [R.SEC_SPLIT]: '── SPLIT SOCIOS ──',
+    [R.PRE_POST]: '  Pre/Post Payback', [R.SPLIT_PCT]: '  Split Inversor %',
+    [R.INV_SHARE]: '  Inversor $', [R.OP_SHARE]: '  Operador $', [R.INV_ACUM]: 'Inversor Acumulado',
+  };
+
+  // Write labels + style col A
+  for (const [row, label] of Object.entries(labels)) {
+    const r = parseInt(row);
+    const cell = wsP.getRow(r).getCell(1);
+    cell.value = label;
+    cell.fill = fillDark;
+
+    if (sectionRows.includes(r)) {
+      cell.font = fontSection;
+      cell.fill = fillSection;
+    } else if (totalRows.includes(r)) {
+      cell.font = fontTotal;
+      cell.fill = fillSubtotal;
+    } else if (subtotalRows.includes(r)) {
+      cell.font = fontBold;
+      cell.fill = fillSubtotal;
+    } else {
+      cell.font = indentRows.includes(r) ? fontMuted : fontMain;
+    }
+  }
+
+  // Fill blank rows col A with dark bg
+  for (let r = 1; r <= R.INV_ACUM; r++) {
+    const cell = wsP.getRow(r).getCell(1);
+    if (!cell.value) cell.fill = fillDark;
+  }
+
+  // Column letter helper (col 2 = B, col 3 = C, ...)
+  const colLetter = (colIdx) => String.fromCharCode(64 + colIdx); // 1=A, 2=B, 13=M
+
+  // For each month
+  for (let mi = 0; mi < MESES; mi++) {
+    const col = mi + 2; // Excel column (2=B, 3=C, ...)
+    const c = colLetter(col); // B, C, D...
+    const calMonth = ((inp.mesApertura - 1 + mi) % 12);
+
+    // Helper to set formula + style
+    const setF = (row, formula, isSub, isPct) => {
+      const cell = wsP.getRow(row).getCell(col);
+      cell.value = { formula };
+      cell.alignment = { horizontal: 'right' };
+      cell.border = borderThin;
+      cell.numFmt = isPct ? numFmtPct : numFmt$;
+
+      if (totalRows.includes(row)) {
+        cell.font = fontTotal;
+        cell.fill = fillSubtotal;
+      } else if (subtotalRows.includes(row)) {
+        cell.font = fontBold;
+        cell.fill = fillSubtotal;
+      } else if (sectionRows.includes(row)) {
+        cell.fill = fillSection;
+      } else {
+        cell.font = isSub ? fontMuted : fontMain;
+        cell.fill = fillPanel;
+      }
+    };
+
+    const setV = (row, val, type) => {
+      const cell = wsP.getRow(row).getCell(col);
+      cell.value = val;
+      cell.alignment = { horizontal: 'center' };
+      cell.font = fontBold;
+      cell.fill = fillSection;
+      cell.border = borderThin;
+    };
+
+    // Header rows
+    setV(R.MES_NUM, mi + 1);
+    setV(R.MES_CAL, MONTHS[calMonth]);
+
+    // Estacionalidad
+    setF(R.ESTAC, `INDEX(Inputs!$B$46:$B$57,MOD(Inputs!$B$28-1+${c}${R.MES_NUM}-1,12)+1)`, false, true);
+
+    // REVENUE
+    setF(R.COVERS_ALM, `Inputs!$B$2*Inputs!$B$3*4.33*${c}${R.ESTAC}`, true);
+    setF(R.COVERS_CENA, `Inputs!$B$2*Inputs!$B$4*4.33*${c}${R.ESTAC}`, true);
+    setF(R.COVERS_TOTAL, `${c}${R.COVERS_ALM}+${c}${R.COVERS_CENA}`);
+    setF(R.REV_ALM, `${c}${R.COVERS_ALM}*Inputs!$B$5`, true);
+    setF(R.REV_CENA, `${c}${R.COVERS_CENA}*Inputs!$B$6`, true);
+    setF(R.REV_TOTAL, `${c}${R.REV_ALM}+${c}${R.REV_CENA}`);
+    setF(R.REV_NEGRO, `${c}${R.REV_TOTAL}*Inputs!$B$7`, true);
+    setF(R.REV_BLANCO, `${c}${R.REV_TOTAL}*(1-Inputs!$B$7)`, true);
+
+    // CMV
+    setF(R.FOOD_COST, `${c}${R.REV_TOTAL}*Inputs!$B$8`, true);
+    setF(R.PAPER_COST, `${c}${R.REV_TOTAL}*Inputs!$B$9`, true);
+    setF(R.TOTAL_CMV, `${c}${R.FOOD_COST}+${c}${R.PAPER_COST}`);
+    setF(R.GROSS_PROFIT, `${c}${R.REV_TOTAL}-${c}${R.TOTAL_CMV}`);
+    setF(R.GROSS_MARGIN, `IF(${c}${R.REV_TOTAL}>0,${c}${R.GROSS_PROFIT}/${c}${R.REV_TOTAL},0)`, true, true);
+
+    // COST OF REVENUE
+    setF(R.CREW_LABOR, `(Inputs!$B$10+Inputs!$B$11)*Inputs!$B$12`, true);
+    setF(R.OCCUPANCY, `Inputs!$B$13+Inputs!$B$14`, true);
+    setF(R.OPEX, `${c}${R.REV_TOTAL}*Inputs!$B$15`, true);
+    setF(R.MARKETING, `${c}${R.REV_TOTAL}*Inputs!$B$16`, true);
+    setF(R.PROCESSING, `${c}${R.REV_BLANCO}*Inputs!$B$17`, true);
+    setF(R.TOTAL_COR, `${c}${R.CREW_LABOR}+${c}${R.OCCUPANCY}+${c}${R.OPEX}+${c}${R.MARKETING}+${c}${R.PROCESSING}`);
+    setF(R.STORE_OP, `${c}${R.GROSS_PROFIT}-${c}${R.TOTAL_COR}`);
+    setF(R.STORE_OP_M, `IF(${c}${R.REV_TOTAL}>0,${c}${R.STORE_OP}/${c}${R.REV_TOTAL},0)`, true, true);
+
+    // SG&A
+    setF(R.CONTABLE, `Inputs!$B$18`, true);
+    setF(R.SOFTWARE, `Inputs!$B$19`, true);
+    setF(R.TOTAL_SGA, `${c}${R.CONTABLE}+${c}${R.SOFTWARE}`);
+
+    // EBITDA
+    setF(R.EBITDA, `${c}${R.STORE_OP}-${c}${R.TOTAL_SGA}`);
+    setF(R.EBITDA_M, `IF(${c}${R.REV_TOTAL}>0,${c}${R.EBITDA}/${c}${R.REV_TOTAL},0)`, true, true);
+
+    // IMPUESTOS
+    setF(R.BASE_IMP, `${c}${R.REV_BLANCO}/(1+Inputs!$B$20)`, true);
+    setF(R.IIBB, `${c}${R.BASE_IMP}*Inputs!$B$21`, true);
+    setF(R.IVA_DEB, `${c}${R.BASE_IMP}*Inputs!$B$20`, true);
+    setF(R.IVA_CRED, `(${c}${R.FOOD_COST}+${c}${R.PAPER_COST}+Inputs!$B$14+Inputs!$B$19)*Inputs!$B$22*Inputs!$B$20/(1+Inputs!$B$20)`, true);
+    setF(R.IVA_NETO, `MAX(0,${c}${R.IVA_DEB}-${c}${R.IVA_CRED})`, true);
+    setF(R.DEB_CRED, `${c}${R.REV_BLANCO}*Inputs!$B$23`, true);
+    setF(R.TOTAL_IMP, `${c}${R.IIBB}+${c}${R.IVA_NETO}+${c}${R.DEB_CRED}`);
+
+    // RESULTADO
+    setF(R.RES_PRE_GAN, `${c}${R.EBITDA}-${c}${R.TOTAL_IMP}`);
+    setF(R.IMP_GAN, `MAX(0,${c}${R.RES_PRE_GAN})*Inputs!$B$24`, true);
+    setF(R.RES_NETO, `${c}${R.RES_PRE_GAN}-${c}${R.IMP_GAN}`);
+    setF(R.NET_MARGIN, `IF(${c}${R.REV_TOTAL}>0,${c}${R.RES_NETO}/${c}${R.REV_TOTAL},0)`, true, true);
+
+    // CASH FLOW
+    setF(R.CF_NEG_ING, `${c}${R.REV_NEGRO}`, true);
+    setF(R.CF_NEG_CMV, `${c}${R.TOTAL_CMV}*Inputs!$B$7`, true);
+    setF(R.CF_NEG_NETO, `${c}${R.CF_NEG_ING}-${c}${R.CF_NEG_CMV}`);
+    setF(R.CF_BLA_ING, `${c}${R.REV_BLANCO}`, true);
+    setF(R.CF_BLA_CMV, `${c}${R.TOTAL_CMV}*(1-Inputs!$B$7)`, true);
+    setF(R.CF_BLA_OP, `${c}${R.CREW_LABOR}+${c}${R.OCCUPANCY}+${c}${R.OPEX}+${c}${R.MARKETING}+${c}${R.PROCESSING}+${c}${R.TOTAL_SGA}`, true);
+    setF(R.CF_BLA_IMP, `${c}${R.TOTAL_IMP}+${c}${R.IMP_GAN}`, true);
+    setF(R.CF_BLA_NETO, `${c}${R.CF_BLA_ING}-${c}${R.CF_BLA_CMV}-${c}${R.CF_BLA_OP}-${c}${R.CF_BLA_IMP}`);
+
+    // CASH TOTAL
+    setF(R.CASH_MES, `${c}${R.CF_NEG_NETO}+${c}${R.CF_BLA_NETO}`);
+    if (mi === 0) {
+      setF(R.CASH_ACUM, `${c}${R.CASH_MES}-Inputs!$B$25`);
+    } else {
+      const prev = colLetter(col - 1);
+      setF(R.CASH_ACUM, `${prev}${R.CASH_ACUM}+${c}${R.CASH_MES}`);
+    }
+
+    // SPLIT
+    const cellPP = wsP.getRow(R.PRE_POST).getCell(col);
+    cellPP.value = { formula: `IF(${c}${R.CASH_ACUM}<0,"PRE","POST")` };
+    cellPP.font = fontMain; cellPP.fill = fillPanel; cellPP.border = borderThin; cellPP.alignment = { horizontal: 'right' };
+
+    setF(R.SPLIT_PCT, `IF(${c}${R.PRE_POST}="PRE",Inputs!$B$26,Inputs!$B$27)`, true, true);
+    setF(R.INV_SHARE, `IF(${c}${R.RES_NETO}>0,${c}${R.RES_NETO}*${c}${R.SPLIT_PCT},0)`, true);
+    setF(R.OP_SHARE, `${c}${R.RES_NETO}-${c}${R.INV_SHARE}`, true);
+    if (mi === 0) {
+      setF(R.INV_ACUM, `${c}${R.INV_SHARE}`);
+    } else {
+      const prev = colLetter(col - 1);
+      setF(R.INV_ACUM, `${prev}${R.INV_ACUM}+${c}${R.INV_SHARE}`);
+    }
+
+    // Style section row cells
+    for (const sr of sectionRows) {
+      const cell = wsP.getRow(sr).getCell(col);
+      cell.fill = fillSection;
+    }
+
+    // Dark bg for blank rows
+    const blankRows = [4,9,15,22,32,37,40,49,54,59,65,68];
+    for (const br of blankRows) {
+      wsP.getRow(br).getCell(col).fill = fillDark;
+      wsP.getRow(br).getCell(1).fill = fillDark;
+    }
+  }
+
+  // Download
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  saveAs(blob, 'snackz-pnl.xlsx');
+}
+
+// ===== EVENT LISTENERS =====
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', update));
+document.querySelectorAll('.day-grid input, .season-grid input').forEach(el => el.addEventListener('input', update));
+
+// Initial render
+update();
+</script>
+</body>
+</html>

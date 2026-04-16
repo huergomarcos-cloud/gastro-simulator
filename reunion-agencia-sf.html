@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Reunión Agencia de Pauta — Santiago Funes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a1a; background: #fff; padding: 40px 50px; font-size: 11px; line-height: 1.5; }
+
+  @media print {
+    body { padding: 20px 30px; }
+    .no-print { display: none; }
+    @page { margin: 15mm 12mm; size: A4; }
+    h1 { font-size: 18px; }
+    h2 { font-size: 13px; }
+    .page-break { page-break-before: always; }
+  }
+
+  h1 { font-size: 22px; font-weight: 700; color: #050A30; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 24px; }
+  h2 { font-size: 14px; font-weight: 700; color: #050A30; margin-top: 22px; margin-bottom: 10px; padding-bottom: 4px; border-bottom: 2px solid #C4A265; }
+  h3 { font-size: 12px; font-weight: 600; color: #333; margin-top: 14px; margin-bottom: 6px; }
+
+  .gold-bar { width: 60px; height: 3px; background: #C4A265; margin-bottom: 20px; }
+
+  ol, ul { padding-left: 18px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px; }
+  th { background: #050A30; color: #fff; text-align: left; padding: 6px 10px; font-weight: 600; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e5e5e5; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+
+  .report-box { background: #f4f4f2; border: 1px solid #ddd; border-radius: 6px; padding: 14px 16px; font-family: 'Courier New', monospace; font-size: 10.5px; line-height: 1.6; margin-bottom: 12px; white-space: pre-line; }
+
+  .flag { background: #fff3f3; border-left: 3px solid #C8453A; padding: 8px 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; font-size: 10.5px; }
+  .flag strong { color: #C8453A; }
+
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .insight-card { background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 12px; }
+  .insight-card h4 { font-size: 11px; font-weight: 600; color: #050A30; margin-bottom: 4px; }
+  .insight-card ul { margin-bottom: 0; }
+
+  .btn-print { position: fixed; top: 20px; right: 20px; background: #050A30; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600; }
+  .btn-print:hover { background: #0a1550; }
+
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+
+<button class="btn-print no-print" onclick="window.print()">Guardar como PDF</button>
+
+<h1>Reunión Agencia de Pauta</h1>
+<p class="subtitle">Santiago Funes Real Estate — 7 de abril 2026</p>
+<div class="gold-bar"></div>
+
+<!-- SECTION 1 -->
+<h2>1. Preguntas que hacemos nosotros</h2>
+
+<h3>Operativa y fee</h3>
+<ol>
+  <li>¿Cuánto es el fee y cuánto va a pauta real de nuestros $500-1000?</li>
+  <li>¿El Business Manager queda a nuestro nombre?</li>
+  <li>¿Contrato mínimo? ¿Podemos salir cuando queramos?</li>
+  <li>¿Quién crea las piezas? ¿O las damos nosotros?</li>
+</ol>
+
+<h3>Estrategia</h3>
+<ol start="5">
+  <li>¿Cómo dividen el budget entre Meta y TikTok? ¿Por qué?</li>
+  <li>¿Cómo mantienen el posicionamiento premium en TikTok sin perder identidad?</li>
+  <li>¿Qué tipo de campañas recomiendan para captación de vendedores vs. compradores?</li>
+  <li>¿Hacen A/B testing de creatividades?</li>
+  <li>¿Arman audiencias lookalike y retargeting?</li>
+  <li>¿Cuánto tiempo necesitan para optimizar antes de ver resultados reales?</li>
+</ol>
+
+<h3>Resultados</h3>
+<ol start="11">
+  <li>¿Cuál es el CPL que manejan en inmobiliarias? ¿Y en ciudades chicas?</li>
+  <li>¿Tienen algún cliente inmobiliario que pueda mostrar resultados?</li>
+  <li>¿Integran con algún CRM o los leads llegan por WhatsApp/formulario suelto?</li>
+</ol>
+
+<!-- SECTION 2 -->
+<h2>2. Preguntas que nos van a hacer</h2>
+
+<table>
+  <tr><th style="width:25%">Pregunta</th><th>Nuestra respuesta</th></tr>
+  <tr><td><strong>¿Objetivo?</strong></td><td>Doble: leads de compradores y vendedores + posicionamiento como referente inmobiliario en Tandil</td></tr>
+  <tr><td><strong>¿Presupuesto?</strong></td><td>$500-1000/mes. Necesitamos entender cuánto es fee y cuánto pauta</td></tr>
+  <tr><td><strong>¿Zona?</strong></td><td>Tandil y alrededores (Santiago tiene el detalle fino de las zonas)</td></tr>
+  <tr><td><strong>¿Público?</strong></td><td>20-80 años, gente con capacidad de compra o propiedades para vender. Mínimo 2 segmentos</td></tr>
+  <tr><td><strong>¿Materiales?</strong></td><td>Videos, placas fijas, identidad de marca completa con manual, sistema de PDFs de propiedades automatizado</td></tr>
+  <tr><td><strong>¿Pautaron antes?</strong></td><td>Sí, funcionó. Queremos escalar y profesionalizar</td></tr>
+  <tr><td><strong>¿Competencia?</strong></td><td>Muy poca pauta en Tandil — es una oportunidad grande</td></tr>
+  <tr><td><strong>¿Plataformas?</strong></td><td>Meta y TikTok</td></tr>
+  <tr><td><strong>¿Qué esperamos?</strong></td><td>Leads calificados, no vanity metrics. Queremos saber costo por lead real</td></tr>
+</table>
+
+<!-- SECTION 3 -->
+<h2>3. Insights que pedimos</h2>
+
+<div class="insight-grid">
+  <div class="insight-card">
+    <h4>Semanales</h4>
+    <ul>
+      <li>CPL por plataforma y por campaña</li>
+      <li>Cantidad de leads nuevos y de dónde vienen</li>
+      <li>CTR de cada creatividad</li>
+      <li>Cuál pieza/video performó mejor y por qué</li>
+      <li>Frecuencia del anuncio (saturación)</li>
+    </ul>
+  </div>
+  <div class="insight-card">
+    <h4>Mensuales</h4>
+    <ul>
+      <li>CPL compradores vs. vendedores (separado)</li>
+      <li>Evolución del CPL semana a semana</li>
+      <li>Breakdown: cuánto fue fee, cuánto pauta real</li>
+      <li>Audiencias: tamaño, saturación, nuevas testeadas</li>
+      <li>Recomendaciones concretas para el mes siguiente</li>
+    </ul>
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<h2>4. Formato de reporte semanal a exigir</h2>
+
+<div class="report-box">REPORTE SEMANAL — Santiago Funes — Semana [X]
+
+INVERSIÓN
+- Gastado en pauta: $___
+- Acumulado mes: $___ / $___
+
+RESULTADOS
+- Leads totales: ___
+- Leads compradores: ___ | CPL: $___
+- Leads vendedores: ___ | CPL: $___
+- Mejor plataforma: Meta / TikTok
+
+CREATIVIDADES
+- Mejor pieza: [cuál y por qué]
+- Peor pieza: [cuál y por qué]
+- A/B tests corriendo: [cuáles]
+
+ACCIONES SEMANA PRÓXIMA
+- [qué van a cambiar/probar]</div>
+
+<!-- SECTION 5 -->
+<h2>5. Banderas rojas</h2>
+
+<div class="flag"><strong>No te pueden dar un CPL estimado</strong> para el rubro inmobiliario</div>
+<div class="flag"><strong>Quieren manejar el Business Manager</strong> desde su cuenta, no la nuestra</div>
+<div class="flag"><strong>Ofrecen "paquete cerrado"</strong> sin desglosar fee vs. inversión en pauta</div>
+<div class="flag"><strong>No mencionan A/B testing</strong> ni optimización de creatividades</div>
+<div class="flag"><strong>No pueden mostrar</strong> un reporte real de otro cliente</div>
+
+<!-- SECTION 6 -->
+<h2>6. Lo que ya tenemos (ventaja nuestra)</h2>
+
+<ul>
+  <li><strong>Brand guide completo</strong> — logo, paleta (Navy #050A30 + Gold #C4A265), tipografías, tono de voz</li>
+  <li><strong>Sistema de PDFs automatizado</strong> — generación de folletos de propiedades en formato 9:16</li>
+  <li><strong>Videos y placas fijas</strong> — material listo para pautar</li>
+  <li><strong>Poca competencia pautando en Tandil</strong> — CPL debería ser bajo</li>
+  <li><strong>Experiencia previa</strong> — sabemos que funciona, queremos escalar</li>
+</ul>
+
+<div class="footer">
+  Santiago Funes Real Estate — Documento interno de preparación — Abril 2026
+</div>
+
+</body>
+</html>

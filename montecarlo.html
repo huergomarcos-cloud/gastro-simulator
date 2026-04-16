@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monte Carlo — Simulador Gastronómico</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  body { font-family: 'Inter', sans-serif; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+  .metric-positive { color: #4ade80; }
+  .metric-negative { color: #f87171; }
+  .metric-neutral { color: #fbbf24; }
+  .tab-active { background: #3b82f6; color: white; }
+  .tab-inactive { background: #334155; color: #94a3b8; cursor: pointer; }
+  .tab-inactive:hover { background: #475569; }
+  canvas { max-height: 340px; }
+  .progress-fill { transition: width 0.15s ease-out; }
+  select { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; }
+  .scenario-highlight { background: #1e3a5f; border-color: #3b82f6; }
+</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Simulación Monte Carlo</h1>
+      <p class="text-slate-400 text-sm mt-1">Análisis probabilístico — Contexto Argentina</p>
+    </div>
+    <a href="index.html" class="text-blue-400 hover:text-blue-300 text-sm">&larr; Volver al Simulador</a>
+  </div>
+
+  <!-- Config Section -->
+  <div class="card p-5 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Variables</h2>
+      <button onclick="toggleConfig()" id="toggleConfigBtn" class="text-sm text-slate-400 hover:text-slate-200">Ocultar &uarr;</button>
+    </div>
+    <div id="configPanel">
+      <p class="text-slate-400 text-xs mb-4">FIJO = valor conocido. RANDOM = se sortea en cada iteración.</p>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2 mt-3">Operación</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpOperacion"></div>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2">Tickets</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpTickets"></div>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2">Costos Variables</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpCostosVar"></div>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2">Costos Fijos</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpCostosFijos"></div>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2">Impuestos / Facturación</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpImpuestos"></div>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2">Inversión</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpInversion"></div>
+      <h3 class="text-sm font-semibold text-blue-400 mb-2">Constantes Operativas</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpConstantes"></div>
+      <h3 class="text-sm font-semibold text-purple-400 mb-2">Contexto Argentina</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4" id="grpArgentina"></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card p-5 mb-6">
+    <div class="flex flex-wrap items-center gap-4">
+      <div>
+        <label class="text-xs text-slate-400">Iteraciones</label>
+        <select id="iterCount" class="block rounded px-3 py-1.5 text-sm mt-1">
+          <option value="10000">10,000</option>
+          <option value="50000">50,000</option>
+          <option value="100000" selected>100,000</option>
+          <option value="500000">500,000</option>
+          <option value="1000000">1,000,000</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400">Seed (opcional)</label>
+        <input type="number" id="seedInput" placeholder="Auto" class="block bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm mt-1 w-28">
+      </div>
+      <button onclick="runSimulation()" id="runBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2 rounded-lg mt-4 md:mt-0 transition">
+        Ejecutar Simulación
+      </button>
+      <button onclick="exportCSV()" id="exportBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg mt-4 md:mt-0 transition hidden">
+        Exportar CSV
+      </button>
+      <button onclick="exportExcelLogica()" id="exportXlsBtn" class="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg mt-4 md:mt-0 transition">
+        Exportar Excel (Lógica)
+      </button>
+    </div>
+    <div id="progressContainer" class="hidden mt-4">
+      <div class="flex justify-between text-xs text-slate-400 mb-1">
+        <span id="progressLabel">Simulando...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="w-full bg-slate-800 rounded-full h-3">
+        <div id="progressBar" class="progress-fill bg-blue-500 h-3 rounded-full" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RESULTS ===== -->
+  <div id="resultsSection" class="hidden">
+
+    <!-- Tabs -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <button onclick="switchTab('recomendaciones')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium tab-active" data-tab="recomendaciones">Recomendaciones</button>
+      <button onclick="switchTab('escenarios')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium tab-inactive" data-tab="escenarios">Escenarios Inversor</button>
+      <button onclick="switchTab('riesgos')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium tab-inactive" data-tab="riesgos">Riesgos</button>
+      <button onclick="switchTab('zonas')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium tab-inactive" data-tab="zonas">Zonas CABA</button>
+      <button onclick="switchTab('montecarlo')" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium tab-inactive" data-tab="montecarlo">Monte Carlo</button>
+    </div>
+
+    <!-- ===== TAB 1: RECOMENDACIONES ===== -->
+    <div id="tab-recomendaciones" class="tab-content">
+
+      <!-- How this works -->
+      <div class="card p-5 mb-4 bg-slate-800/50">
+        <h3 class="text-sm font-semibold mb-2 text-slate-300">Cómo funciona esta sección</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">El simulador corrió <b>miles de escenarios aleatorios</b> (Monte Carlo) variando todas las variables: capacidad, staff, vueltas, demanda, inflación, etc. De todos esos escenarios, filtró el <b>top 25% que mejor performó</b> (más cash acumulado) y sacó la <b>mediana</b> de cada variable de decisión. Esos son los valores "ideales" de abajo. No son mágicos — son los que estadísticamente aparecen más seguido en los mejores escenarios. Las variables de mercado (vueltas, demanda) también salen de ahí, pero como no las controlás, se muestran como referencia.</p>
+      </div>
+
+      <!-- What you control -->
+      <div class="card p-5 mb-4 border-l-4 border-l-green-500">
+        <h3 class="text-lg font-bold mb-2">Lo que vos decidís (setup del local)</h3>
+        <p class="text-sm text-slate-400 mb-4">Estos valores los definís vos antes de abrir. Son la mediana del top 25% de escenarios exitosos del Monte Carlo.</p>
+        <div id="idealDecisions" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+      </div>
+
+      <!-- What market decides -->
+      <div class="card p-5 mb-4 border-l-4 border-l-slate-500">
+        <h3 class="text-sm font-semibold mb-2 text-slate-400">Lo que decide el mercado (no controlás)</h3>
+        <p class="text-xs text-slate-500 mb-3">Estos valores dependen de cuánta gente viene, la economía, etc. Los benchmarks vienen de data de la industria gastronómica (fuentes abajo). Vos elegís cuál te parece realista en las tablas de escenarios.</p>
+        <div id="idealMarket" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+      </div>
+
+      <!-- Scenario grid: vueltas cena × demanda -->
+      <div class="card p-5 mb-4">
+        <h3 class="text-lg font-bold mb-2">Qué pasa si cambio las vueltas o la demanda?</h3>
+        <div class="bg-slate-800 rounded-lg p-3 mb-4 text-xs text-slate-400 leading-relaxed space-y-1">
+          <p><b class="text-slate-300">Qué muestra:</b> cada celda es un escenario fijo. Se calcula la proyección completa de 60 meses con todos los ajustes (inflación, estacionalidad, patrón semanal, shocks esperados).</p>
+          <p><b class="text-slate-300">Vueltas (eje vertical):</b> es el promedio de vueltas de cena por noche considerando que viernes y sábado son el pico y martes/miércoles son flojos. Abajo ves el desglose día por día.</p>
+          <p><b class="text-slate-300">Demanda (eje horizontal):</b> es el % de esas vueltas que se concreta. Incluye cancelaciones, mesas vacías, días malos. Si decís 1.5 vueltas con 80% demanda = <b>1.2 vueltas reales</b> (el número azul).</p>
+          <p><b class="text-slate-300">Qué queda fijo:</b> capacidad, staff, tickets, alquiler, food cost, inflación (3%), prob. shock (2%), todo al valor ideal de arriba.</p>
+          <p><b class="text-slate-300">Colores:</b> <span class="text-green-400">verde</span> = recupera inversión en 60 meses. <span class="text-yellow-400">amarillo</span> = recupera pero lento. <span class="text-red-400">rojo</span> = no recupera (pierde plata).</p>
+        </div>
+        <div id="scenarioGrid" class="overflow-x-auto"></div>
+        <div id="weeklyReference" class="mt-4"></div>
+      </div>
+
+      <!-- Focus: what to concentrate on -->
+      <div class="card p-5 mb-4 border-l-4 border-l-blue-500">
+        <h3 class="text-lg font-bold mb-2">En qué concentrarte</h3>
+        <p class="text-sm text-slate-400 mb-3">Del Monte Carlo, filtramos los escenarios cercanos al setup ideal y calculamos la <b>correlación</b> entre cada variable y el resultado final (cash a 60 meses). Las que tienen correlación alta son las que más mueven la aguja — si esas salen bien, el negocio va bien; si salen mal, se complica.</p>
+        <div id="idealFocus" class="space-y-2"></div>
+      </div>
+
+      <!-- Sensitivity of fixed variables -->
+      <div class="card p-5 border-l-4 border-l-purple-500">
+        <h3 class="text-lg font-bold mb-2">Cómo afectan las variables fijas</h3>
+        <p class="text-sm text-slate-400 mb-4">Estas variables las fijaste al principio, pero acá ves qué pasa si cambian. Cada tabla mueve <b>solo esa variable</b> y deja todo lo demás fijo al escenario base. Útil para negociar (ej: "¿cuánto puedo pagar de alquiler?") o entender márgenes de maniobra (ej: "¿qué pasa si el food cost sube a 30%?").</p>
+        <div id="sensitivityTables" class="space-y-6"></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 2: ESCENARIOS INVERSOR ===== -->
+    <div id="tab-escenarios" class="tab-content hidden">
+
+      <div class="card p-5 mb-4 bg-slate-800/50">
+        <h3 class="text-sm font-semibold mb-2 text-slate-300">Cómo funcionan los escenarios</h3>
+        <div class="text-xs text-slate-400 leading-relaxed space-y-1">
+          <p>Cada escenario usa el <b>mismo setup del local</b> (capacidad, staff, tickets, alquiler) pero cambia las condiciones de mercado: cuánta gente viene, inflación, velocidad de arranque y probabilidad de crisis.</p>
+          <p>Los escenarios van de <b>Pesimista</b> (casi nadie viene, inflación alta, tarda en arrancar) a <b>Boom</b> (lleno todas las noches, economía estable). El <b>Base</b> usa los valores ideales del Monte Carlo.</p>
+          <p><b>Payback:</b> mes en que la caja acumulada pasa a positivo (recuperaste la inversión). Si dice "~80m" significa que en 60 meses no recuperó pero proyectando la ganancia estabilizada, recuperaría en ~80.</p>
+          <p><b>Net/mes:</b> ganancia neta mensual después de impuestos, ya estabilizado (mes 18+). Es lo que queda en el bolsillo después de pagar todo.</p>
+          <p><b>Inversor:</b> lo que cobró el inversor en 60 meses. Cobra 80% de las ganancias hasta recuperar su inversión, después 27.5%.</p>
+          <p><b>Gráfico:</b> muestra cómo crece la plata del inversor mes a mes en cada escenario. La línea horizontal es $0 — arriba ganó, abajo perdió.</p>
+          <p><b>Inflación en el modelo:</b> alquiler fijo 24 meses (contrato), sueldos suben cada 6 meses (paritarias), servicios cada 4 meses (tarifazos), tus precios suben mensual con 1-3 meses de lag.</p>
+          <p><b>Shocks:</b> cada escenario tiene una probabilidad mensual de crisis que baja la demanda temporalmente. Se aplica como descuento promedio esperado a la demanda.</p>
+        </div>
+      </div>
+
+      <!-- Scenario cards -->
+      <div id="scenarioCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6"></div>
+
+      <!-- Chart -->
+      <div class="card p-4 mb-4">
+        <h3 class="text-sm font-semibold mb-2">Proyección 60 meses — Cash acumulado del inversor</h3>
+        <canvas id="chartScenarios" style="max-height:380px"></canvas>
+      </div>
+
+      <!-- Comparison table -->
+      <div class="card p-4 mb-4">
+        <h3 class="text-sm font-semibold mb-2">Comparación de escenarios</h3>
+        <p class="text-xs text-slate-400 mb-3">Todos los parámetros de cada escenario para que veas exactamente qué asume cada uno. "Vueltas reales" = vueltas promedio × demanda (lo que realmente pasa).</p>
+        <div id="scenarioTable" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- Weekly breakdown per scenario -->
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold mb-2">Desglose semanal: cuántas vueltas por día en cada escenario</h3>
+        <p class="text-xs text-slate-400 mb-3">Las vueltas del escenario son el pico (viernes/sábado). Los demás días se escalan: martes 35%, miércoles 45%, jueves 75%, viernes 100%, sábado 100%, domingo 45%. Mirá cada fila y decidí si te parece realista.</p>
+        <div id="weeklyBreakdown" class="overflow-x-auto"></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 3: RIESGOS (qué pasa si) ===== -->
+    <div id="tab-riesgos" class="tab-content hidden">
+      <div class="card p-5 mb-4 bg-slate-800/50">
+        <h3 class="text-sm font-semibold mb-2 text-slate-300">Cómo funciona esta sección</h3>
+        <div class="text-xs text-slate-400 leading-relaxed space-y-1">
+          <p>Elegís un <b>escenario base</b> (ej: Moderado) y después ves qué pasa si movés <b>una sola variable a la vez</b>. Todo lo demás queda fijo al escenario elegido.</p>
+          <p>Esto sirve para responder: "Si estoy en el escenario Moderado y la inflación sube a 5%, ¿qué pasa?" o "¿Cuánto puedo pagar de alquiler sin fundir el negocio?"</p>
+          <p>Cada tabla corre la proyección completa de 60 meses con inflación diferenciada (alquiler fijo 24m, sueldos cada 6m, servicios cada 4m, precios mensuales).</p>
+        </div>
+      </div>
+
+      <div class="card p-5 mb-4 border-l-4 border-l-yellow-500">
+        <h3 class="text-lg font-bold mb-2">Qué pasa si cambian las cosas que no controlás</h3>
+        <p class="text-sm text-slate-400 mb-3">Elegí sobre qué escenario base calcular. Las tablas se recalculan en el momento.</p>
+        <div class="flex items-center gap-3 mt-3">
+          <span class="text-sm text-slate-300">Calcular sobre:</span>
+          <select id="riskBaseScenario" onchange="renderRiesgos(lastResults)" class="rounded px-3 py-1.5 text-sm">
+            <option value="pesimista">😰 Pesimista</option>
+            <option value="conservador">😐 Conservador</option>
+            <option value="moderado">🤞 Moderado</option>
+            <option value="base" selected>👍 Base (ideal)</option>
+            <option value="optimista">🚀 Optimista</option>
+            <option value="boom">🔥 Boom</option>
+          </select>
+          <span id="riskBaseDesc" class="text-xs text-slate-500"></span>
+        </div>
+      </div>
+
+      <div id="riskTables" class="space-y-4"></div>
+    </div>
+
+    <!-- ===== TAB: ZONAS CABA ===== -->
+    <div id="tab-zonas" class="tab-content hidden">
+      <div class="card p-5 mb-4 bg-slate-800/50">
+        <h3 class="text-sm font-semibold mb-2 text-slate-300">Análisis geográfico: dónde abrir en CABA</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">Cada zona tiene diferentes costos de alquiler, perfil de público y nivel de competencia. Acá cruzamos esos datos con el modelo financiero para ver cómo impacta la ubicación. Datos de alquileres: Zonaprop/Argenprop 2025. Tendencias gastronómicas: TimeOut, La Nación, Infobae 2025.</p>
+      </div>
+
+      <!-- Zone comparison table -->
+      <div class="card p-5 mb-4">
+        <h3 class="text-lg font-bold mb-2">Comparación por zona</h3>
+        <p class="text-xs text-slate-400 mb-4">Cada zona corre la simulación de 60 meses con su alquiler y ticket estimado. Todo lo demás fijo al escenario base.</p>
+        <div id="zonaTable" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- Zone details -->
+      <div class="card p-5">
+        <h3 class="text-lg font-bold mb-2">Perfil de cada zona</h3>
+        <div id="zonaDetails" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 5: MONTE CARLO (raw data) ===== -->
+    <div id="tab-montecarlo" class="tab-content hidden">
+      <div class="card p-5 mb-4 bg-slate-800/50">
+        <h3 class="text-sm font-semibold mb-2 text-slate-300">Qué es Monte Carlo y cómo funciona</h3>
+        <div class="text-xs text-slate-400 leading-relaxed space-y-1">
+          <p><b>Monte Carlo</b> es una técnica que corre <b>miles de simulaciones aleatorias</b> para explorar todas las combinaciones posibles de variables. En vez de analizar un solo escenario, analiza miles y te muestra la distribución de resultados.</p>
+          <p><b>Cómo funciona acá:</b> cada iteración sortea valores aleatorios para las variables marcadas como RANDOM (capacidad, vueltas, tickets, alquiler, inflación, etc.) dentro de los rangos que configuraste arriba. Después corre la proyección completa de 60 meses con toda la lógica (inflación diferenciada, estacionalidad, patrón semanal, shocks) y registra el resultado.</p>
+          <p><b>Limitación importante:</b> las probabilidades que salen acá dependen de los rangos que vos configuraste. Si le decís que las vueltas van de 0.5 a 2.5, va a sortear dentro de eso. No tiene data real de mercado — vos definís los rangos según tu criterio.</p>
+          <p><b>Para qué sirve:</b> para encontrar el setup óptimo (tab Recomendaciones), entender qué variables más impactan, y ver la dispersión de resultados posibles. No para decirte "tenés 30% de probabilidad de fracasar" — eso depende de rangos que inventamos.</p>
+          <p><b>Heatmap:</b> muestra qué combinaciones de capacidad × staff tienen más escenarios exitosos. Verde = buena combinación.</p>
+          <p><b>Sensibilidad general:</b> correlación entre cada variable y el resultado final. Barras verdes = si sube, mejora el resultado. Barras rojas = si sube, empeora.</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Datos crudos de la simulación completa. Incluye todas las combinaciones (buenas y malas).</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="card p-3 text-center">
+          <div class="text-xs text-slate-400 mb-1">P(Ruina) general</div>
+          <div id="mcKpiRuin" class="text-2xl font-bold">—</div>
+        </div>
+        <div class="card p-3 text-center">
+          <div class="text-xs text-slate-400 mb-1">Payback Mediano</div>
+          <div id="mcKpiPayback" class="text-2xl font-bold">—</div>
+        </div>
+        <div class="card p-3 text-center">
+          <div class="text-xs text-slate-400 mb-1">Net Income Mediano</div>
+          <div id="mcKpiNetIncome" class="text-2xl font-bold">—</div>
+        </div>
+        <div class="card p-3 text-center">
+          <div class="text-xs text-slate-400 mb-1">Escenarios simulados</div>
+          <div id="mcKpiTotal" class="text-2xl font-bold">—</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="card p-4">
+          <h3 class="text-sm font-semibold mb-1">Distribución Payback</h3>
+          <canvas id="chartPayback"></canvas>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-sm font-semibold mb-1">Distribución Net Income</h3>
+          <canvas id="chartNetIncome"></canvas>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-sm font-semibold mb-1">Cash Acumulado 60m</h3>
+          <canvas id="chartCash24"></canvas>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-sm font-semibold mb-1">Heatmap Capacidad × Staff</h3>
+          <div id="heatmapContainer" class="overflow-x-auto"></div>
+        </div>
+      </div>
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold mb-1">Sensibilidad general (todos los escenarios)</h3>
+        <canvas id="chartTornado" style="max-height:400px"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== WORKER CODE ========== -->
+<script id="workerCode" type="text/js-worker">
+// xoshiro128** PRNG
+function xoshiro128ss(seed) {
+  let s = [seed, seed ^ 0x9E3779B9, seed ^ 0x6C078965, seed ^ 0x714ACB41];
+  function rotl(x, k) { return ((x << k) | (x >>> (32 - k))) >>> 0; }
+  function next() {
+    const result = (rotl((s[1] * 5) >>> 0, 7) * 9) >>> 0;
+    const t = (s[1] << 9) >>> 0;
+    s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3];
+    s[2] ^= t;
+    s[3] = rotl(s[3], 11);
+    return result;
+  }
+  for (let i = 0; i < 20; i++) next();
+  return function() { return next() / 4294967296; };
+}
+
+function sampleUniform(rng, min, max) { return min + rng() * (max - min); }
+
+function sampleTriangular(rng, min, mode, max) {
+  const u = rng();
+  const fc = (mode - min) / (max - min);
+  if (u < fc) return min + Math.sqrt(u * (max - min) * (mode - min));
+  return max - Math.sqrt((1 - u) * (max - min) * (max - mode));
+}
+
+const SEASONALITY = [0.60, 0.65, 0.80, 0.90, 1.00, 1.05, 1.10, 1.05, 0.95, 0.90, 0.85, 0.70];
+// Weekly patterns: Tue, Wed, Thu, Fri, Sat, Sun (Mon closed)
+// Almuerzo: entre semana moderado, finde baja
+const WEEKLY_ALM = [0.50, 0.60, 0.80, 0.75, 0.45, 0.60];
+// Cena: vie+sab pico, mar/mie muy flojos
+const WEEKLY_CENA = [0.35, 0.45, 0.75, 1.00, 1.00, 0.45];
+// Monthly averages
+const WEEKLY_ALM_AVG = WEEKLY_ALM.reduce((s,v) => s+v, 0) / WEEKLY_ALM.length;
+const WEEKLY_CENA_AVG = WEEKLY_CENA.reduce((s,v) => s+v, 0) / WEEKLY_CENA.length;
+
+function calcMC(s, f) {
+  // vueltas represent PEAK: almuerzo peak = Thu, cena peak = Fri
+  // Peak cena turns (config defines max)
+  const peakCoversAlmDia = s.capacidad * s.vueltasAlmuerzo;
+  const peakCoversCenaDia = s.capacidad * s.vueltasCena;
+  let cashAccum = -s.inversionTotal;
+  let investorAccum = 0, operadorAccum = 0, paybackMonth = null;
+  let shockRemaining = 0, totalRevenue24 = 0, totalNetIncome24 = 0, annualNet = 0;
+  let steadyStateNetIncome = 0;
+  const months = [];
+
+  for (let m = 1; m <= 60; m++) {
+    const inf = s.inflacionMensual / 100;
+
+    // TICKET: sube con inflación, con lag los primeros 12 meses, después lag 1 mes
+    const effectiveLag = m <= 12 ? s.ajusteTicketLag : 1;
+    const ticketMult = Math.pow(1 + inf, Math.max(0, m - effectiveLag));
+
+    // MATERIA PRIMA: sube con inflación mensual (food cost es % del revenue, ya ajustado por ticket)
+    // No necesita multiplicador extra — el % se aplica sobre revenue que ya tiene ticketMult
+
+    // ALQUILER: fijo primeros 24 meses (contrato), después ajusta anualmente
+    const alquilerMult = m <= 24 ? 1.0 : Math.pow(1 + inf, m - 24);
+
+    // SUELDOS: paritarias cada 6 meses (escalón, no gradual)
+    const semestre = Math.floor((m - 1) / 6);
+    const sueldoMult = Math.pow(1 + inf * 6, semestre); // cada 6 meses acumula 6 meses de inflación
+
+    // SERVICIOS: tarifazos cada 4 meses
+    const trimestre = Math.floor((m - 1) / 4);
+    const serviciosMult = Math.pow(1 + inf * 4, trimestre);
+
+    // OTROS FIJOS (contador, software): suben anualmente
+    const anio = Math.floor((m - 1) / 12);
+    const otrosMult = Math.pow(1 + inf * 12, anio);
+
+    const rampPct = m <= s.rampUpMeses ? 20 + (s.demandaMaxPct - 20) * (m / s.rampUpMeses) : s.demandaMaxPct;
+    let demandMult = SEASONALITY[(m - 1) % 12];
+
+    if (shockRemaining > 0) { demandMult *= (1 + s.impactoShock / 100); shockRemaining--; }
+    else if (s.rng() < s.probShockMensual / 100) { shockRemaining = Math.round(s.duracionShock); demandMult *= (1 + s.impactoShock / 100); shockRemaining--; }
+
+    const eff = (rampPct / 100) * demandMult;
+    const mCoversAlm = peakCoversAlmDia * s.diasOperativos * eff * WEEKLY_ALM_AVG;
+    const mCoversCena = peakCoversCenaDia * s.diasOperativos * eff * WEEKLY_CENA_AVG;
+    const mRev = mCoversAlm * s.ticketAlmuerzo * ticketMult + mCoversCena * s.ticketCena * ticketMult;
+    const mRevBlancoConIVA = mRev * (s.pctBlanco / 100);
+    const mRevBlanco = mRevBlancoConIVA / (1 + s.ivaAlicuota / 100);
+    const mCOGS = mRev * ((s.foodCost + s.paperCost) / 100);
+    const mGross = mRev - mCOGS;
+    const almuerzoOnly = s.staffAlmuerzoOnly || 0;
+    const fullTime = s.staffCount - almuerzoOnly;
+    const mStaffCost = (fullTime * s.costoEmpleado + almuerzoOnly * s.costoEmpleado * 0.6) * sueldoMult;
+    const mOpex = mStaffCost + s.alquiler * alquilerMult + s.servicios * serviciosMult
+      + mRev * ((f.opexPct + s.marketingPct) / 100) + mRevBlanco * (f.processingPctBlanco / 100)
+      + (f.estudioContable + s.softwareMisc) * otrosMult;
+    const mEbitda = mGross - mOpex;
+    const mIvaNeto = Math.max(0, mRevBlanco * (s.ivaAlicuota / 100) * (1 - s.ivaCreditoPct / 100));
+    const mIibb = mRevBlanco * (s.iibbPct / 100);
+    const mDebCred = mRevBlancoConIVA * (s.debCredPct / 100);
+    const mGanancias = Math.max(0, mEbitda * (s.pctBlanco / 100)) * (s.gananciasPct / 100);
+    const mNet = mEbitda - mIvaNeto - mIibb - mDebCred - mGanancias;
+
+    cashAccum += mNet; totalRevenue24 += mRev; totalNetIncome24 += mNet;
+    const isPrePayback = investorAccum < s.inversionTotal;
+    const splitPct = isPrePayback ? s.pctDurantePayback / 100 : s.pctPostPayback / 100;
+    const investorShare = mNet > 0 ? mNet * splitPct : 0;
+    operadorAccum += mNet - investorShare; investorAccum += investorShare;
+    if (paybackMonth === null && cashAccum >= 0) paybackMonth = m;
+    if (m <= 12) annualNet += mNet;
+    if (m === 18) steadyStateNetIncome = mNet;
+    months.push({ month: m, revenue: mRev, netIncome: mNet, cashAccum, investorAccum, operadorAccum });
+  }
+
+  return {
+    paybackMonth: paybackMonth || 61, steadyStateNetIncome, cashAccum24: cashAccum,
+    totalRevenue24, totalNetIncome24, investorAccum24: investorAccum, operadorAccum24: operadorAccum,
+    roi: s.inversionTotal > 0 ? (annualNet / s.inversionTotal * 100) : 0,
+    inversionTotal: s.inversionTotal, months,
+    inputs: {
+      capacidad: s.capacidad, vueltasAlmuerzo: s.vueltasAlmuerzo, vueltasCena: s.vueltasCena,
+      ticketAlmuerzo: s.ticketAlmuerzo, ticketCena: s.ticketCena, staffCount: s.staffCount,
+      staffRatio: s.capacidad / s.staffCount, alquiler: s.alquiler, servicios: s.servicios,
+      inversionTotal: s.inversionTotal, demandaMaxPct: s.demandaMaxPct, rampUpMeses: s.rampUpMeses,
+      marketingPct: s.marketingPct, inflacionMensual: s.inflacionMensual, ajusteTicketLag: s.ajusteTicketLag,
+      probShockMensual: s.probShockMensual, impactoShock: s.impactoShock, duracionShock: s.duracionShock
+    }
+  };
+}
+
+function welfordInit() { return { n: 0, mean: 0, m2: 0, min: Infinity, max: -Infinity }; }
+function welfordUpdate(w, x) { w.n++; const d = x - w.mean; w.mean += d / w.n; w.m2 += d * (x - w.mean); if (x < w.min) w.min = x; if (x > w.max) w.max = x; }
+function histInit(min, max, bins) { return { min, max, bins, counts: new Float64Array(bins) }; }
+function histAdd(h, x) { let i = Math.floor((x - h.min) / (h.max - h.min) * h.bins); if (i < 0) i = 0; if (i >= h.bins) i = h.bins - 1; h.counts[i]++; }
+function reservoirInit(k) { return { k, samples: [], n: 0 }; }
+function reservoirAdd(res, rng, item) { res.n++; if (res.samples.length < res.k) { res.samples.push(item); } else { const j = Math.floor(rng() * res.n); if (j < res.k) res.samples[j] = item; } }
+
+self.onmessage = function(e) {
+  const { iterations, config, fixed, seed, workerId } = e.data;
+  const rng = xoshiro128ss(seed);
+  const stats = { paybackMonth: welfordInit(), steadyStateNetIncome: welfordInit(), cashAccum24: welfordInit(), investorAccum24: welfordInit(), operadorAccum24: welfordInit(), roi: welfordInit(), totalRevenue24: welfordInit() };
+  const hists = { paybackMonth: histInit(0, 62, 62), steadyStateNetIncome: histInit(-80000, 150000, 60), cashAccum24: histInit(-500000, 1500000, 100), investorROI: histInit(-100, 800, 60), investorReturn: histInit(-100000, 1200000, 80) };
+  const reservoir = reservoirInit(10000);
+  let ruinCount = 0, investorRecoveryCount = 0;
+  const heatCapBins = [20,25,30,35,40,45,50,55,60], heatStaffBins = [4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+  const heatSuccess = {}, heatTotal = {};
+  for (const c of heatCapBins) for (const st of heatStaffBins) { heatSuccess[c+'_'+st] = 0; heatTotal[c+'_'+st] = 0; }
+  const inputKeys = ['capacidad','vueltasAlmuerzo','vueltasCena','ticketAlmuerzo','ticketCena','staffCount','staffRatio','alquiler','servicios','inversionTotal','demandaMaxPct','rampUpMeses','marketingPct','inflacionMensual','ajusteTicketLag','probShockMensual','impactoShock','duracionShock'];
+  const successSums = {}, failSums = {}; for (const k of inputKeys) { successSums[k] = 0; failSums[k] = 0; }
+  let successCount = 0, failCount = 0;
+
+  for (let i = 0; i < iterations; i++) {
+    const cap = Math.round(sampleUniform(rng, config.capacidad.min, config.capacidad.max));
+    const ratioCena = sampleUniform(rng, config.staffRatio.min, config.staffRatio.max);
+    const staffCena = Math.max(2, Math.round(cap / ratioCena));
+    const staffAlmuerzo = Math.max(1, Math.round(staffCena * 0.5));
+    const overlap = Math.round(staffCena * 0.3); // 30% hace doble turno
+    const staff = staffCena + staffAlmuerzo - overlap;
+    const s = {
+      // Vueltas, demanda, rampUp: fixed at mode/midpoint (market variables, not decisions)
+      capacidad: cap,
+      vueltasAlmuerzo: config.vueltasAlmuerzo.mode || (config.vueltasAlmuerzo.min + config.vueltasAlmuerzo.max) / 2,
+      vueltasCena: config.vueltasCena.mode || (config.vueltasCena.min + config.vueltasCena.max) / 2,
+      demandaMaxPct: config.demandaMaxPct.mode || (config.demandaMaxPct.min + config.demandaMaxPct.max) / 2,
+      rampUpMeses: Math.round(config.rampUpMeses.mode || (config.rampUpMeses.min + config.rampUpMeses.max) / 2),
+      diasOperativos: config.diasOperativos, ticketAlmuerzo: sampleUniform(rng, config.ticketAlmuerzo.min, config.ticketAlmuerzo.max),
+      ticketCena: sampleUniform(rng, config.ticketCena.min, config.ticketCena.max), foodCost: config.foodCost, paperCost: config.paperCost,
+      staffCount: staff, staffAlmuerzoOnly: Math.max(0, staffAlmuerzo - overlap), costoEmpleado: config.costoEmpleado, alquiler: sampleUniform(rng, config.alquiler.min, config.alquiler.max),
+      servicios: sampleUniform(rng, config.servicios.min, config.servicios.max), pctNegro: config.pctNegro, pctBlanco: 100 - config.pctNegro,
+      iibbPct: config.iibbPct, ivaAlicuota: config.ivaAlicuota, ivaCreditoPct: config.ivaCreditoPct, gananciasPct: config.gananciasPct,
+      debCredPct: config.debCredPct, inversionTotal: sampleUniform(rng, config.inversionTotal.min, config.inversionTotal.max),
+      pctDurantePayback: config.pctDurantePayback, pctPostPayback: sampleUniform(rng, config.pctPostPayback.min, config.pctPostPayback.max),
+      marketingPct: sampleUniform(rng, config.marketingPct.min, config.marketingPct.max),
+      inflacionMensual: sampleUniform(rng, config.inflacionMensual.min, config.inflacionMensual.max),
+      ajusteTicketLag: Math.round(sampleUniform(rng, config.ajusteTicketLag.min, config.ajusteTicketLag.max)),
+      probShockMensual: sampleUniform(rng, config.probShockMensual.min, config.probShockMensual.max),
+      impactoShock: sampleUniform(rng, config.impactoShock.min, config.impactoShock.max),
+      duracionShock: sampleUniform(rng, config.duracionShock.min, config.duracionShock.max),
+      softwareMisc: sampleUniform(rng, config.softwareMisc.min, config.softwareMisc.max), rng
+    };
+    const result = calcMC(s, fixed);
+    for (const k of ['paybackMonth','steadyStateNetIncome','cashAccum24','investorAccum24','operadorAccum24','roi','totalRevenue24']) welfordUpdate(stats[k], result[k]);
+    histAdd(hists.paybackMonth, result.paybackMonth); histAdd(hists.steadyStateNetIncome, result.steadyStateNetIncome);
+    histAdd(hists.cashAccum24, result.cashAccum24);
+    histAdd(hists.investorROI, result.inversionTotal > 0 ? ((result.investorAccum24 - result.inversionTotal) / result.inversionTotal * 100) : 0);
+    histAdd(hists.investorReturn, result.investorAccum24);
+    reservoirAdd(reservoir, rng, result);
+    const isRuin = result.paybackMonth >= 61; if (isRuin) ruinCount++;
+    if (result.investorAccum24 >= result.inversionTotal) investorRecoveryCount++;
+    const capBin = Math.min(60, Math.max(20, Math.round(result.inputs.capacidad / 5) * 5));
+    const stBin = Math.min(17, Math.max(4, Math.round(result.inputs.staffCount)));
+    const hk = capBin + '_' + stBin; if (heatTotal[hk] !== undefined) { heatTotal[hk]++; if (!isRuin) heatSuccess[hk]++; }
+    if (isRuin) { failCount++; for (const k of inputKeys) failSums[k] += result.inputs[k]; }
+    else { successCount++; for (const k of inputKeys) successSums[k] += result.inputs[k]; }
+    if (i % 2000 === 0) self.postMessage({ type: 'progress', done: i, total: iterations, workerId });
+  }
+  const successAvgs = {}, failAvgs = {};
+  for (const k of inputKeys) { successAvgs[k] = successCount > 0 ? successSums[k] / successCount : 0; failAvgs[k] = failCount > 0 ? failSums[k] / failCount : 0; }
+  self.postMessage({
+    type: 'result', workerId, iterations, stats,
+    hists: { paybackMonth: { min: hists.paybackMonth.min, max: hists.paybackMonth.max, bins: hists.paybackMonth.bins, counts: Array.from(hists.paybackMonth.counts) }, steadyStateNetIncome: { min: hists.steadyStateNetIncome.min, max: hists.steadyStateNetIncome.max, bins: hists.steadyStateNetIncome.bins, counts: Array.from(hists.steadyStateNetIncome.counts) }, cashAccum24: { min: hists.cashAccum24.min, max: hists.cashAccum24.max, bins: hists.cashAccum24.bins, counts: Array.from(hists.cashAccum24.counts) }, investorROI: { min: hists.investorROI.min, max: hists.investorROI.max, bins: hists.investorROI.bins, counts: Array.from(hists.investorROI.counts) }, investorReturn: { min: hists.investorReturn.min, max: hists.investorReturn.max, bins: hists.investorReturn.bins, counts: Array.from(hists.investorReturn.counts) } },
+    samples: reservoir.samples.map(r => ({ paybackMonth: r.paybackMonth, steadyStateNetIncome: r.steadyStateNetIncome, cashAccum24: r.cashAccum24, investorAccum24: r.investorAccum24, roi: r.roi, inputs: r.inputs, inversionTotal: r.inversionTotal, months: r.months })),
+    ruinCount, investorRecoveryCount, successAvgs, failAvgs, successCount, failCount, heatSuccess, heatTotal, inputKeys
+  });
+};
+</script>
+
+<!-- ========== MAIN SCRIPT ========== -->
+<script>
+// ========== PARAMS ==========
+const PARAMS = [
+  { id: 'capacidad', label: 'Capacidad', unit: 'pax', group: 'grpOperacion', type: 'random', dist: 'uniform', min: 20, max: 60 },
+  { id: 'vueltasAlmuerzo', label: 'Vueltas Almuerzo (pico)', unit: '', group: 'grpOperacion', type: 'random', dist: 'triangular', min: 0.3, mode: 0.8, max: 1.5, note: 'MERCADO — MC usa el modo' },
+  { id: 'vueltasCena', label: 'Vueltas Cena (pico)', unit: '', group: 'grpOperacion', type: 'random', dist: 'triangular', min: 0.5, mode: 1.5, max: 2.5, note: 'MERCADO — MC usa el modo' },
+  { id: 'diasOperativos', label: 'Días Operativos', unit: 'días', group: 'grpOperacion', type: 'fixed', value: 26 },
+  { id: 'ticketAlmuerzo', label: 'Ticket Almuerzo', unit: 'USD', group: 'grpTickets', type: 'random', dist: 'uniform', min: 15, max: 25 },
+  { id: 'ticketCena', label: 'Ticket Cena', unit: 'USD', group: 'grpTickets', type: 'random', dist: 'uniform', min: 30, max: 41 },
+  { id: 'foodCost', label: 'Food Cost', unit: '%', group: 'grpCostosVar', type: 'fixed', value: 25 },
+  { id: 'paperCost', label: 'Paper Cost', unit: '%', group: 'grpCostosVar', type: 'fixed', value: 2.5 },
+  { id: 'staffRatio', label: 'Ratio pax/empleado', unit: '', group: 'grpCostosFijos', type: 'random', dist: 'uniform', min: 2.5, max: 4.0, note: 'Staff = capacidad / ratio' },
+  { id: 'costoEmpleado', label: 'Costo Empleado', unit: 'USD', group: 'grpCostosFijos', type: 'fixed', value: 1150 },
+  { id: 'alquiler', label: 'Alquiler', unit: 'USD', group: 'grpCostosFijos', type: 'random', dist: 'uniform', min: 3000, max: 4500 },
+  { id: 'servicios', label: 'Servicios', unit: 'USD', group: 'grpCostosFijos', type: 'random', dist: 'uniform', min: 800, max: 1500 },
+  { id: 'pctNegro', label: '% Negro', unit: '%', group: 'grpImpuestos', type: 'fixed', value: 20 },
+  { id: 'iibbPct', label: 'IIBB', unit: '%', group: 'grpImpuestos', type: 'fixed', value: 3.5 },
+  { id: 'ivaAlicuota', label: 'IVA', unit: '%', group: 'grpImpuestos', type: 'fixed', value: 21 },
+  { id: 'ivaCreditoPct', label: 'Crédito Fiscal IVA', unit: '%', group: 'grpImpuestos', type: 'fixed', value: 40 },
+  { id: 'gananciasPct', label: 'Ganancias', unit: '%', group: 'grpImpuestos', type: 'fixed', value: 35 },
+  { id: 'debCredPct', label: 'Déb/Créd Bancario', unit: '%', group: 'grpImpuestos', type: 'fixed', value: 1.2 },
+  { id: 'inversionTotal', label: 'Inversión Total', unit: 'USD', group: 'grpInversion', type: 'random', dist: 'uniform', min: 190000, max: 230000 },
+  { id: 'pctDurantePayback', label: '% Inversor Pre-Payback', unit: '%', group: 'grpInversion', type: 'fixed', value: 80 },
+  { id: 'pctPostPayback', label: '% Inversor Post-Payback', unit: '%', group: 'grpInversion', type: 'random', dist: 'uniform', min: 25, max: 30 },
+  { id: 'rampUpMeses', label: 'Ramp-up', unit: 'meses', group: 'grpInversion', type: 'random', dist: 'triangular', min: 3, mode: 6, max: 12, note: 'MERCADO — MC usa el modo' },
+  { id: 'demandaMaxPct', label: 'Demanda Máxima', unit: '%', group: 'grpConstantes', type: 'random', dist: 'triangular', min: 50, mode: 85, max: 98, note: 'MERCADO — MC usa el modo' },
+  { id: 'opexPct', label: 'Opex Mantenimiento', unit: '%', group: 'grpConstantes', type: 'fixed', value: 2 },
+  { id: 'marketingPct', label: 'Marketing', unit: '%', group: 'grpConstantes', type: 'random', dist: 'uniform', min: 3, max: 5 },
+  { id: 'processingPctBlanco', label: 'Comisión Tarjetas', unit: '%', group: 'grpConstantes', type: 'fixed', value: 1.5 },
+  { id: 'estudioContable', label: 'Estudio Contable', unit: 'USD', group: 'grpConstantes', type: 'fixed', value: 500 },
+  { id: 'softwareMisc', label: 'Software/Misc', unit: 'USD', group: 'grpConstantes', type: 'random', dist: 'uniform', min: 200, max: 500 },
+  { id: 'inflacionMensual', label: 'Inflación Mensual', unit: '%', group: 'grpArgentina', type: 'random', dist: 'uniform', min: 2, max: 4 },
+  { id: 'ajusteTicketLag', label: 'Lag Ajuste Ticket', unit: 'meses', group: 'grpArgentina', type: 'random', dist: 'uniform', min: 1, max: 3 },
+  { id: 'probShockMensual', label: 'Prob. Shock Mensual', unit: '%', group: 'grpArgentina', type: 'random', dist: 'uniform', min: 1, max: 3 },
+  { id: 'impactoShock', label: 'Impacto Shock', unit: '%', group: 'grpArgentina', type: 'random', dist: 'uniform', min: -50, max: -25 },
+  { id: 'duracionShock', label: 'Duración Shock', unit: 'meses', group: 'grpArgentina', type: 'random', dist: 'uniform', min: 2, max: 4 },
+];
+
+// ========== CONFIG UI ==========
+function renderConfig() {
+  for (const p of PARAMS) {
+    const container = document.getElementById(p.group);
+    if (!container) continue;
+    const div = document.createElement('div');
+    div.className = 'bg-slate-800 rounded-lg px-3 py-2';
+    if (p.type === 'fixed') {
+      div.innerHTML = `<div class="flex items-center justify-between mb-1"><span class="text-xs text-slate-300">${p.label}</span><span class="text-[10px] text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded">FIJO</span></div><input type="number" data-id="${p.id}" data-field="value" value="${p.value}" step="any" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-right"><span class="text-[10px] text-slate-500">${p.unit}</span>`;
+    } else {
+      let fields = '';
+      if (p.dist === 'uniform') {
+        fields = `<div class="grid grid-cols-2 gap-2 mt-1"><div><label class="text-[10px] text-slate-500">Min</label><input type="number" data-id="${p.id}" data-field="min" value="${p.min}" step="any" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-right"></div><div><label class="text-[10px] text-slate-500">Max</label><input type="number" data-id="${p.id}" data-field="max" value="${p.max}" step="any" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-right"></div></div>`;
+      } else {
+        fields = `<div class="grid grid-cols-3 gap-1 mt-1"><div><label class="text-[10px] text-slate-500">Min</label><input type="number" data-id="${p.id}" data-field="min" value="${p.min}" step="any" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-right"></div><div><label class="text-[10px] text-slate-500">Modo</label><input type="number" data-id="${p.id}" data-field="mode" value="${p.mode}" step="any" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-right"></div><div><label class="text-[10px] text-slate-500">Max</label><input type="number" data-id="${p.id}" data-field="max" value="${p.max}" step="any" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-right"></div></div>`;
+      }
+      div.innerHTML = `<div class="flex items-center justify-between mb-1"><span class="text-xs text-slate-300">${p.label}</span><span class="text-[10px] text-blue-400 bg-blue-900/30 px-1.5 py-0.5 rounded">RANDOM</span></div>${fields}<span class="text-[10px] text-slate-500">${p.unit}${p.note ? ' — ' + p.note : ''}</span>`;
+    }
+    container.appendChild(div);
+  }
+}
+
+function toggleConfig() {
+  const p = document.getElementById('configPanel');
+  const b = document.getElementById('toggleConfigBtn');
+  if (p.style.display === 'none') { p.style.display = ''; b.innerHTML = 'Ocultar &uarr;'; }
+  else { p.style.display = 'none'; b.innerHTML = 'Mostrar &darr;'; }
+}
+
+function readConfig() {
+  const config = {};
+  for (const p of PARAMS) {
+    if (p.type === 'fixed') { config[p.id] = parseFloat(document.querySelector(`input[data-id="${p.id}"][data-field="value"]`).value); }
+    else {
+      config[p.id] = {};
+      for (const f of (p.dist === 'triangular' ? ['min','mode','max'] : ['min','max'])) {
+        config[p.id][f] = parseFloat(document.querySelector(`input[data-id="${p.id}"][data-field="${f}"]`).value);
+      }
+    }
+  }
+  return config;
+}
+
+// ========== DETERMINISTIC SCENARIO CALC (main thread) ==========
+const SEASONALITY = [0.60, 0.65, 0.80, 0.90, 1.00, 1.05, 1.10, 1.05, 0.95, 0.90, 0.85, 0.70];
+
+// Weekly patterns (same as worker)
+const W_ALM = [0.50, 0.60, 0.80, 0.75, 0.45, 0.60];
+const W_CENA = [0.35, 0.45, 0.75, 1.00, 1.00, 0.45];
+const W_ALM_AVG = W_ALM.reduce((s,v) => s+v, 0) / W_ALM.length;
+const W_CENA_AVG = W_CENA.reduce((s,v) => s+v, 0) / W_CENA.length;
+
+function calcScenario(params) {
+  const s = params;
+  const f = s._fixed;
+  const peakCoversAlmDia = s.capacidad * s.vueltasAlmuerzo;
+  const peakCoversCenaDia = s.capacidad * s.vueltasCena;
+  let cashAccum = -s.inversionTotal;
+  let investorAccum = 0, operadorAccum = 0, paybackMonth = null;
+  let annualNet = 0;
+  const months = [];
+
+  for (let m = 1; m <= 60; m++) {
+    const inf = s.inflacionMensual / 100;
+
+    // Ticket: con lag primeros 12 meses, después lag 1
+    const effectiveLag = m <= 12 ? s.ajusteTicketLag : 1;
+    const ticketMult = Math.pow(1 + inf, Math.max(0, m - effectiveLag));
+
+    // Alquiler: fijo 24 meses (contrato), después ajusta
+    const alquilerMult = m <= 24 ? 1.0 : Math.pow(1 + inf, m - 24);
+
+    // Sueldos: paritarias cada 6 meses
+    const semestre = Math.floor((m - 1) / 6);
+    const sueldoMult = Math.pow(1 + inf * 6, semestre);
+
+    // Servicios: tarifazos cada 4 meses
+    const trimestre = Math.floor((m - 1) / 4);
+    const serviciosMult = Math.pow(1 + inf * 4, trimestre);
+
+    // Otros fijos: anualmente
+    const anio = Math.floor((m - 1) / 12);
+    const otrosMult = Math.pow(1 + inf * 12, anio);
+
+    const rampPct = m <= s.rampUpMeses ? 20 + (s.demandaMaxPct - 20) * (m / s.rampUpMeses) : s.demandaMaxPct;
+    const demandMult = SEASONALITY[(m - 1) % 12];
+    // Expected shock discount: prob × impact × duration / 12 as permanent monthly adjustment
+    const shockDiscount = 1 - (s.probShockMensual / 100) * Math.abs(s.impactoShock / 100) * s.duracionShock;
+    const eff = (rampPct / 100) * demandMult * shockDiscount;
+
+    const mRevAlm = peakCoversAlmDia * s.ticketAlmuerzo * s.diasOperativos * eff * W_ALM_AVG * ticketMult;
+    const mRevCena = peakCoversCenaDia * s.ticketCena * s.diasOperativos * eff * W_CENA_AVG * ticketMult;
+    const mRev = mRevAlm + mRevCena;
+    const mRevBCI = mRev * (s.pctBlanco / 100);
+    const mRevB = mRevBCI / (1 + s.ivaAlicuota / 100);
+    const mCOGS = mRev * ((s.foodCost + s.paperCost) / 100);
+    const mGross = mRev - mCOGS;
+    const almOnly = s.staffAlmuerzoOnly || 0;
+    const ft = s.staffCount - almOnly;
+    const mStaff = (ft * s.costoEmpleado + almOnly * s.costoEmpleado * 0.6) * sueldoMult;
+    const mOpex = mStaff + s.alquiler * alquilerMult + s.servicios * serviciosMult
+      + mRev * ((f.opexPct + s.marketingPct) / 100) + mRevB * (f.processingPctBlanco / 100)
+      + (f.estudioContable + s.softwareMisc) * otrosMult;
+    const mEbitda = mGross - mOpex;
+    const mImp = Math.max(0, mRevB * (s.ivaAlicuota/100) * (1 - s.ivaCreditoPct/100))
+      + mRevB * (s.iibbPct/100) + mRevBCI * (s.debCredPct/100)
+      + Math.max(0, mEbitda * (s.pctBlanco/100)) * (s.gananciasPct/100);
+    const mNet = mEbitda - mImp;
+
+    cashAccum += mNet;
+    const isPrePayback = investorAccum < s.inversionTotal;
+    const splitPct = isPrePayback ? s.pctDurantePayback / 100 : s.pctPostPayback / 100;
+    const invShare = mNet > 0 ? mNet * splitPct : 0;
+    investorAccum += invShare; operadorAccum += mNet - invShare;
+    if (paybackMonth === null && cashAccum >= 0) paybackMonth = m;
+    if (m <= 12) annualNet += mNet;
+    months.push({ month: m, revenue: mRev, netIncome: mNet, cashAccum, investorAccum, operadorAccum });
+  }
+
+  return { paybackMonth: paybackMonth || 61, netIncomeSteady: months[17]?.netIncome || 0, cashAccum24: cashAccum, investorAccum24: investorAccum, operadorAccum24: operadorAccum, roi: s.inversionTotal > 0 ? (annualNet / s.inversionTotal * 100) : 0, months };
+}
+
+// ========== SIMULATION ==========
+let charts = {};
+let lastResults = null;
+let idealVals = null;
+let filteredSamples = null;
+
+function runSimulation() {
+  const config = readConfig();
+  const iterations = parseInt(document.getElementById('iterCount').value);
+  const seedInput = document.getElementById('seedInput').value;
+  const baseSeed = seedInput ? parseInt(seedInput) : Math.floor(Math.random() * 2147483647);
+
+  const workerConfig = {};
+  for (const p of PARAMS) {
+    if (p.type === 'fixed') workerConfig[p.id] = config[p.id];
+    else workerConfig[p.id] = config[p.id];
+  }
+
+  const workerFixed = { opexPct: config.opexPct, processingPctBlanco: config.processingPctBlanco, estudioContable: config.estudioContable };
+
+  document.getElementById('progressContainer').classList.remove('hidden');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').textContent = 'Simulando...';
+
+  const numWorkers = Math.min(navigator.hardwareConcurrency || 4, 8);
+  const iterPerWorker = Math.ceil(iterations / numWorkers);
+  const workerBlob = new Blob([document.getElementById('workerCode').textContent], { type: 'application/javascript' });
+  const workerURL = URL.createObjectURL(workerBlob);
+  let completedWorkers = 0;
+  const workerResults = [];
+  const progressByWorker = {};
+
+  for (let w = 0; w < numWorkers; w++) {
+    const worker = new Worker(workerURL);
+    const wIters = (w === numWorkers - 1) ? iterations - iterPerWorker * (numWorkers - 1) : iterPerWorker;
+    worker.onmessage = function(e) {
+      if (e.data.type === 'progress') {
+        progressByWorker[e.data.workerId] = e.data.done;
+        let t = 0; for (const k in progressByWorker) t += progressByWorker[k];
+        const pct = Math.min(99, Math.round(t / iterations * 100));
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressPct').textContent = pct + '%';
+      } else if (e.data.type === 'result') {
+        workerResults.push(e.data); completedWorkers++;
+        if (completedWorkers === numWorkers) {
+          URL.revokeObjectURL(workerURL);
+          document.getElementById('progressBar').style.width = '100%';
+          document.getElementById('progressPct').textContent = '100%';
+          setTimeout(() => mergeAndDisplay(workerResults, iterations, config), 50);
+        }
+        worker.terminate();
+      }
+    };
+    worker.postMessage({ iterations: wIters, config: workerConfig, fixed: workerFixed, seed: baseSeed + w * 1000000, workerId: w });
+  }
+}
+
+// ========== MERGE ==========
+function mergeAndDisplay(results, totalIterations, config) {
+  const statKeys = ['paybackMonth','steadyStateNetIncome','cashAccum24','investorAccum24','operadorAccum24','roi','totalRevenue24'];
+  const mergedStats = {};
+  for (const k of statKeys) {
+    let m = { n: 0, mean: 0, m2: 0, min: Infinity, max: -Infinity };
+    for (const r of results) {
+      const b = r.stats[k]; if (b.n === 0) continue;
+      if (m.n === 0) { m = { ...b }; continue; }
+      const n = m.n + b.n, d = b.mean - m.mean;
+      m.m2 = m.m2 + b.m2 + d * d * (m.n * b.n / n); m.mean += d * (b.n / n); m.n = n;
+      m.min = Math.min(m.min, b.min); m.max = Math.max(m.max, b.max);
+    }
+    mergedStats[k] = m;
+  }
+  const histKeys = ['paybackMonth','steadyStateNetIncome','cashAccum24','investorROI','investorReturn'];
+  const mergedHists = {};
+  for (const k of histKeys) {
+    let m = null;
+    for (const r of results) { if (!m) { m = { ...r.hists[k], counts: [...r.hists[k].counts] }; } else { for (let i = 0; i < m.counts.length; i++) m.counts[i] += r.hists[k].counts[i]; } }
+    mergedHists[k] = m;
+  }
+  let allSamples = [];
+  for (const r of results) allSamples = allSamples.concat(r.samples);
+  if (allSamples.length > 10000) { allSamples.sort(() => Math.random() - 0.5); allSamples = allSamples.slice(0, 10000); }
+
+  let ruinCount = 0, investorRecoveryCount = 0, successCount = 0, failCount = 0;
+  for (const r of results) { ruinCount += r.ruinCount; investorRecoveryCount += r.investorRecoveryCount; successCount += r.successCount; failCount += r.failCount; }
+
+  const inputKeys = results[0].inputKeys;
+  const successAvgs = {}, failAvgs = {};
+  for (const k of inputKeys) {
+    let sS = 0, fS = 0;
+    for (const r of results) { sS += r.successAvgs[k] * r.successCount; fS += r.failAvgs[k] * r.failCount; }
+    successAvgs[k] = successCount > 0 ? sS / successCount : 0; failAvgs[k] = failCount > 0 ? fS / failCount : 0;
+  }
+
+  const heatSuccess = {}, heatTotal = {};
+  for (const k in results[0].heatSuccess) { heatSuccess[k] = 0; heatTotal[k] = 0; for (const r of results) { heatSuccess[k] += r.heatSuccess[k]; heatTotal[k] += r.heatTotal[k]; } }
+
+  lastResults = { stats: mergedStats, hists: mergedHists, samples: allSamples, ruinCount, investorRecoveryCount, successCount, failCount, successAvgs, failAvgs, inputKeys, heatSuccess, heatTotal, totalIterations };
+
+  displayResults(lastResults, config);
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').textContent = 'Ejecutar Simulación';
+  document.getElementById('exportBtn').classList.remove('hidden');
+  setTimeout(() => document.getElementById('progressContainer').classList.add('hidden'), 1000);
+}
+
+// ========== DISPLAY ==========
+function displayResults(R, config) {
+  document.getElementById('resultsSection').classList.remove('hidden');
+
+  // Compute ideal values from top 25% performers
+  const successful = R.samples.filter(s => s.paybackMonth < 61);
+  if (successful.length < 20) return;
+  successful.sort((a, b) => b.cashAccum24 - a.cashAccum24);
+  const top25 = successful.slice(0, Math.ceil(successful.length * 0.25));
+  function med(arr) { const s = [...arr].sort((a,b) => a-b); return s[Math.floor(s.length * 0.5)]; }
+
+  idealVals = {
+    capacidad: Math.round(med(top25.map(s => s.inputs.capacidad))),
+    staffCount: Math.round(med(top25.map(s => s.inputs.staffCount))),
+    vueltasAlmuerzo: Math.round(med(top25.map(s => s.inputs.vueltasAlmuerzo)) * 10) / 10,
+    vueltasCena: Math.round(med(top25.map(s => s.inputs.vueltasCena)) * 10) / 10,
+    ticketAlmuerzo: Math.round(med(top25.map(s => s.inputs.ticketAlmuerzo))),
+    ticketCena: Math.round(med(top25.map(s => s.inputs.ticketCena))),
+    alquiler: Math.round(med(top25.map(s => s.inputs.alquiler))),
+    demandaMaxPct: Math.round(med(top25.map(s => s.inputs.demandaMaxPct))),
+    rampUpMeses: Math.round(med(top25.map(s => s.inputs.rampUpMeses))),
+  };
+
+  // Filter samples near ideal
+  const tol = 0.25;
+  filteredSamples = R.samples.filter(s =>
+    s.inputs.capacidad >= idealVals.capacidad * (1-tol) && s.inputs.capacidad <= idealVals.capacidad * (1+tol) &&
+    s.inputs.staffCount >= idealVals.staffCount * (1-tol) && s.inputs.staffCount <= idealVals.staffCount * (1+tol)
+  );
+
+  renderRecomendaciones(R, config);
+  renderEscenarios(R, config);
+  renderRiesgos(R);
+  renderMonteCarlo(R);
+  renderZonas(R, config);
+}
+
+// ========== TAB 1: RECOMENDACIONES ==========
+function renderRecomendaciones(R, config) {
+  const iv = idealVals;
+
+  // Staff breakdown for display
+  const staffCena = iv.staffCount;
+  const staffAlm = Math.max(1, Math.round(staffCena * 0.5));
+  const staffOverlap = Math.round(staffCena * 0.3);
+  const staffTotal = staffCena + staffAlm - staffOverlap;
+
+  // What you control
+  const decisions = [
+    { label: 'Capacidad', value: iv.capacidad + ' pax', icon: '🪑' },
+    { label: 'Staff total', value: staffTotal + ' empleados', sub: staffCena + ' cena + ' + (staffAlm - staffOverlap) + ' solo almuerzo', icon: '👨‍🍳' },
+    { label: 'Ticket Cena', value: '$' + iv.ticketCena, icon: '🥂' },
+    { label: 'Ticket Almuerzo', value: '$' + iv.ticketAlmuerzo, icon: '🍽️' },
+    { label: 'Alquiler máximo', value: '$' + iv.alquiler.toLocaleString('es-AR'), icon: '🏠' },
+  ];
+  document.getElementById('idealDecisions').innerHTML = decisions.map(it => `
+    <div class="bg-slate-800 rounded-lg p-3 text-center">
+      <div class="text-xl mb-1">${it.icon}</div>
+      <div class="text-lg font-bold">${it.value}</div>
+      <div class="text-xs text-slate-400">${it.label}</div>
+      ${it.sub ? '<div class="text-[10px] text-slate-500 mt-1">' + it.sub + '</div>' : ''}
+    </div>`).join('');
+
+  // What market decides — based on real industry data
+  const market = [
+    { label: 'Vueltas Cena (benchmark)', value: '1.2 - 1.8', sub: 'Casual dining: 2-3 pico. Izakaya/tapas con límite 2h: ~1.75 pico. Promedio semanal real: 1.2-1.8.', icon: '🌙', source: 'Industry avg' },
+    { label: 'Ocupación objetivo', value: '60% - 80%', sub: 'Benchmark óptimo: 80%. Argentina 2025: ocupación cayó a ~25% nacional. CABA mejor pero lejos del 80%.', icon: '📈', source: 'Kantar / INDEC' },
+    { label: 'Ramp-up', value: '6 - 12 meses', sub: 'En contexto Argentina 2025 con caída del 30% del consumo gastronómico, el ramp-up puede ser más largo.', icon: '🚀' },
+    { label: 'Contexto Argentina', value: '-30% consumo', sub: '76% de argentinos redujo salidas a comer. Turismo -24%. Cierres masivos en CABA.', icon: '🇦🇷', source: 'Infobae / Ambito 2025' },
+  ];
+  document.getElementById('idealMarket').innerHTML = market.map(it => `
+    <div class="bg-slate-700/50 rounded-lg p-3 text-center">
+      <div class="text-xl mb-1">${it.icon}</div>
+      <div class="text-lg font-bold text-slate-300">${it.value}</div>
+      <div class="text-xs text-slate-400">${it.label}</div>
+      <div class="text-[10px] text-slate-500 mt-1">${it.sub}</div>
+    </div>`).join('');
+
+  // Scenario grid: average weekly vueltas cena × demanda
+  // User sees average. Internally we convert to peak (Friday) by dividing by W_CENA_AVG
+  const wCenaAvg = W_CENA_AVG;
+  // Dynamic steps based on configured ranges
+  const vueltasCenaConfig = config.vueltasCena || { min: 0.5, max: 2.5 };
+  const demandaConfig = config.demandaMaxPct || { min: 50, max: 98 };
+  // Peak max from config, convert to avg real range
+  const maxPeakFromConfig = typeof vueltasCenaConfig === 'object' ? (vueltasCenaConfig.max || 2.5) : 2.5;
+  const minPeakFromConfig = typeof vueltasCenaConfig === 'object' ? (vueltasCenaConfig.min || 0.5) : 0.5;
+  const maxAvgReal = maxPeakFromConfig * wCenaAvg;
+  const minAvgReal = minPeakFromConfig * wCenaAvg;
+  // Generate 7 evenly spaced steps
+  const avgCenaSteps = [];
+  for (let i = 0; i < 7; i++) {
+    avgCenaSteps.push(Math.round((minAvgReal + (maxAvgReal - minAvgReal) * (i / 6)) * 10) / 10);
+  }
+  // Demanda steps from config range
+  const demMin = typeof demandaConfig === 'object' ? (demandaConfig.min || 50) : 50;
+  const demMax = typeof demandaConfig === 'object' ? (demandaConfig.max || 98) : 98;
+  const demandaSteps = [];
+  for (let i = 0; i < 5; i++) {
+    demandaSteps.push(Math.round(demMin + (demMax - demMin) * (i / 4)));
+  }
+  const baseParams = buildBaseParams(config);
+  const days = ['Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+  let html = '<table class="w-full text-xs"><thead><tr><th class="p-2 text-slate-400">Vueltas prom. ↓ / Demanda →</th>';
+  for (const d of demandaSteps) html += `<th class="p-2 text-center text-slate-400">${d}%</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (const avgVc of avgCenaSteps) {
+    const peakVc = avgVc / wCenaAvg;
+    html += `<tr><td class="p-2 text-slate-300 font-medium">${avgVc.toFixed(1)} vueltas</td>`;
+    for (const d of demandaSteps) {
+      const realVueltas = (avgVc * d / 100).toFixed(1);
+      const p = { ...baseParams, vueltasCena: peakVc, demandaMaxPct: d };
+      const r = calcScenario(p);
+      const payback = r.paybackMonth < 61 ? r.paybackMonth : (r.netIncomeSteady > 0 ? '~'+(60+Math.ceil(-r.cashAccum24/r.netIncomeSteady)) : '>60');
+      const net = Math.round(r.netIncomeSteady / 1000);
+      const cash = Math.round(r.cashAccum24 / 1000);
+      const isGood = r.paybackMonth < 61 && r.cashAccum24 > 0;
+      const isBad = r.paybackMonth >= 61 && r.netIncomeSteady <= 0;
+      const isSlow = r.paybackMonth >= 61 && r.netIncomeSteady > 0;
+      const bg = isBad ? 'bg-red-900/30' : isSlow ? 'bg-yellow-900/30' : isGood ? 'bg-green-900/30' : 'bg-yellow-900/30';
+      html += `<td class="p-2 text-center ${bg} rounded">
+        <div class="text-[10px] text-blue-400 mb-0.5">${realVueltas} reales</div>
+        <div class="font-semibold">${payback}m</div>
+        <div class="text-slate-400">$${net}K/mes</div>
+        <div class="text-slate-500">$${cash}K total</div>
+      </td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('scenarioGrid').innerHTML = html;
+
+  // Weekly reference: show how each average breaks down by day
+  let ref = '<h4 class="text-sm font-semibold mb-2">Cómo se distribuye cada promedio en la semana</h4>';
+  ref += '<table class="w-full text-xs"><thead><tr class="text-slate-400 border-b border-slate-700"><th class="py-1.5 px-2 text-left">Promedio</th>';
+  for (const d of days) ref += `<th class="py-1.5 px-2 text-center">${d}</th>`;
+  ref += '<th class="py-1.5 px-2 text-center">Pico (Vie)</th></tr></thead><tbody>';
+  for (const avgVc of avgCenaSteps) {
+    const peakVc = avgVc / wCenaAvg;
+    ref += `<tr class="border-b border-slate-800"><td class="py-1.5 px-2 font-medium">${avgVc.toFixed(1)} prom.</td>`;
+    for (const f of wCena) {
+      const v = (peakVc * f).toFixed(1);
+      ref += `<td class="py-1.5 px-2 text-center">${v}</td>`;
+    }
+    ref += `<td class="py-1.5 px-2 text-center font-semibold text-blue-400">${peakVc.toFixed(1)}</td></tr>`;
+  }
+  ref += '</tbody></table>';
+  document.getElementById('weeklyReference').innerHTML = ref;
+
+  // Focus: what to concentrate on
+  renderIdealFocus(R);
+  renderSensitivityTables(R, config);
+}
+
+// Helper: get midpoint of a random config value, or the fixed value
+function configMid(cfg) {
+  if (typeof cfg === 'number') return cfg;
+  if (cfg.mode !== undefined) return cfg.mode; // triangular: use mode
+  if (cfg.min !== undefined && cfg.max !== undefined) return (cfg.min + cfg.max) / 2; // uniform: midpoint
+  return 0;
+}
+
+function buildBaseParams(config) {
+  const iv = idealVals;
+  // Staff breakdown: cena team + almuerzo part-timers
+  const staffCena = iv.staffCount;
+  const staffAlm = Math.max(1, Math.round(staffCena * 0.5));
+  const overlap = Math.round(staffCena * 0.3);
+  const totalStaff = staffCena + staffAlm - overlap;
+  const almOnly = Math.max(0, staffAlm - overlap);
+  return {
+    // From ideal values (MC top 25%)
+    capacidad: iv.capacidad, vueltasAlmuerzo: iv.vueltasAlmuerzo, vueltasCena: iv.vueltasCena,
+    ticketAlmuerzo: iv.ticketAlmuerzo, ticketCena: iv.ticketCena,
+    alquiler: iv.alquiler, demandaMaxPct: iv.demandaMaxPct, rampUpMeses: iv.rampUpMeses,
+    staffCount: totalStaff, staffAlmuerzoOnly: almOnly,
+    // Fixed values directly from config
+    diasOperativos: config.diasOperativos, foodCost: config.foodCost, paperCost: config.paperCost,
+    costoEmpleado: config.costoEmpleado,
+    pctNegro: config.pctNegro, pctBlanco: 100 - config.pctNegro,
+    iibbPct: config.iibbPct, ivaAlicuota: config.ivaAlicuota, ivaCreditoPct: config.ivaCreditoPct,
+    gananciasPct: config.gananciasPct, debCredPct: config.debCredPct,
+    pctDurantePayback: config.pctDurantePayback, opexPct: config.opexPct,
+    // Random values: use midpoint of configured range
+    servicios: configMid(config.servicios),
+    inversionTotal: configMid(config.inversionTotal),
+    pctPostPayback: configMid(config.pctPostPayback),
+    marketingPct: configMid(config.marketingPct),
+    inflacionMensual: configMid(config.inflacionMensual),
+    ajusteTicketLag: Math.round(configMid(config.ajusteTicketLag)),
+    probShockMensual: configMid(config.probShockMensual),
+    impactoShock: configMid(config.impactoShock),
+    duracionShock: configMid(config.duracionShock),
+    softwareMisc: configMid(config.softwareMisc),
+    // Fixed object for calc functions
+    _fixed: { opexPct: config.opexPct, processingPctBlanco: config.processingPctBlanco, estudioContable: config.estudioContable }
+  };
+}
+
+function renderIdealFocus(R) {
+  const samples = filteredSamples;
+  if (!samples || samples.length < 50) { document.getElementById('idealFocus').innerHTML = '<p class="text-slate-400">Datos insuficientes.</p>'; return; }
+  const n = samples.length;
+  const externalKeys = ['vueltasCena','vueltasAlmuerzo','ticketCena','ticketAlmuerzo','demandaMaxPct','rampUpMeses','inflacionMensual','ajusteTicketLag','probShockMensual','impactoShock','duracionShock','alquiler','servicios'];
+  const actions = {
+    vueltasCena: 'Llenar las mesas de noche: marketing, eventos, delivery, reservas.',
+    vueltasAlmuerzo: 'Menú ejecutivo simple para sumar. No te obsesiones.',
+    ticketCena: 'Carta que suba el ticket: maridajes, compartir, postres.',
+    ticketAlmuerzo: 'Menú acotado pero rentable.',
+    demandaMaxPct: 'Marketing digital, Google Maps, convenios hoteles.',
+    rampUpMeses: 'Lanzamiento fuerte: inauguración, prensa, influencers.',
+    inflacionMensual: 'Negociá alquiler fijo, stockeá insumos, ajustá precios rápido.',
+    ajusteTicketLag: 'Revisá precios cada mes. La demora te come el margen.',
+    probShockMensual: 'Colchón financiero para aguantar 2-4 meses malos.',
+    impactoShock: 'Diversificá: delivery, eventos privados, catering.',
+    duracionShock: 'Planificá para sobrevivir 4 meses malos.',
+    alquiler: 'Negociá duro. Cada $500 menos por mes cambia mucho.',
+    servicios: 'Controlá consumo energético.',
+  };
+  const labelMap = { vueltasCena:'Vueltas Cena', vueltasAlmuerzo:'Vueltas Almuerzo', ticketCena:'Ticket Cena', ticketAlmuerzo:'Ticket Almuerzo', demandaMaxPct:'Demanda', rampUpMeses:'Ramp-up', inflacionMensual:'Inflación', ajusteTicketLag:'Lag Precios', probShockMensual:'Prob. Crisis', impactoShock:'Impacto Crisis', duracionShock:'Duración Crisis', alquiler:'Alquiler', servicios:'Servicios' };
+
+  function rankArr(arr) { const ix = arr.map((v,i)=>({v,i})); ix.sort((a,b)=>a.v-b.v); const r = new Array(n); for(let i=0;i<n;i++) r[ix[i].i]=i+1; return r; }
+  const cashRanks = rankArr(samples.map(s => s.cashAccum24));
+  const ranked = externalKeys.map(k => {
+    const ir = rankArr(samples.map(s => s.inputs[k]));
+    let sxy=0,sx=0,sy=0,sx2=0,sy2=0;
+    for(let i=0;i<n;i++){sxy+=ir[i]*cashRanks[i];sx+=ir[i];sy+=cashRanks[i];sx2+=ir[i]*ir[i];sy2+=cashRanks[i]*cashRanks[i];}
+    const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+    return { key: k, rho: den > 0 ? (n*sxy-sx*sy)/den : 0 };
+  });
+  ranked.sort((a,b) => Math.abs(b.rho) - Math.abs(a.rho));
+
+  let html = '';
+  for (const r of ranked.slice(0, 6)) {
+    const impact = Math.abs(r.rho);
+    const bar = impact > 0.3 ? '🔴' : impact > 0.15 ? '🟡' : '🟢';
+    html += `<div class="bg-slate-800 rounded-lg p-3"><div class="flex items-center gap-2 mb-1"><span>${bar}</span><span class="font-semibold text-sm">${labelMap[r.key] || r.key}</span><span class="text-xs text-slate-400 ml-auto">Impacto: ${(impact*100).toFixed(0)}%</span></div><p class="text-sm text-slate-300">${actions[r.key] || ''}</p></div>`;
+  }
+  document.getElementById('idealFocus').innerHTML = html;
+}
+
+// ========== SENSITIVITY OF FIXED VARIABLES ==========
+function formatPayback(r) {
+  if (r.paybackMonth < 61) return r.paybackMonth + ' meses';
+  // If net income is positive at steady state, extrapolate
+  if (r.netIncomeSteady > 0) {
+    const remaining = -r.cashAccum24; // how much is still negative
+    const monthsMore = Math.ceil(remaining / r.netIncomeSteady);
+    return '~' + (60 + monthsMore) + ' meses';
+  }
+  return 'No recupera';
+}
+
+function renderSensitivityTables(R, config) {
+  const base = buildBaseParams(config);
+  const container = document.getElementById('sensitivityTables');
+
+  // Show base scenario context
+  const wCAvg = W_CENA_AVG;
+  const baseContext = `Escenario base: ${base.capacidad} pax, ${base.staffCount} staff, ${(base.vueltasCena*wCAvg).toFixed(1)} vueltas cena prom, ${base.demandaMaxPct}% demanda, $${base.alquiler.toLocaleString('es-AR')} alquiler, ${base.inflacionMensual}% inflación`;
+
+  const variables = [
+    { key: 'foodCost', label: 'Food Cost', unit: '%', steps: [18, 20, 22, 25, 28, 30, 33, 35],
+      desc: 'Cuánto gastás en materia prima por cada peso que facturás.',
+      explain: 'Solo se mueve el food cost. Todo lo demás queda fijo al escenario base.' },
+    { key: 'costoEmpleado', label: 'Costo por Empleado', unit: 'USD', steps: [800, 950, 1050, 1150, 1300, 1450, 1600],
+      desc: 'Sueldo promedio mensual por empleado (full-time). Los part-time almuerzo cobran 60% de este valor.',
+      explain: 'Solo se mueve el sueldo. Suben por paritarias cada 6 meses. Alquiler fijo 24m.' },
+    { key: 'paperCost', label: 'Paper Cost (descartables)', unit: '%', steps: [1, 1.5, 2, 2.5, 3, 4, 5],
+      desc: 'Servilletas, bolsas, packaging.',
+      explain: 'Solo se mueve paper cost. Todo lo demás fijo.' },
+    { key: 'pctNegro', label: '% Facturación en Negro', unit: '%', steps: [0, 10, 20, 30, 40, 50],
+      desc: 'Cuánto se factura en negro. Más negro = menos impuestos pero más riesgo legal.',
+      explain: 'Solo se mueve el % negro. La parte negra no paga IVA, IIBB, Ganancias ni débitos/créditos.' },
+    { key: 'inflacionMensual', label: 'Inflación Mensual', unit: '%', steps: [1, 2, 3, 4, 5, 6, 8],
+      desc: 'Inflación mensual general.',
+      explain: 'Cómo afecta cada costo: Alquiler fijo 24 meses (contrato). Sueldos suben cada 6 meses (paritarias). Servicios cada 4 meses (tarifazos). Tus precios suben mensual con lag de 1-3 meses. Por eso con más inflación recuperás más rápido los primeros 2 años: tu alquiler queda barato en términos reales mientras tus precios suben.' },
+  ];
+
+  let html = `<div class="bg-slate-800 rounded-lg p-3 mb-4 text-xs text-slate-400">${baseContext}</div>`;
+
+  for (const v of variables) {
+    html += `<div class="card p-4 mb-3">
+      <h4 class="font-semibold text-sm mb-1">${v.label}</h4>
+      <p class="text-xs text-slate-400 mb-1">${v.desc}</p>
+      <p class="text-xs text-blue-400 mb-3">${v.explain}</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs"><thead>
+          <tr class="text-slate-400 border-b border-slate-700">
+            <th class="py-1.5 px-2 text-left">${v.label}</th>
+            <th class="py-1.5 px-2 text-right">Payback</th>
+            <th class="py-1.5 px-2 text-right">Net Income/mes</th>
+            <th class="py-1.5 px-2 text-right">Cash 60m</th>
+            <th class="py-1.5 px-2 text-right">Inversor 60m</th>
+          </tr>
+        </thead><tbody>`;
+
+    const currentVal = config[v.key] !== undefined ? config[v.key] : base[v.key];
+
+    for (const step of v.steps) {
+      const p = { ...base, [v.key]: step };
+      if (v.key === 'pctNegro') p.pctBlanco = 100 - step;
+      const r = calcScenario(p);
+      const isCurrent = Math.abs(step - currentVal) < 0.5;
+      const rowClass = isCurrent ? 'bg-blue-900/30 font-semibold' : 'hover:bg-slate-800/50';
+      const payback = formatPayback(r);
+      const net = Math.round(r.netIncomeSteady);
+      const cash = Math.round(r.cashAccum24);
+      const inv = Math.round(r.investorAccum24);
+
+      html += `<tr class="${rowClass} border-b border-slate-800">
+        <td class="py-1.5 px-2">${step}${v.unit}${isCurrent ? ' (actual)' : ''}</td>
+        <td class="py-1.5 px-2 text-right">${payback}</td>
+        <td class="py-1.5 px-2 text-right ${net < 0 ? 'text-red-400' : 'text-green-400'}">$${net.toLocaleString('es-AR')}</td>
+        <td class="py-1.5 px-2 text-right ${cash < 0 ? 'text-red-400' : 'text-green-400'}">$${cash.toLocaleString('es-AR')}</td>
+        <td class="py-1.5 px-2 text-right">$${inv.toLocaleString('es-AR')}</td>
+      </tr>`;
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ========== TAB 2: ESCENARIOS INVERSOR ==========
+function renderEscenarios(R, config) {
+  const base = buildBaseParams(config);
+  // Scenarios relative to ideal values
+  const iv = idealVals;
+  // Define scenarios by TARGET real turns per night, then compute peak & demanda
+  // realVc = peakVc × weeklyAvg(0.667) × demanda
+  // We set demanda and solve for peakVc, or set both to hit the target
+  const wAvg = W_CENA_AVG;
+  function scenarioFromReal(targetReal, demanda) {
+    // peakVc = targetReal / (wAvg × demanda)
+    return { vueltasCena: targetReal / (wAvg * demanda / 100), demandaMaxPct: demanda };
+  }
+
+  // Almuerzo = ~40% de cena real. Compute almuerzo peak from target real.
+  const wAlmAvgSc = W_ALM_AVG; // ~0.617
+  function scenarioFull(targetCenaReal, demanda, inflacion, rampup, probShock) {
+    const cena = scenarioFromReal(targetCenaReal, demanda);
+    const almReal = targetCenaReal * 0.4;
+    const almPeak = Math.min(2.0, almReal / (wAlmAvgSc * demanda / 100));
+    return { ...cena, vueltasAlmuerzo: almPeak, inflacionMensual: inflacion, rampUpMeses: rampup, probShockMensual: probShock };
+  }
+
+  const scenarios = [
+    { name: 'Pesimista', emoji: '😰', color: '#f87171', desc: '~1.0 cena + ~0.4 almuerzo reales/noche',
+      mods: scenarioFull(1.0, 75, 5, 10, 3) },
+    { name: 'Conservador', emoji: '😐', color: '#fbbf24', desc: '~1.2 cena + ~0.5 almuerzo reales',
+      mods: scenarioFull(1.2, 78, 4, 8, 2) },
+    { name: 'Moderado', emoji: '🤞', color: '#fb923c', desc: '~1.4 cena + ~0.6 almuerzo reales',
+      mods: scenarioFull(1.4, 82, 3.5, 7, 2) },
+    { name: 'Base', emoji: '👍', color: '#3b82f6', desc: 'Lo esperado con buen setup',
+      mods: {} },
+    { name: 'Optimista', emoji: '🚀', color: '#4ade80', desc: '~1.8 cena + ~0.7 almuerzo reales',
+      mods: scenarioFull(1.8, 90, 2.5, 4, 1) },
+    { name: 'Boom', emoji: '🔥', color: '#a78bfa', desc: '~2.0 cena + ~0.8 almuerzo reales',
+      mods: scenarioFull(2.0, 95, 2, 3, 0.5) },
+  ];
+
+  const results = scenarios.map(sc => {
+    const p = { ...base, ...sc.mods };
+    return { ...sc, result: calcScenario(p) };
+  });
+
+  // Cards
+  const wCenaAvgCards = W_CENA_AVG;
+  document.getElementById('scenarioCards').innerHTML = results.map(sc => {
+    const r = sc.result;
+    const p = { ...base, ...sc.mods };
+    const peakVc = (p.vueltasCena || base.vueltasCena);
+    const demanda = p.demandaMaxPct || base.demandaMaxPct;
+    const realVc = (peakVc * wCenaAvgCards * demanda / 100).toFixed(1);
+    const invROI = base.inversionTotal > 0 ? ((r.investorAccum24 - base.inversionTotal) / base.inversionTotal * 100).toFixed(0) : '—';
+    const recovered = base.inversionTotal > 0 ? (r.investorAccum24 / base.inversionTotal * 100).toFixed(0) : '—';
+    const invColor = r.investorAccum24 >= base.inversionTotal ? '#4ade80' : '#f87171';
+    return `<div class="card p-4 text-center" style="border-top: 3px solid ${sc.color}">
+      <div class="text-2xl mb-1">${sc.emoji}</div>
+      <div class="font-bold text-sm mb-1">${sc.name}</div>
+      <div class="text-xs text-slate-400 mb-2">${sc.desc}</div>
+      <div class="text-sm text-blue-400 font-semibold mb-2">${realVc} vueltas reales/noche</div>
+      <div class="text-lg font-bold" style="color:${sc.color}">${r.paybackMonth < 61 ? 'Mes ' + r.paybackMonth : (r.netIncomeSteady > 0 ? '~' + (60 + Math.ceil(-r.cashAccum24 / r.netIncomeSteady)) + ' meses' : 'No recupera')}</div>
+      <div class="text-xs text-slate-400">Payback</div>
+      <div class="text-sm font-semibold mt-2">$${Math.round(r.netIncomeSteady).toLocaleString('es-AR')}/mes</div>
+      <div class="text-xs text-slate-400">Ganancia neta (estabilizado)</div>
+      <div class="text-sm font-semibold mt-2" style="color:${invColor}">$${Math.round(r.investorAccum24).toLocaleString('es-AR')}</div>
+      <div class="text-xs text-slate-400">Inversor cobró (60 meses)</div>
+      <div class="text-xs mt-1" style="color:${invColor}">${r.investorAccum24 >= base.inversionTotal ? 'Recuperó + ganó ' + invROI + '%' : 'Recuperó solo el ' + recovered + '%'}</div>
+    </div>`;
+  }).join('');
+
+  // 24-month chart
+  const ctx = document.getElementById('chartScenarios').getContext('2d');
+  if (charts.scenarios) charts.scenarios.destroy();
+  charts.scenarios = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length:60}, (_,i) => 'M' + (i+1)),
+      datasets: results.map(sc => ({
+        label: sc.name,
+        data: sc.result.months.map(m => Math.round(m.investorAccum)),
+        borderColor: sc.color,
+        backgroundColor: sc.color + '20',
+        borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e2e8f0', usePointStyle: true } },
+        tooltip: { callbacks: { label: (item) => item.dataset.label + ': $' + item.raw.toLocaleString('es-AR') } }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+        y: { ticks: { color: '#94a3b8', callback: v => '$' + Math.round(v/1000) + 'K' }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+
+  // Comparison table — show ALL parameters that differ per scenario
+  const wCenaAvgFactor = W_CENA_AVG;
+
+  let table = '<table class="w-full text-xs"><thead><tr class="text-slate-400 border-b border-slate-700">';
+  table += '<th class="py-2 px-2 text-left">Escenario</th>';
+  table += '<th class="py-2 px-2 text-right">Vueltas cena<br>reales/noche</th>';
+  table += '<th class="py-2 px-2 text-right">Inflación</th>';
+  table += '<th class="py-2 px-2 text-right">Ramp-up</th>';
+  table += '<th class="py-2 px-2 text-right">Shock/mes</th>';
+  table += '<th class="py-2 px-2 text-right font-semibold">Payback</th>';
+  table += '<th class="py-2 px-2 text-right">Net/mes<br>(estabilizado)</th>';
+  table += '<th class="py-2 px-2 text-right">Cash 60m</th>';
+  table += '<th class="py-2 px-2 text-right">Inversor<br>(60 meses)</th>';
+  table += '<th class="py-2 px-2 text-right">Operador<br>(60 meses)</th>';
+  table += '</tr></thead><tbody>';
+  for (const sc of results) {
+    const r = sc.result;
+    const p = { ...base, ...sc.mods };
+    const peakVc = (p.vueltasCena || base.vueltasCena);
+    const avgVc = peakVc * wCenaAvgFactor;
+    const demanda = p.demandaMaxPct || base.demandaMaxPct;
+    const realVc = (avgVc * demanda / 100).toFixed(1);
+    const inflacion = p.inflacionMensual !== undefined ? p.inflacionMensual : base.inflacionMensual;
+    const rampup = p.rampUpMeses !== undefined ? p.rampUpMeses : base.rampUpMeses;
+    const probShock = p.probShockMensual !== undefined ? p.probShockMensual : base.probShockMensual;
+    const pbText = formatPayback(r);
+    table += `<tr class="border-b border-slate-800">
+      <td class="py-2 px-2" style="color:${sc.color}">${sc.emoji} ${sc.name}</td>
+      <td class="py-2 px-2 text-right text-blue-400 font-semibold">${realVc}</td>
+      <td class="py-2 px-2 text-right">${inflacion}%</td>
+      <td class="py-2 px-2 text-right">${rampup}m</td>
+      <td class="py-2 px-2 text-right">${probShock}%</td>
+      <td class="py-2 px-2 text-right font-semibold">${pbText}</td>
+      <td class="py-2 px-2 text-right ${r.netIncomeSteady < 0 ? 'text-red-400' : 'text-green-400'}">$${Math.round(r.netIncomeSteady).toLocaleString('es-AR')}</td>
+      <td class="py-2 px-2 text-right ${r.cashAccum24 < 0 ? 'text-red-400' : 'text-green-400'}">$${Math.round(r.cashAccum24).toLocaleString('es-AR')}</td>
+      <td class="py-2 px-2 text-right">$${Math.round(r.investorAccum24).toLocaleString('es-AR')}</td>
+      <td class="py-2 px-2 text-right">$${Math.round(r.operadorAccum24).toLocaleString('es-AR')}</td>
+    </tr>`;
+  }
+  table += '</tbody></table>';
+  document.getElementById('scenarioTable').innerHTML = table;
+
+  // Weekly breakdown table
+  const days = ['Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const wCena = W_CENA;
+  const wAlm = W_ALM;
+
+  let wb = '<table class="w-full text-xs"><thead><tr class="text-slate-400 border-b border-slate-700"><th class="py-2 px-2 text-left">Escenario</th><th class="py-2 px-2 text-left">Turno</th>';
+  for (const d of days) wb += `<th class="py-2 px-2 text-center">${d}</th>`;
+  wb += '<th class="py-2 px-2 text-center">Prom. semanal</th></tr></thead><tbody>';
+
+  for (const sc of results) {
+    const p = { ...base, ...sc.mods };
+    const vc = (p.vueltasCena || base.vueltasCena);
+    const va = Math.min(p.vueltasAlmuerzo || base.vueltasAlmuerzo, 2.0);
+
+    // Cena row
+    const cenaVals = wCena.map(f => (vc * f).toFixed(1));
+    const cenaAvg = (wCena.reduce((s,f) => s + vc*f, 0) / wCena.length).toFixed(1);
+    wb += `<tr class="border-b border-slate-800"><td class="py-1.5 px-2 font-medium" style="color:${sc.color}" rowspan="2">${sc.emoji} ${sc.name}<br><span class="text-[10px] text-slate-500">Pico cena: ${vc.toFixed(1)}</span></td>`;
+    wb += `<td class="py-1.5 px-2 text-slate-400">Cena</td>`;
+    for (const v of cenaVals) wb += `<td class="py-1.5 px-2 text-center">${v}</td>`;
+    wb += `<td class="py-1.5 px-2 text-center font-semibold">${cenaAvg}</td></tr>`;
+
+    // Almuerzo row
+    const almVals = wAlm.map(f => (va * f).toFixed(1));
+    const almAvg = (wAlm.reduce((s,f) => s + va*f, 0) / wAlm.length).toFixed(1);
+    wb += `<tr class="border-b border-slate-700"><td class="py-1.5 px-2 text-slate-400">Almuerzo</td>`;
+    for (const v of almVals) wb += `<td class="py-1.5 px-2 text-center">${v}</td>`;
+    wb += `<td class="py-1.5 px-2 text-center font-semibold">${almAvg}</td></tr>`;
+  }
+  wb += '</tbody></table>';
+  document.getElementById('weeklyBreakdown').innerHTML = wb;
+}
+
+// ========== TAB 3: RIESGOS ==========
+function renderRiesgos(R) {
+  const config = readConfig();
+  const baseIdeal = buildBaseParams(config);
+  const iv = idealVals;
+
+  // Get scenario mods based on selector
+  const scenarioKey = document.getElementById('riskBaseScenario').value;
+  const scenarioMods = {
+    pesimista: { vueltasCena: Math.max(0.5, iv.vueltasCena * 0.45), vueltasAlmuerzo: Math.max(0.2, iv.vueltasAlmuerzo * 0.45), demandaMaxPct: 55, inflacionMensual: 5, rampUpMeses: 10, probShockMensual: 3 },
+    conservador: { vueltasCena: iv.vueltasCena * 0.7, vueltasAlmuerzo: iv.vueltasAlmuerzo * 0.7, demandaMaxPct: 68, inflacionMensual: 4, rampUpMeses: 8, probShockMensual: 2 },
+    moderado: { vueltasCena: iv.vueltasCena * 0.85, vueltasAlmuerzo: iv.vueltasAlmuerzo * 0.85, demandaMaxPct: 75, inflacionMensual: 3.5, rampUpMeses: 7, probShockMensual: 2 },
+    base: {},
+    optimista: { vueltasCena: iv.vueltasCena * 1.3, vueltasAlmuerzo: iv.vueltasAlmuerzo * 1.3, demandaMaxPct: 90, inflacionMensual: 2.5, rampUpMeses: 4, probShockMensual: 1 },
+    boom: { vueltasCena: 2.8, vueltasAlmuerzo: iv.vueltasAlmuerzo * 1.6, demandaMaxPct: 95, inflacionMensual: 2, rampUpMeses: 3, probShockMensual: 0.5 },
+  };
+  const mods = scenarioMods[scenarioKey] || {};
+  const base = { ...baseIdeal, ...mods };
+
+  // Show what scenario is selected
+  const wCenaAvgF = W_CENA_AVG;
+  const avgVc = (base.vueltasCena * wCenaAvgF).toFixed(1);
+  document.getElementById('riskBaseDesc').textContent = `Vueltas cena: ${avgVc} prom/noche | Demanda: ${base.demandaMaxPct}% | Inflación: ${base.inflacionMensual}%`;
+
+  const container = document.getElementById('riskTables');
+
+  const riskVars = [
+    { key: 'inflacionMensual', label: 'Inflación Mensual', unit: '%', steps: [1, 2, 3, 4, 5, 6, 8],
+      desc: 'Cómo afecta la inflación a tu negocio a 60 meses. Recordá que después del mes 12 ajustás precios con 1 mes de lag.' },
+    { key: 'demandaMaxPct', label: 'Demanda Máxima (ocupación)', unit: '%', steps: [50, 60, 70, 80, 85, 90, 95],
+      desc: 'Qué % del local llenás en promedio una vez estabilizado. Esto lo define tu marketing, ubicación y propuesta.' },
+    { key: 'rampUpMeses', label: 'Meses de Ramp-up', unit: ' meses', steps: [3, 4, 6, 8, 10, 12],
+      desc: 'Cuánto tardás en llegar a la demanda estable. Un buen lanzamiento lo acorta.' },
+    { key: 'alquiler', label: 'Alquiler', unit: ' USD', steps: [2000, 2500, 3000, 3500, 4000, 4500, 5000],
+      desc: 'Impacto del alquiler. Es costo fijo — no baja cuando la demanda baja.' },
+    { key: 'vueltasCena', label: 'Vueltas Cena (pico viernes)', unit: '', steps: [0.8, 1.2, 1.5, 1.8, 2.0, 2.5, 2.8],
+      desc: 'Cuántas vueltas das un viernes a la noche. Los demás días se escalan proporcionalmente.' },
+  ];
+
+  let html = '';
+  for (const v of riskVars) {
+    const currentVal = base[v.key];
+    html += `<div class="card p-4">
+      <h4 class="font-semibold text-sm mb-1">${v.label}</h4>
+      <p class="text-xs text-slate-400 mb-3">${v.desc}</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs"><thead>
+          <tr class="text-slate-400 border-b border-slate-700">
+            <th class="py-1.5 px-2 text-left">${v.label}</th>
+            <th class="py-1.5 px-2 text-right">Payback</th>
+            <th class="py-1.5 px-2 text-right">Net Income/mes</th>
+            <th class="py-1.5 px-2 text-right">Cash 60m</th>
+            <th class="py-1.5 px-2 text-right">Inversor 60m</th>
+            <th class="py-1.5 px-2 text-right">Operador 60m</th>
+          </tr>
+        </thead><tbody>`;
+
+    for (const step of v.steps) {
+      const p = { ...base, [v.key]: step };
+      const r = calcScenario(p);
+      const isCurrent = Math.abs(step - currentVal) < 0.5;
+      const rowClass = isCurrent ? 'bg-blue-900/30 font-semibold' : 'hover:bg-slate-800/50';
+      const payback = formatPayback(r);
+      const net = Math.round(r.netIncomeSteady);
+      const cash = Math.round(r.cashAccum24);
+      const inv = Math.round(r.investorAccum24);
+      const op = Math.round(r.operadorAccum24);
+
+      html += `<tr class="${rowClass} border-b border-slate-800">
+        <td class="py-1.5 px-2">${step}${v.unit}${isCurrent ? ' (ideal)' : ''}</td>
+        <td class="py-1.5 px-2 text-right">${payback}</td>
+        <td class="py-1.5 px-2 text-right ${net < 0 ? 'text-red-400' : 'text-green-400'}">$${net.toLocaleString('es-AR')}</td>
+        <td class="py-1.5 px-2 text-right ${cash < 0 ? 'text-red-400' : 'text-green-400'}">$${cash.toLocaleString('es-AR')}</td>
+        <td class="py-1.5 px-2 text-right">$${inv.toLocaleString('es-AR')}</td>
+        <td class="py-1.5 px-2 text-right">$${op.toLocaleString('es-AR')}</td>
+      </tr>`;
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ========== TAB 4: MONTE CARLO ==========
+function renderMonteCarlo(R) {
+  const samples = R.samples;
+  const paybacks = samples.map(s=>s.paybackMonth).sort((a,b)=>a-b);
+  const netIncomes = samples.map(s=>s.steadyStateNetIncome).sort((a,b)=>a-b);
+  function pctl(arr,p) { return arr[Math.min(Math.floor(arr.length*p),arr.length-1)]; }
+
+  // KPIs
+  const ruinPct = (R.ruinCount/R.totalIterations*100);
+  document.getElementById('mcKpiRuin').textContent = ruinPct.toFixed(1)+'%';
+  document.getElementById('mcKpiRuin').className = 'text-2xl font-bold '+(ruinPct>50?'metric-negative':ruinPct>25?'metric-neutral':'metric-positive');
+  const medPb = pctl(paybacks, 0.5);
+  document.getElementById('mcKpiPayback').textContent = medPb>=25?'>60m':medPb.toFixed(0)+' meses';
+  document.getElementById('mcKpiPayback').className = 'text-2xl font-bold '+(medPb>18?'metric-negative':medPb>12?'metric-neutral':'metric-positive');
+  const medNet = pctl(netIncomes, 0.5);
+  document.getElementById('mcKpiNetIncome').textContent = '$'+Math.round(medNet).toLocaleString('es-AR');
+  document.getElementById('mcKpiNetIncome').className = 'text-2xl font-bold '+(medNet<0?'metric-negative':'metric-positive');
+  document.getElementById('mcKpiTotal').textContent = R.totalIterations.toLocaleString('es-AR');
+
+  // Histograms
+  function renderHist(canvasId, hist, colorFn) {
+    const ctx=document.getElementById(canvasId).getContext('2d');
+    if(charts[canvasId]) charts[canvasId].destroy();
+    const bw=(hist.max-hist.min)/hist.bins;
+    const labels=[]; for(let i=0;i<hist.bins;i++){const lo=hist.min+bw*i; labels.push(Math.abs(lo)>=1000?'$'+Math.round(lo/1000)+'K':lo.toFixed(0));}
+    charts[canvasId]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:Array.from(hist.counts),backgroundColor:hist.counts.map((_,i)=>colorFn(hist.min+bw*(i+0.5))),borderWidth:0,barPercentage:1,categoryPercentage:1}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:(i)=>i.raw.toLocaleString()+' escenarios'}}},scales:{x:{ticks:{maxTicksLimit:10,color:'#94a3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#1e293b'}}}}});
+  }
+  renderHist('chartPayback',R.hists.paybackMonth,v=>v>=25?'#f87171':v>18?'#fbbf24':'#4ade80');
+  renderHist('chartNetIncome',R.hists.steadyStateNetIncome,v=>v<0?'#f87171':'#4ade80');
+  renderHist('chartCash24',R.hists.cashAccum24,v=>v<0?'#f87171':'#4ade80');
+
+  // Heatmap
+  const capBins=[20,25,30,35,40,45,50,55,60], staffBins=[4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+  let hm='<table class="text-xs w-full"><thead><tr><th class="p-1 text-slate-400">Cap\\Staff</th>';
+  for(const st of staffBins) hm+=`<th class="p-1 text-center text-slate-400">${st}</th>`;
+  hm+='</tr></thead><tbody>';
+  for(const c of capBins){
+    hm+=`<tr><td class="p-1 text-slate-400 font-medium">${c}</td>`;
+    for(const st of staffBins){
+      const k=c+'_'+st, t=R.heatTotal[k]||0, s=R.heatSuccess[k]||0;
+      const pct=t>10?(s/t*100):-1;
+      let bg,text; if(pct<0){bg='#1e293b';text='—';}else{bg=`rgb(${Math.round((100-pct)*2.55)},${Math.round(pct*2.55)},40)`;text=pct.toFixed(0)+'%';}
+      hm+=`<td class="p-1 text-center rounded" style="background:${bg};color:${pct>50?'#fff':'#ccc'}">${text}</td>`;
+    }
+    hm+='</tr>';
+  }
+  hm+='</tbody></table>';
+  document.getElementById('heatmapContainer').innerHTML=hm;
+
+  // Tornado
+  const n=samples.length;
+  function rankArr(arr){const ix=arr.map((v,i)=>({v,i}));ix.sort((a,b)=>a.v-b.v);const r=new Array(n);for(let i=0;i<n;i++)r[ix[i].i]=i+1;return r;}
+  const cashRanks=rankArr(samples.map(s=>s.cashAccum24));
+  const allKeys=R.inputKeys;
+  const labelMap={capacidad:'Capacidad',vueltasAlmuerzo:'Vueltas Almuerzo',vueltasCena:'Vueltas Cena',ticketAlmuerzo:'Ticket Almuerzo',ticketCena:'Ticket Cena',staffCount:'Staff',staffRatio:'Ratio pax/emp',alquiler:'Alquiler',servicios:'Servicios',inversionTotal:'Inversión',demandaMaxPct:'Demanda',rampUpMeses:'Ramp-up',marketingPct:'Marketing',inflacionMensual:'Inflación',ajusteTicketLag:'Lag Precios',probShockMensual:'Prob. Shock',impactoShock:'Impacto Shock',duracionShock:'Duración Shock'};
+  const corrs=allKeys.map(k=>{const ir=rankArr(samples.map(s=>s.inputs[k]));let sxy=0,sx=0,sy=0,sx2=0,sy2=0;for(let i=0;i<n;i++){sxy+=ir[i]*cashRanks[i];sx+=ir[i];sy+=cashRanks[i];sx2+=ir[i]*ir[i];sy2+=cashRanks[i]*cashRanks[i];}const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));return{key:k,label:labelMap[k]||k,rho:den>0?(n*sxy-sx*sy)/den:0};});
+  corrs.sort((a,b)=>Math.abs(b.rho)-Math.abs(a.rho));
+  const ctx=document.getElementById('chartTornado').getContext('2d');
+  if(charts.tornado)charts.tornado.destroy();
+  charts.tornado=new Chart(ctx,{type:'bar',data:{labels:corrs.map(c=>c.label),datasets:[{data:corrs.map(c=>c.rho),backgroundColor:corrs.map(c=>c.rho>=0?'#4ade80':'#f87171'),borderWidth:0}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:(i)=>'Correlación: '+i.raw.toFixed(3)}}},scales:{x:{min:-1,max:1,ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}},y:{ticks:{color:'#e2e8f0',font:{size:11}},grid:{display:false}}}}});
+}
+
+// ========== TAB: ZONAS CABA ==========
+function renderZonas(R, config) {
+  const base = buildBaseParams(config);
+
+  // Zone data based on real market research (Zonaprop, La Nación, TimeOut, Infobae 2025)
+  const zonas = [
+    { name: 'Palermo Hollywood', emoji: '🌴', alquiler: 5000, ticketCena: 38, ticketAlm: 22, demandaMaxPct: 85, rampUpMeses: 5,
+      pros: 'Máxima visibilidad, turismo, público joven con poder adquisitivo, polo gastronómico consolidado.',
+      contras: 'Alquiler muy caro, saturación de oferta, alta competencia.',
+      perfil: 'Turistas, expats, clase media-alta 25-45. Noche fuerte.' },
+    { name: 'Villa Crespo / Chacarita', emoji: '🔥', alquiler: 3000, ticketCena: 33, ticketAlm: 18, demandaMaxPct: 78, rampUpMeses: 7,
+      pros: 'Nuevo polo gastronómico ("Chacacrespo"), alquileres accesibles, público curioso, tendencia 2025.',
+      contras: 'Menos tráfico peatonal que Palermo, ramp-up más lento.',
+      perfil: 'Foodies locales, 25-40, buscan propuestas con identidad. Crecimiento explosivo.' },
+    { name: 'San Telmo', emoji: '🏛️', alquiler: 3500, ticketCena: 30, ticketAlm: 17, demandaMaxPct: 72, rampUpMeses: 8,
+      pros: 'Turismo, identidad barrial fuerte, alquileres moderados.',
+      contras: 'Zona irregular en demanda, depende mucho del turismo, menos vida nocturna entre semana.',
+      perfil: 'Turistas, bohemios, público ecléctico. Fines de semana fuertes.' },
+    { name: 'Belgrano / Núñez', emoji: '🏠', alquiler: 4000, ticketCena: 35, ticketAlm: 20, demandaMaxPct: 80, rampUpMeses: 6,
+      pros: 'Barrio residencial con poder adquisitivo, polo en crecimiento Belgrano-Núñez.',
+      contras: 'Más familiar, menos nocturno, competencia con cadenas.',
+      perfil: 'Familias, profesionales, 30-55. Almuerzo fuerte.' },
+    { name: 'Recoleta', emoji: '💎', alquiler: 6500, ticketCena: 40, ticketAlm: 25, demandaMaxPct: 82, rampUpMeses: 6,
+      pros: 'Máximo poder adquisitivo, turismo premium, ticket alto.',
+      contras: 'Alquiler muy caro, público más conservador (menos abierto a fusión japonesa).',
+      perfil: 'Clase alta, turistas de hotel, 35-60. Formal.' },
+    { name: 'Caballito / Almagro', emoji: '🚇', alquiler: 2500, ticketCena: 28, ticketAlm: 16, demandaMaxPct: 70, rampUpMeses: 9,
+      pros: 'Alquiler bajo, mucha densidad poblacional, polo Acoyte en crecimiento.',
+      contras: 'Menor poder adquisitivo, ticket más bajo, concepto fusión puede ser nicho.',
+      perfil: 'Clase media, familias, estudiantes. Ticket sensible a precio.' },
+  ];
+
+  // Run simulations for each zone
+  const results = zonas.map(z => {
+    const p = { ...base, alquiler: z.alquiler, ticketCena: z.ticketCena, ticketAlmuerzo: z.ticketAlm, demandaMaxPct: z.demandaMaxPct, rampUpMeses: z.rampUpMeses };
+    return { ...z, result: calcScenario(p) };
+  });
+
+  // Comparison table
+  let table = '<table class="w-full text-xs"><thead><tr class="text-slate-400 border-b border-slate-700">';
+  table += '<th class="py-2 px-2 text-left">Zona</th>';
+  table += '<th class="py-2 px-2 text-right">Alquiler</th>';
+  table += '<th class="py-2 px-2 text-right">Ticket cena</th>';
+  table += '<th class="py-2 px-2 text-right">Demanda</th>';
+  table += '<th class="py-2 px-2 text-right">Ramp-up</th>';
+  table += '<th class="py-2 px-2 text-right font-semibold">Payback</th>';
+  table += '<th class="py-2 px-2 text-right">Net/mes</th>';
+  table += '<th class="py-2 px-2 text-right">Cash 60m</th>';
+  table += '<th class="py-2 px-2 text-right">Inversor 60m</th>';
+  table += '</tr></thead><tbody>';
+
+  // Sort by payback
+  results.sort((a, b) => a.result.paybackMonth - b.result.paybackMonth);
+
+  for (const z of results) {
+    const r = z.result;
+    const pb = formatPayback(r);
+    table += `<tr class="border-b border-slate-800 hover:bg-slate-800/50">
+      <td class="py-2 px-2 font-medium">${z.emoji} ${z.name}</td>
+      <td class="py-2 px-2 text-right">$${z.alquiler.toLocaleString('es-AR')}</td>
+      <td class="py-2 px-2 text-right">$${z.ticketCena}</td>
+      <td class="py-2 px-2 text-right">${z.demandaMaxPct}%</td>
+      <td class="py-2 px-2 text-right">${z.rampUpMeses}m</td>
+      <td class="py-2 px-2 text-right font-semibold">${pb}</td>
+      <td class="py-2 px-2 text-right ${r.netIncomeSteady < 0 ? 'text-red-400' : 'text-green-400'}">$${Math.round(r.netIncomeSteady).toLocaleString('es-AR')}</td>
+      <td class="py-2 px-2 text-right ${r.cashAccum24 < 0 ? 'text-red-400' : 'text-green-400'}">$${Math.round(r.cashAccum24).toLocaleString('es-AR')}</td>
+      <td class="py-2 px-2 text-right">$${Math.round(r.investorAccum24).toLocaleString('es-AR')}</td>
+    </tr>`;
+  }
+  table += '</tbody></table>';
+  document.getElementById('zonaTable').innerHTML = table;
+
+  // Zone detail cards
+  document.getElementById('zonaDetails').innerHTML = results.map(z => {
+    const r = z.result;
+    const pb = formatPayback(r);
+    return `<div class="card p-4 border-l-4" style="border-left-color: ${r.cashAccum24 > 0 ? '#4ade80' : r.netIncomeSteady > 0 ? '#fbbf24' : '#f87171'}">
+      <div class="text-lg mb-1">${z.emoji}</div>
+      <h4 class="font-bold text-sm mb-2">${z.name}</h4>
+      <div class="text-xs space-y-1 text-slate-300 mb-3">
+        <p><b class="text-slate-400">Perfil:</b> ${z.perfil}</p>
+        <p><b class="text-green-400">A favor:</b> ${z.pros}</p>
+        <p><b class="text-red-400">En contra:</b> ${z.contras}</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="bg-slate-800 rounded p-2 text-center">
+          <div class="text-slate-400">Alquiler</div>
+          <div class="font-semibold">$${z.alquiler.toLocaleString('es-AR')}</div>
+        </div>
+        <div class="bg-slate-800 rounded p-2 text-center">
+          <div class="text-slate-400">Ticket cena</div>
+          <div class="font-semibold">$${z.ticketCena}</div>
+        </div>
+        <div class="bg-slate-800 rounded p-2 text-center">
+          <div class="text-slate-400">Payback</div>
+          <div class="font-semibold">${pb}</div>
+        </div>
+        <div class="bg-slate-800 rounded p-2 text-center">
+          <div class="text-slate-400">Net/mes</div>
+          <div class="font-semibold ${r.netIncomeSteady < 0 ? 'text-red-400' : 'text-green-400'}">$${Math.round(r.netIncomeSteady).toLocaleString('es-AR')}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ========== TABS ==========
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.className = el.className.replace('tab-active', 'tab-inactive'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  document.querySelector(`[data-tab="${name}"]`).className = document.querySelector(`[data-tab="${name}"]`).className.replace('tab-inactive', 'tab-active');
+}
+
+// ========== EXPORT ==========
+function exportCSV() {
+  if (!lastResults) return;
+  let csv = 'paybackMonth,steadyStateNetIncome,cashAccum24,investorAccum24,roi,capacidad,vueltasAlmuerzo,vueltasCena,ticketAlmuerzo,ticketCena,staffCount,alquiler,demandaMaxPct,inflacionMensual\n';
+  for (const s of lastResults.samples) {
+    csv += [s.paybackMonth,Math.round(s.steadyStateNetIncome),Math.round(s.cashAccum24),Math.round(s.investorAccum24),s.roi.toFixed(1),s.inputs.capacidad.toFixed(0),s.inputs.vueltasAlmuerzo.toFixed(2),s.inputs.vueltasCena.toFixed(2),s.inputs.ticketAlmuerzo.toFixed(1),s.inputs.ticketCena.toFixed(1),s.inputs.staffCount.toFixed(0),s.inputs.alquiler.toFixed(0),s.inputs.demandaMaxPct.toFixed(1),s.inputs.inflacionMensual.toFixed(2)].join(',')+'\n';
+  }
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'montecarlo_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+
+// ========== EXPORT EXCEL LÓGICA ==========
+function exportExcelLogica() {
+  const config = readConfig();
+  // Build params object using midpoints/fixed values (deterministic single run)
+  const fixed = {};
+  const sampled = {};
+  for (const p of PARAMS) {
+    if (p.type === 'fixed') {
+      const val = parseFloat(document.querySelector(`input[data-id="${p.id}"][data-field="value"]`).value);
+      fixed[p.id] = val;
+      sampled[p.id] = val;
+    } else {
+      const cfg = {};
+      for (const f of (p.dist === 'triangular' ? ['min','mode','max'] : ['min','max'])) {
+        cfg[f] = parseFloat(document.querySelector(`input[data-id="${p.id}"][data-field="${f}"]`).value);
+      }
+      // Use mode for triangular, midpoint for uniform
+      sampled[p.id] = cfg.mode !== undefined ? cfg.mode : (cfg.min + cfg.max) / 2;
+    }
+  }
+
+  // Derive staff from capacity and ratio
+  const cap = Math.round(sampled.capacidad);
+  const ratioCena = sampled.staffRatio;
+  const staffCena = Math.max(2, Math.round(cap / ratioCena));
+  const staffAlmuerzo = Math.max(1, Math.round(staffCena * 0.5));
+  const overlap = Math.round(staffCena * 0.3);
+  const staff = staffCena + staffAlmuerzo - overlap;
+  const almOnly = Math.max(0, staffAlmuerzo - overlap);
+
+  const s = {
+    capacidad: cap,
+    vueltasAlmuerzo: sampled.vueltasAlmuerzo,
+    vueltasCena: sampled.vueltasCena,
+    diasOperativos: sampled.diasOperativos,
+    ticketAlmuerzo: sampled.ticketAlmuerzo,
+    ticketCena: sampled.ticketCena,
+    foodCost: sampled.foodCost,
+    paperCost: sampled.paperCost,
+    staffCount: staff,
+    staffAlmuerzoOnly: almOnly,
+    costoEmpleado: sampled.costoEmpleado,
+    alquiler: sampled.alquiler,
+    servicios: sampled.servicios,
+    pctNegro: sampled.pctNegro,
+    pctBlanco: 100 - sampled.pctNegro,
+    iibbPct: sampled.iibbPct,
+    ivaAlicuota: sampled.ivaAlicuota,
+    ivaCreditoPct: sampled.ivaCreditoPct,
+    gananciasPct: sampled.gananciasPct,
+    debCredPct: sampled.debCredPct,
+    inversionTotal: sampled.inversionTotal,
+    pctDurantePayback: sampled.pctDurantePayback,
+    pctPostPayback: sampled.pctPostPayback,
+    marketingPct: sampled.marketingPct,
+    inflacionMensual: sampled.inflacionMensual,
+    ajusteTicketLag: Math.round(sampled.ajusteTicketLag),
+    probShockMensual: sampled.probShockMensual,
+    impactoShock: sampled.impactoShock,
+    duracionShock: sampled.duracionShock,
+    softwareMisc: sampled.softwareMisc,
+    demandaMaxPct: sampled.demandaMaxPct,
+    rampUpMeses: Math.round(sampled.rampUpMeses),
+  };
+
+  const f = {
+    opexPct: sampled.opexPct,
+    processingPctBlanco: sampled.processingPctBlanco,
+    estudioContable: sampled.estudioContable,
+  };
+
+  // Run month-by-month capturing ALL intermediates
+  const SEA = [0.60, 0.65, 0.80, 0.90, 1.00, 1.05, 1.10, 1.05, 0.95, 0.90, 0.85, 0.70];
+  const WA = [0.50, 0.60, 0.80, 0.75, 0.45, 0.60];
+  const WC = [0.35, 0.45, 0.75, 1.00, 1.00, 0.45];
+  const WAavg = WA.reduce((a,b)=>a+b,0)/WA.length;
+  const WCavg = WC.reduce((a,b)=>a+b,0)/WC.length;
+
+  const peakAlmDia = s.capacidad * s.vueltasAlmuerzo;
+  const peakCenaDia = s.capacidad * s.vueltasCena;
+  let cashAccum = -s.inversionTotal;
+  let investorAccum = 0, operadorAccum = 0, paybackMonth = null;
+
+  const shockDiscount = 1 - (s.probShockMensual/100) * Math.abs(s.impactoShock/100) * s.duracionShock;
+
+  const rows = [];
+  for (let m = 1; m <= 60; m++) {
+    const inf = s.inflacionMensual / 100;
+    const effectiveLag = m <= 12 ? s.ajusteTicketLag : 1;
+    const ticketMult = Math.pow(1 + inf, Math.max(0, m - effectiveLag));
+    const alquilerMult = m <= 24 ? 1.0 : Math.pow(1 + inf, m - 24);
+    const semestre = Math.floor((m-1)/6);
+    const sueldoMult = Math.pow(1 + inf*6, semestre);
+    const trimestre = Math.floor((m-1)/4);
+    const serviciosMult = Math.pow(1 + inf*4, trimestre);
+    const anio = Math.floor((m-1)/12);
+    const otrosMult = Math.pow(1 + inf*12, anio);
+
+    const rampPct = m <= s.rampUpMeses ? 20 + (s.demandaMaxPct - 20) * (m / s.rampUpMeses) : s.demandaMaxPct;
+    const demandMult = SEA[(m-1)%12];
+    const eff = (rampPct/100) * demandMult * shockDiscount;
+
+    const coversAlm = peakAlmDia * s.diasOperativos * eff * WAavg;
+    const coversCena = peakCenaDia * s.diasOperativos * eff * WCavg;
+    const revAlm = coversAlm * s.ticketAlmuerzo * ticketMult;
+    const revCena = coversCena * s.ticketCena * ticketMult;
+    const revenue = revAlm + revCena;
+
+    const revBlancoConIVA = revenue * (s.pctBlanco/100);
+    const revBlanco = revBlancoConIVA / (1 + s.ivaAlicuota/100);
+    const cogs = revenue * ((s.foodCost + s.paperCost)/100);
+    const gross = revenue - cogs;
+
+    const ft = s.staffCount - s.staffAlmuerzoOnly;
+    const staffCost = (ft * s.costoEmpleado + s.staffAlmuerzoOnly * s.costoEmpleado * 0.6) * sueldoMult;
+    const alquilerCost = s.alquiler * alquilerMult;
+    const serviciosCost = s.servicios * serviciosMult;
+    const opexVar = revenue * ((f.opexPct + s.marketingPct)/100);
+    const processing = revBlanco * (f.processingPctBlanco/100);
+    const otrosFijos = (f.estudioContable + s.softwareMisc) * otrosMult;
+    const opex = staffCost + alquilerCost + serviciosCost + opexVar + processing + otrosFijos;
+    const ebitda = gross - opex;
+
+    const ivaNeto = Math.max(0, revBlanco * (s.ivaAlicuota/100) * (1 - s.ivaCreditoPct/100));
+    const iibb = revBlanco * (s.iibbPct/100);
+    const debCred = revBlancoConIVA * (s.debCredPct/100);
+    const ganancias = Math.max(0, ebitda * (s.pctBlanco/100)) * (s.gananciasPct/100);
+    const totalImp = ivaNeto + iibb + debCred + ganancias;
+    const net = ebitda - totalImp;
+
+    cashAccum += net;
+    const isPrePayback = investorAccum < s.inversionTotal;
+    const splitPct = isPrePayback ? s.pctDurantePayback/100 : s.pctPostPayback/100;
+    const invShare = net > 0 ? net * splitPct : 0;
+    investorAccum += invShare;
+    operadorAccum += net - invShare;
+    if (paybackMonth === null && cashAccum >= 0) paybackMonth = m;
+
+    rows.push({
+      'Mes': m,
+      'Inflación %': (inf*100),
+      'Ticket Mult': +ticketMult.toFixed(4),
+      'Alquiler Mult': +alquilerMult.toFixed(4),
+      'Sueldo Mult': +sueldoMult.toFixed(4),
+      'Servicios Mult': +serviciosMult.toFixed(4),
+      'Otros Mult': +otrosMult.toFixed(4),
+      'Ramp %': +rampPct.toFixed(1),
+      'Estacionalidad': demandMult,
+      'Shock Discount': +shockDiscount.toFixed(4),
+      'Eficiencia': +eff.toFixed(4),
+      'Covers Almuerzo': +coversAlm.toFixed(0),
+      'Covers Cena': +coversCena.toFixed(0),
+      'Rev Almuerzo': +revAlm.toFixed(0),
+      'Rev Cena': +revCena.toFixed(0),
+      'Revenue Total': +revenue.toFixed(0),
+      'Rev Blanco c/IVA': +revBlancoConIVA.toFixed(0),
+      'Rev Blanco s/IVA': +revBlanco.toFixed(0),
+      'COGS': +cogs.toFixed(0),
+      'Gross Profit': +gross.toFixed(0),
+      'Staff Cost': +staffCost.toFixed(0),
+      'Alquiler': +alquilerCost.toFixed(0),
+      'Servicios': +serviciosCost.toFixed(0),
+      'Opex Variable': +opexVar.toFixed(0),
+      'Processing': +processing.toFixed(0),
+      'Otros Fijos': +otrosFijos.toFixed(0),
+      'OPEX Total': +opex.toFixed(0),
+      'EBITDA': +ebitda.toFixed(0),
+      'IVA Neto': +ivaNeto.toFixed(0),
+      'IIBB': +iibb.toFixed(0),
+      'Déb/Créd': +debCred.toFixed(0),
+      'Ganancias': +ganancias.toFixed(0),
+      'Total Impuestos': +totalImp.toFixed(0),
+      'Net Income': +net.toFixed(0),
+      'Cash Acumulado': +cashAccum.toFixed(0),
+      'Fase': isPrePayback ? 'Pre-Payback' : 'Post-Payback',
+      'Split Inversor %': +(splitPct*100).toFixed(0),
+      'Share Inversor': +invShare.toFixed(0),
+      'Acum Inversor': +investorAccum.toFixed(0),
+      'Acum Operador': +operadorAccum.toFixed(0),
+    });
+  }
+
+  // Sheet 1: Parámetros
+  const paramRows = [
+    ['PARÁMETRO', 'VALOR', 'UNIDAD', 'NOTA'],
+    ['Capacidad', s.capacidad, 'pax', ''],
+    ['Vueltas Almuerzo (pico)', s.vueltasAlmuerzo, '', 'Peak day'],
+    ['Vueltas Cena (pico)', s.vueltasCena, '', 'Peak day'],
+    ['Días Operativos', s.diasOperativos, 'días/mes', ''],
+    ['Ticket Almuerzo', s.ticketAlmuerzo, 'USD', ''],
+    ['Ticket Cena', s.ticketCena, 'USD', ''],
+    ['Food Cost', s.foodCost, '%', ''],
+    ['Paper Cost', s.paperCost, '%', ''],
+    ['Staff Total', s.staffCount, '', 'Cena: '+staffCena+' | Alm: '+staffAlmuerzo+' | Overlap: '+overlap],
+    ['Staff Solo Almuerzo', s.staffAlmuerzoOnly, '', 'Cobran 60% del sueldo'],
+    ['Costo Empleado', s.costoEmpleado, 'USD', ''],
+    ['Alquiler', s.alquiler, 'USD', 'Fijo 24 meses'],
+    ['Servicios', s.servicios, 'USD', ''],
+    ['% Negro', s.pctNegro, '%', ''],
+    ['% Blanco', s.pctBlanco, '%', ''],
+    ['IVA', s.ivaAlicuota, '%', ''],
+    ['Crédito Fiscal IVA', s.ivaCreditoPct, '%', ''],
+    ['IIBB', s.iibbPct, '%', ''],
+    ['Déb/Créd', s.debCredPct, '%', ''],
+    ['Ganancias', s.gananciasPct, '%', ''],
+    ['Inversión Total', s.inversionTotal, 'USD', ''],
+    ['% Inversor Pre-Payback', s.pctDurantePayback, '%', ''],
+    ['% Inversor Post-Payback', s.pctPostPayback, '%', ''],
+    ['Ramp-up', s.rampUpMeses, 'meses', ''],
+    ['Demanda Máxima', s.demandaMaxPct, '%', ''],
+    ['Marketing', s.marketingPct, '%', ''],
+    ['Opex Mantenimiento', f.opexPct, '%', ''],
+    ['Comisión Tarjetas', f.processingPctBlanco, '%', ''],
+    ['Estudio Contable', f.estudioContable, 'USD', ''],
+    ['Software/Misc', s.softwareMisc, 'USD', ''],
+    ['Inflación Mensual', s.inflacionMensual, '%', ''],
+    ['Lag Ajuste Ticket', s.ajusteTicketLag, 'meses', '≤12m usa este lag, después 1'],
+    ['Prob Shock Mensual', s.probShockMensual, '%', ''],
+    ['Impacto Shock', s.impactoShock, '%', ''],
+    ['Duración Shock', s.duracionShock, 'meses', ''],
+    ['', '', '', ''],
+    ['CONSTANTES SEMANALES', '', '', ''],
+    ['Prom Almuerzo (WAavg)', WAavg.toFixed(4), '', 'Promedio pesos semanales almuerzo'],
+    ['Prom Cena (WCavg)', WCavg.toFixed(4), '', 'Promedio pesos semanales cena'],
+    ['Shock Discount', shockDiscount.toFixed(4), '', 'E[prob × impacto × duración]'],
+    ['', '', '', ''],
+    ['ESTACIONALIDAD', '', '', ''],
+    ['Ene', SEA[0], '', ''], ['Feb', SEA[1], '', ''], ['Mar', SEA[2], '', ''],
+    ['Abr', SEA[3], '', ''], ['May', SEA[4], '', ''], ['Jun', SEA[5], '', ''],
+    ['Jul', SEA[6], '', ''], ['Ago', SEA[7], '', ''], ['Sep', SEA[8], '', ''],
+    ['Oct', SEA[9], '', ''], ['Nov', SEA[10], '', ''], ['Dic', SEA[11], '', ''],
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const wsParams = XLSX.utils.aoa_to_sheet(paramRows);
+  wsParams['!cols'] = [{wch:28},{wch:14},{wch:10},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, wsParams, 'Parámetros');
+
+  const wsCalc = XLSX.utils.json_to_sheet(rows);
+  wsCalc['!cols'] = Array(Object.keys(rows[0]).length).fill({wch:16});
+  XLSX.utils.book_append_sheet(wb, wsCalc, 'Cálculo Mensual');
+
+  // Sheet 3: Fórmulas explicadas
+  const formulas = [
+    ['VARIABLE', 'FÓRMULA', 'DESCRIPCIÓN'],
+    ['ticketMult', '(1 + inf)^max(0, mes - lag)', 'Ajuste de precio por inflación con lag'],
+    ['alquilerMult', 'mes ≤ 24: 1.0 | después: (1+inf)^(mes-24)', 'Contrato fijo 24 meses'],
+    ['sueldoMult', '(1 + inf×6)^semestre', 'Paritarias cada 6 meses'],
+    ['serviciosMult', '(1 + inf×4)^trimestre', 'Tarifazos cada 4 meses'],
+    ['otrosMult', '(1 + inf×12)^año', 'Ajuste anual'],
+    ['rampPct', 'mes ≤ rampUp: 20 + (demMax-20)×(mes/rampUp) | después: demMax', 'Ramp-up lineal desde 20%'],
+    ['eficiencia', '(rampPct/100) × estacionalidad × shockDiscount', 'Factor combinado de demanda'],
+    ['coversAlm', 'cap × vueltasAlm × diasOp × eficiencia × WAavg', 'Cubiertos almuerzo/mes'],
+    ['coversCena', 'cap × vueltasCena × diasOp × eficiencia × WCavg', 'Cubiertos cena/mes'],
+    ['revenue', 'coversAlm × ticketAlm × ticketMult + coversCena × ticketCena × ticketMult', ''],
+    ['revBlancoConIVA', 'revenue × (pctBlanco/100)', 'Facturado'],
+    ['revBlanco', 'revBlancoConIVA / (1 + IVA/100)', 'Base imponible'],
+    ['COGS', 'revenue × (foodCost + paperCost)/100', ''],
+    ['grossProfit', 'revenue - COGS', ''],
+    ['staffCost', '(fullTime × costoEmp + almOnly × costoEmp × 0.6) × sueldoMult', ''],
+    ['OPEX', 'staff + alquiler + servicios + opexVar + processing + otrosFijos', ''],
+    ['EBITDA', 'grossProfit - OPEX', ''],
+    ['IVA Neto', 'max(0, revBlanco × IVA% × (1 - créditoFiscal%))', ''],
+    ['IIBB', 'revBlanco × iibb%', ''],
+    ['Déb/Créd', 'revBlancoConIVA × debCred%', ''],
+    ['Ganancias', 'max(0, EBITDA × pctBlanco%) × ganancias%', ''],
+    ['netIncome', 'EBITDA - totalImpuestos', ''],
+    ['cashAccum', '-inversión + Σ netIncome', ''],
+    ['splitInversor', 'Pre-payback: netIncome × pctPre | Post: netIncome × pctPost', 'Solo si netIncome > 0'],
+  ];
+  const wsFormulas = XLSX.utils.aoa_to_sheet(formulas);
+  wsFormulas['!cols'] = [{wch:20},{wch:55},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, wsFormulas, 'Fórmulas');
+
+  XLSX.writeFile(wb, 'gastro_logica_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ========== INIT ==========
+renderConfig();
+</script>
+</body>
+</html>

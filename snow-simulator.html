@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swell Snow — Pricing & Profit Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+    .sr { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .sr label { min-width: 140px; font-size: 11px; color: #94a3b8; }
+    .sr input[type=range] { flex: 1; accent-color: #38bdf8; height: 5px; }
+    .sr .v { min-width: 60px; text-align: right; font-size: 12px; font-weight: 600; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+    .st { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin: 10px 0 4px; font-weight: 700; }
+    .pnl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .pnl td { padding: 3px 6px; }
+    .pnl .l { color: #94a3b8; }
+    .pnl .val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+    .pnl .sub { border-top: 1px solid #334155; font-weight: 700; color: #f1f5f9; }
+    .pnl .tot { border-top: 2px solid #38bdf8; font-weight: 800; color: #38bdf8; font-size: 13px; }
+    .pnl .neg { color: #f87171; }
+    .pnl .pos { color: #4ade80; }
+    .kpi { background: #1e293b; border-radius: 8px; padding: 10px 14px; text-align: center; }
+    .kpi .kl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
+    .kpi .kv { font-size: 22px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .tab { padding: 5px 14px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; border: none; background: transparent; color: #64748b; transition: all .15s; }
+    .tab:hover { color: #94a3b8; }
+    .tab.on { background: #1e293b; color: #38bdf8; }
+    .pn { background: #1e293b; border-radius: 8px; padding: 14px; }
+    .season-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .season-alta { background: #7f1d1d; color: #fca5a5; }
+    .season-media { background: #78350f; color: #fcd34d; }
+    .season-baja { background: #064e3b; color: #6ee7b7; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .mc-bar { height: 4px; border-radius: 2px; transition: width .3s; }
+  </style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-[1400px] mx-auto p-4">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-xl font-bold text-white">SWELL SNOW <span class="text-xs text-slate-500 font-normal">Pricing & Profit</span></h1>
+      <p class="text-[10px] text-slate-500">Simulador de temporada — Paquetes Ski Bariloche</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="tab on" onclick="showTab('pnl',this)">P&L</button>
+      <button class="tab" onclick="showTab('escenarios',this)">Escenarios</button>
+      <button class="tab" onclick="showTab('pricing',this)">Pricing</button>
+      <button class="tab" onclick="showTab('montecarlo',this)">Monte Carlo</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-[320px_1fr] gap-4">
+    <!-- LEFT: Controls -->
+    <div class="space-y-3" style="max-height:calc(100vh - 80px); overflow-y:auto; padding-right:6px;">
+
+      <!-- Fixed Costs -->
+      <div class="pn">
+        <div class="st">Costos Fijos (USD)</div>
+        <div class="sr">
+          <label>Total fijos</label>
+          <input type="range" id="fixedCosts" min="150000" max="350000" step="1000" value="227000" oninput="calc()">
+          <span class="v" id="fixedCosts_v"></span>
+        </div>
+      </div>
+
+      <!-- Variable Costs -->
+      <div class="pn">
+        <div class="st">Costos Variables (USD/pax)</div>
+        <div class="sr">
+          <label>Pase ski</label>
+          <input type="range" id="vPase" min="400" max="1200" step="10" value="800" oninput="calc()">
+          <span class="v" id="vPase_v"></span>
+        </div>
+        <div class="sr">
+          <label>Comisión venta</label>
+          <input type="range" id="vComision" min="0" max="50" step="1" value="4" oninput="calc()">
+          <span class="v" id="vComision_v"></span>
+        </div>
+        <div class="sr">
+          <label>Transfer</label>
+          <input type="range" id="vTransfer" min="10" max="100" step="1" value="33" oninput="calc()">
+          <span class="v" id="vTransfer_v"></span>
+        </div>
+        <div class="sr">
+          <label>Equipos</label>
+          <input type="range" id="vEquipos" min="20" max="200" step="5" value="70" oninput="calc()">
+          <span class="v" id="vEquipos_v"></span>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="pn">
+        <div class="st">Precios por Temporada (USD/pax)</div>
+        <div class="sr">
+          <label><span class="season-badge season-alta">Alta</span></label>
+          <input type="range" id="pAlta" min="1500" max="3000" step="10" value="2099" oninput="calc()">
+          <span class="v" id="pAlta_v"></span>
+        </div>
+        <div class="sr">
+          <label><span class="season-badge season-media">Media</span></label>
+          <input type="range" id="pMedia" min="1500" max="3000" step="10" value="1999" oninput="calc()">
+          <span class="v" id="pMedia_v"></span>
+        </div>
+        <div class="sr">
+          <label><span class="season-badge season-baja">Baja</span></label>
+          <input type="range" id="pBaja" min="1500" max="3000" step="10" value="1949" oninput="calc()">
+          <span class="v" id="pBaja_v"></span>
+        </div>
+      </div>
+
+      <!-- Capacity -->
+      <div class="pn">
+        <div class="st">Capacidad (semanas × pax/semana)</div>
+        <div class="sr">
+          <label>Pax max/semana</label>
+          <input type="range" id="capWeek" min="20" max="80" step="1" value="46" oninput="calc()">
+          <span class="v" id="capWeek_v"></span>
+        </div>
+        <div class="sr">
+          <label>Semanas Alta</label>
+          <input type="range" id="weeksAlta" min="1" max="8" step="1" value="4" oninput="calc()">
+          <span class="v" id="weeksAlta_v"></span>
+        </div>
+        <div class="sr">
+          <label>Semanas Media</label>
+          <input type="range" id="weeksMedia" min="1" max="8" step="1" value="3" oninput="calc()">
+          <span class="v" id="weeksMedia_v"></span>
+        </div>
+        <div class="sr">
+          <label>Semanas Baja</label>
+          <input type="range" id="weeksBaja" min="1" max="8" step="1" value="3" oninput="calc()">
+          <span class="v" id="weeksBaja_v"></span>
+        </div>
+      </div>
+
+      <!-- Occupancy -->
+      <div class="pn">
+        <div class="st">Ocupación (%)</div>
+        <div class="sr">
+          <label><span class="season-badge season-alta">Alta</span></label>
+          <input type="range" id="occAlta" min="0" max="100" step="1" value="90" oninput="calc()">
+          <span class="v" id="occAlta_v"></span>
+        </div>
+        <div class="sr">
+          <label><span class="season-badge season-media">Media</span></label>
+          <input type="range" id="occMedia" min="0" max="100" step="1" value="70" oninput="calc()">
+          <span class="v" id="occMedia_v"></span>
+        </div>
+        <div class="sr">
+          <label><span class="season-badge season-baja">Baja</span></label>
+          <input type="range" id="occBaja" min="0" max="100" step="1" value="50" oninput="calc()">
+          <span class="v" id="occBaja_v"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Output -->
+    <div style="max-height:calc(100vh - 80px); overflow-y:auto; padding-right:6px;">
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-5 gap-3 mb-4" id="kpis"></div>
+
+      <!-- Tabs content -->
+      <div id="tab-pnl">
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="pn">
+            <div class="st">P&L por Temporada</div>
+            <table class="pnl" id="seasonTable"></table>
+          </div>
+          <div class="pn">
+            <div class="st">Resumen Temporada Completa</div>
+            <table class="pnl" id="totalTable"></table>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="pn">
+            <div class="st">Revenue vs Costos</div>
+            <canvas id="chartBar" height="200"></canvas>
+          </div>
+          <div class="pn">
+            <div class="st">Distribución de Revenue</div>
+            <canvas id="chartPie" height="200"></canvas>
+          </div>
+        </div>
+        <div class="pn mt-4">
+          <div class="st">Profit vs Ocupación</div>
+          <canvas id="chartLine" height="160"></canvas>
+        </div>
+      </div>
+
+      <div id="tab-escenarios" style="display:none">
+        <div class="pn mb-4">
+          <div class="st">Comparación de Escenarios</div>
+          <p class="text-[10px] text-slate-500 mb-3">Automático: pesimista, conservador, base, optimista, full capacity</p>
+          <table class="pnl" id="scenarioTable"></table>
+        </div>
+        <div class="pn">
+          <div class="st">Sensibilidad: Profit vs Precio Alta</div>
+          <canvas id="chartSensitivity" height="200"></canvas>
+        </div>
+      </div>
+
+      <div id="tab-pricing" style="display:none">
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="pn">
+            <div class="st">Unit Economics por Temporada</div>
+            <table class="pnl" id="unitTable"></table>
+          </div>
+          <div class="pn">
+            <div class="st">Break-Even Analysis</div>
+            <table class="pnl" id="breakevenTable"></table>
+            <div class="mt-3">
+              <canvas id="chartBreakeven" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="pn">
+          <div class="st">Pricing Optimizer — ¿Cuánto cobrar?</div>
+          <p class="text-[10px] text-slate-500 mb-2">Precio mínimo para cubrir costos a diferentes niveles de ocupación</p>
+          <table class="pnl" id="pricingTable"></table>
+        </div>
+      </div>
+
+      <div id="tab-montecarlo" style="display:none">
+        <div class="pn mb-4">
+          <div class="st">Simulación Monte Carlo (1,000 escenarios)</div>
+          <p class="text-[10px] text-slate-500 mb-3">Variación aleatoria de ±15% en ocupación y ±5% en costos</p>
+          <div class="grid grid-cols-4 gap-3 mb-4" id="mcKpis"></div>
+          <canvas id="chartMC" height="220"></canvas>
+        </div>
+        <div class="pn">
+          <div class="st">Distribución de Resultados</div>
+          <div id="mcDistribution"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:0}) : '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+const pct = n => (n*100).toFixed(1) + '%';
+
+let chartBar, chartPie, chartLine, chartSens, chartBE, chartMC;
+
+function getInputs() {
+  return {
+    fixed: +$('fixedCosts').value,
+    vPase: +$('vPase').value,
+    vComision: +$('vComision').value,
+    vTransfer: +$('vTransfer').value,
+    vEquipos: +$('vEquipos').value,
+    pAlta: +$('pAlta').value,
+    pMedia: +$('pMedia').value,
+    pBaja: +$('pBaja').value,
+    capWeek: +$('capWeek').value,
+    weeksAlta: +$('weeksAlta').value,
+    weeksMedia: +$('weeksMedia').value,
+    weeksBaja: +$('weeksBaja').value,
+    occAlta: +$('occAlta').value / 100,
+    occMedia: +$('occMedia').value / 100,
+    occBaja: +$('occBaja').value / 100,
+  };
+}
+
+function computeSeason(d, price, weeks, occ) {
+  const maxPax = weeks * d.capWeek;
+  const pax = Math.round(maxPax * occ);
+  const revenue = pax * price;
+  const comision = pax * d.vComision;
+  const varCost = pax * (d.vPase + d.vTransfer + d.vEquipos + d.vComision);
+  const margin = revenue - varCost;
+  const marginPerPax = pax > 0 ? margin / pax : 0;
+  return { maxPax, pax, revenue, varCost, comision, margin, marginPerPax, price, weeks, occ };
+}
+
+function calc() {
+  const d = getInputs();
+
+  // Update slider labels
+  $('fixedCosts_v').textContent = fmt(d.fixed);
+  $('vPase_v').textContent = fmt(d.vPase);
+  $('vComision_v').textContent = fmt(d.vComision);
+  $('vTransfer_v').textContent = fmt(d.vTransfer);
+  $('vEquipos_v').textContent = fmt(d.vEquipos);
+  $('pAlta_v').textContent = fmt(d.pAlta);
+  $('pMedia_v').textContent = fmt(d.pMedia);
+  $('pBaja_v').textContent = fmt(d.pBaja);
+  $('capWeek_v').textContent = d.capWeek;
+  $('weeksAlta_v').textContent = d.weeksAlta + ' sem';
+  $('weeksMedia_v').textContent = d.weeksMedia + ' sem';
+  $('weeksBaja_v').textContent = d.weeksBaja + ' sem';
+  $('occAlta_v').textContent = (d.occAlta*100).toFixed(0) + '%';
+  $('occMedia_v').textContent = (d.occMedia*100).toFixed(0) + '%';
+  $('occBaja_v').textContent = (d.occBaja*100).toFixed(0) + '%';
+
+  const alta = computeSeason(d, d.pAlta, d.weeksAlta, d.occAlta);
+  const media = computeSeason(d, d.pMedia, d.weeksMedia, d.occMedia);
+  const baja = computeSeason(d, d.pBaja, d.weeksBaja, d.occBaja);
+
+  const totalPax = alta.pax + media.pax + baja.pax;
+  const totalRevenue = alta.revenue + media.revenue + baja.revenue;
+  const totalVar = alta.varCost + media.varCost + baja.varCost;
+  const totalMargin = alta.margin + media.margin + baja.margin;
+  const profit = totalMargin - d.fixed;
+  const profitMargin = totalRevenue > 0 ? profit / totalRevenue : 0;
+  const maxPaxTotal = alta.maxPax + media.maxPax + baja.maxPax;
+  const avgOcc = maxPaxTotal > 0 ? totalPax / maxPaxTotal : 0;
+  const avgTicket = totalPax > 0 ? totalRevenue / totalPax : 0;
+
+  // KPIs
+  $('kpis').innerHTML = `
+    <div class="kpi"><div class="kl">Revenue</div><div class="kv text-sky-400">${fmt(totalRevenue)}</div></div>
+    <div class="kpi"><div class="kl">Profit</div><div class="kv ${profit>=0?'text-green-400':'text-red-400'}">${fmt(profit)}</div></div>
+    <div class="kpi"><div class="kl">Margen</div><div class="kv ${profitMargin>=0?'text-green-400':'text-red-400'}">${pct(profitMargin)}</div></div>
+    <div class="kpi"><div class="kl">Total Pax</div><div class="kv text-white">${totalPax}</div></div>
+    <div class="kpi"><div class="kl">Ocupación Avg</div><div class="kv text-amber-400">${pct(avgOcc)}</div></div>
+  `;
+
+  // Season table
+  const seasonRow = (name, badge, s) => `
+    <tr><td class="l" style="padding-top:8px"><span class="season-badge ${badge}">${name}</span></td><td></td><td></td></tr>
+    <tr><td class="l" style="padding-left:16px">Pax</td><td class="val">${s.pax} / ${s.maxPax}</td><td class="val" style="color:#64748b">${(s.occ*100).toFixed(0)}%</td></tr>
+    <tr><td class="l" style="padding-left:16px">Revenue</td><td class="val">${fmt(s.revenue)}</td><td class="val" style="color:#64748b">${totalRevenue>0?(s.revenue/totalRevenue*100).toFixed(1)+'%':'-'}</td></tr>
+    <tr><td class="l" style="padding-left:16px">Costos Var.</td><td class="val neg">${fmt(s.varCost)}</td><td></td></tr>
+    <tr><td class="l" style="padding-left:16px">Contribución</td><td class="val ${s.margin>=0?'pos':'neg'}">${fmt(s.margin)}</td><td class="val" style="color:#64748b">${s.revenue>0?(s.margin/s.revenue*100).toFixed(1)+'%':'-'}</td></tr>
+  `;
+  $('seasonTable').innerHTML = seasonRow('ALTA','season-alta',alta) + seasonRow('MEDIA','season-media',media) + seasonRow('BAJA','season-baja',baja);
+
+  // Total table
+  $('totalTable').innerHTML = `
+    <tr><td class="l">Revenue Total</td><td class="val">${fmt(totalRevenue)}</td></tr>
+    <tr><td class="l">Costos Variables</td><td class="val neg">${fmt(totalVar)}</td></tr>
+    <tr class="sub"><td class="l">Margen de Contribución</td><td class="val">${fmt(totalMargin)}</td></tr>
+    <tr><td class="l">Costos Fijos</td><td class="val neg">${fmt(d.fixed)}</td></tr>
+    <tr class="tot"><td>PROFIT</td><td class="val ${profit>=0?'pos':'neg'}">${fmt(profit)}</td></tr>
+    <tr><td class="l" style="padding-top:8px">Margen Neto</td><td class="val ${profitMargin>=0?'pos':'neg'}">${pct(profitMargin)}</td></tr>
+    <tr><td class="l">Ticket Promedio</td><td class="val">${fmt(avgTicket)}</td></tr>
+    <tr><td class="l">Costo Variable / Pax</td><td class="val">${totalPax>0?fmt(totalVar/totalPax):'-'}</td></tr>
+    <tr><td class="l">Total Semanas</td><td class="val">${d.weeksAlta+d.weeksMedia+d.weeksBaja}</td></tr>
+    <tr><td class="l">Capacidad Máxima</td><td class="val">${maxPaxTotal} pax</td></tr>
+  `;
+
+  // Charts
+  renderCharts(d, alta, media, baja, totalRevenue, totalVar, profit);
+  renderScenarios(d);
+  renderPricing(d, alta, media, baja);
+  renderMonteCarlo(d);
+}
+
+function renderCharts(d, alta, media, baja, totalRevenue, totalVar, profit) {
+  // Bar chart
+  const ctxBar = $('chartBar').getContext('2d');
+  if (chartBar) chartBar.destroy();
+  chartBar = new Chart(ctxBar, {
+    type: 'bar',
+    data: {
+      labels: ['Alta', 'Media', 'Baja'],
+      datasets: [
+        { label: 'Revenue', data: [alta.revenue, media.revenue, baja.revenue], backgroundColor: '#38bdf8' },
+        { label: 'Costos Var.', data: [alta.varCost, media.varCost, baja.varCost], backgroundColor: '#f87171' },
+        { label: 'Contribución', data: [alta.margin, media.margin, baja.margin], backgroundColor: '#4ade80' },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8', callback: v => '$'+v.toLocaleString() } } } }
+  });
+
+  // Pie chart
+  const ctxPie = $('chartPie').getContext('2d');
+  if (chartPie) chartPie.destroy();
+  chartPie = new Chart(ctxPie, {
+    type: 'doughnut',
+    data: {
+      labels: ['Alta', 'Media', 'Baja'],
+      datasets: [{ data: [alta.revenue, media.revenue, baja.revenue], backgroundColor: ['#f87171','#fbbf24','#4ade80'] }]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
+  });
+
+  // Line chart: profit vs occupancy
+  const ctxLine = $('chartLine').getContext('2d');
+  if (chartLine) chartLine.destroy();
+  const lineData = [];
+  for (let o = 0; o <= 100; o += 5) {
+    const oFrac = o / 100;
+    const a = computeSeason(d, d.pAlta, d.weeksAlta, oFrac);
+    const m = computeSeason(d, d.pMedia, d.weeksMedia, oFrac);
+    const b = computeSeason(d, d.pBaja, d.weeksBaja, oFrac);
+    lineData.push({ x: o, y: a.margin + m.margin + b.margin - d.fixed });
+  }
+  chartLine = new Chart(ctxLine, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Profit',
+        data: lineData,
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56,189,248,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        annotation: {}
+      },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Ocupación %', color: '#64748b' }, ticks: { color: '#94a3b8' } },
+        y: { ticks: { color: '#94a3b8', callback: v => '$'+v.toLocaleString() }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+}
+
+function renderScenarios(d) {
+  const scenarios = [
+    { name: 'Pesimista', occA: 0.40, occM: 0.30, occB: 0.20, costMult: 1.10 },
+    { name: 'Conservador', occA: 0.65, occM: 0.50, occB: 0.35, costMult: 1.05 },
+    { name: 'Base', occA: d.occAlta, occM: d.occMedia, occB: d.occBaja, costMult: 1.0 },
+    { name: 'Optimista', occA: 0.90, occM: 0.80, occB: 0.65, costMult: 0.95 },
+    { name: 'Full Cap.', occA: 1.0, occM: 1.0, occB: 1.0, costMult: 1.0 },
+  ];
+
+  let html = '<tr><td class="l" style="font-weight:700">Escenario</td><td class="val" style="font-weight:700;color:#64748b">Pax</td><td class="val" style="font-weight:700;color:#64748b">Revenue</td><td class="val" style="font-weight:700;color:#64748b">Costos Tot.</td><td class="val" style="font-weight:700;color:#64748b">Profit</td><td class="val" style="font-weight:700;color:#64748b">Margen</td></tr>';
+
+  const sensData = [];
+
+  scenarios.forEach(s => {
+    const dd = {...d, vPase: d.vPase * s.costMult, vTransfer: d.vTransfer * s.costMult, vEquipos: d.vEquipos * s.costMult, fixed: d.fixed * s.costMult};
+    const a = computeSeason(dd, d.pAlta, d.weeksAlta, s.occA);
+    const m = computeSeason(dd, d.pMedia, d.weeksMedia, s.occM);
+    const b = computeSeason(dd, d.pBaja, d.weeksBaja, s.occB);
+    const rev = a.revenue + m.revenue + b.revenue;
+    const costs = a.varCost + m.varCost + b.varCost + dd.fixed;
+    const profit = rev - costs;
+    const pax = a.pax + m.pax + b.pax;
+    const margin = rev > 0 ? profit / rev : 0;
+    html += `<tr><td class="l">${s.name}</td><td class="val">${pax}</td><td class="val">${fmt(rev)}</td><td class="val neg">${fmt(costs)}</td><td class="val ${profit>=0?'pos':'neg'}">${fmt(profit)}</td><td class="val ${margin>=0?'pos':'neg'}">${pct(margin)}</td></tr>`;
+  });
+
+  $('scenarioTable').innerHTML = html;
+
+  // Sensitivity chart: Profit vs Price Alta
+  const ctxSens = $('chartSensitivity').getContext('2d');
+  if (chartSens) chartSens.destroy();
+  const sensPoints = [];
+  for (let p = 1500; p <= 3000; p += 50) {
+    const a = computeSeason(d, p, d.weeksAlta, d.occAlta);
+    const m = computeSeason(d, d.pMedia, d.weeksMedia, d.occMedia);
+    const b = computeSeason(d, d.pBaja, d.weeksBaja, d.occBaja);
+    sensPoints.push({ x: p, y: a.margin + m.margin + b.margin - d.fixed });
+  }
+  chartSens = new Chart(ctxSens, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Profit',
+        data: sensPoints,
+        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(251,191,36,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Precio Alta (USD)', color: '#64748b' }, ticks: { color: '#94a3b8', callback: v => '$'+v } },
+        y: { ticks: { color: '#94a3b8', callback: v => '$'+v.toLocaleString() }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+}
+
+function renderPricing(d, alta, media, baja) {
+  // Unit economics
+  const seasons = [
+    { name: 'Alta', badge: 'season-alta', s: alta, price: d.pAlta },
+    { name: 'Media', badge: 'season-media', s: media, price: d.pMedia },
+    { name: 'Baja', badge: 'season-baja', s: baja, price: d.pBaja },
+  ];
+
+  let uhtml = '<tr><td class="l" style="font-weight:700"></td><td class="val" style="font-weight:700;color:#64748b">Alta</td><td class="val" style="font-weight:700;color:#64748b">Media</td><td class="val" style="font-weight:700;color:#64748b">Baja</td></tr>';
+
+  const varPerPax = () => {
+    return { pase: d.vPase, transfer: d.vTransfer, equipos: d.vEquipos, comision: d.vComision, total: d.vPase + d.vTransfer + d.vEquipos + d.vComision };
+  };
+
+  const va = varPerPax();
+  const vm = varPerPax();
+  const vb = varPerPax();
+
+  uhtml += `
+    <tr><td class="l">Precio</td><td class="val">${fmt(d.pAlta)}</td><td class="val">${fmt(d.pMedia)}</td><td class="val">${fmt(d.pBaja)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Pase</td><td class="val neg">${fmt(va.pase)}</td><td class="val neg">${fmt(vm.pase)}</td><td class="val neg">${fmt(vb.pase)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Comisión</td><td class="val neg">${fmt(va.comision)}</td><td class="val neg">${fmt(vm.comision)}</td><td class="val neg">${fmt(vb.comision)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Transfer</td><td class="val neg">${fmt(va.transfer)}</td><td class="val neg">${fmt(vm.transfer)}</td><td class="val neg">${fmt(vb.transfer)}</td></tr>
+    <tr><td class="l" style="padding-left:14px">Equipos</td><td class="val neg">${fmt(va.equipos)}</td><td class="val neg">${fmt(vm.equipos)}</td><td class="val neg">${fmt(vb.equipos)}</td></tr>
+    <tr class="sub"><td class="l">Costo Var. Total/Pax</td><td class="val neg">${fmt(va.total)}</td><td class="val neg">${fmt(vm.total)}</td><td class="val neg">${fmt(vb.total)}</td></tr>
+    <tr class="tot"><td>Contribución/Pax</td><td class="val pos">${fmt(d.pAlta - va.total)}</td><td class="val pos">${fmt(d.pMedia - vm.total)}</td><td class="val pos">${fmt(d.pBaja - vb.total)}</td></tr>
+    <tr><td class="l">Margen Contr. %</td><td class="val">${((d.pAlta - va.total)/d.pAlta*100).toFixed(1)}%</td><td class="val">${((d.pMedia - vm.total)/d.pMedia*100).toFixed(1)}%</td><td class="val">${((d.pBaja - vb.total)/d.pBaja*100).toFixed(1)}%</td></tr>
+  `;
+  $('unitTable').innerHTML = uhtml;
+
+  // Break-even
+  const totalMaxPax = d.weeksAlta * d.capWeek + d.weeksMedia * d.capWeek + d.weeksBaja * d.capWeek;
+  // Weighted average contribution per pax
+  const totalWeeks = d.weeksAlta + d.weeksMedia + d.weeksBaja;
+  const wAvgPrice = (d.pAlta * d.weeksAlta + d.pMedia * d.weeksMedia + d.pBaja * d.weeksBaja) / totalWeeks;
+  const wAvgVar = (va.total * d.weeksAlta + vm.total * d.weeksMedia + vb.total * d.weeksBaja) / totalWeeks;
+  const wAvgContrib = wAvgPrice - wAvgVar;
+  const bePax = wAvgContrib > 0 ? Math.ceil(d.fixed / wAvgContrib) : Infinity;
+  const beOcc = totalMaxPax > 0 ? bePax / totalMaxPax : 0;
+
+  $('breakevenTable').innerHTML = `
+    <tr><td class="l">Precio Promedio Ponderado</td><td class="val">${fmt(wAvgPrice)}</td></tr>
+    <tr><td class="l">Costo Var. Promedio Ponderado</td><td class="val neg">${fmt(wAvgVar)}</td></tr>
+    <tr><td class="l">Contribución Promedio / Pax</td><td class="val pos">${fmt(wAvgContrib)}</td></tr>
+    <tr><td class="l">Costos Fijos</td><td class="val neg">${fmt(d.fixed)}</td></tr>
+    <tr class="tot"><td>Break-Even (pax)</td><td class="val">${bePax === Infinity ? '∞' : bePax + ' pax'}</td></tr>
+    <tr><td class="l">Break-Even (ocupación)</td><td class="val ${beOcc<=1?'pos':'neg'}">${bePax === Infinity ? '∞' : pct(beOcc)}</td></tr>
+    <tr><td class="l">Capacidad Máxima</td><td class="val">${totalMaxPax} pax</td></tr>
+    <tr><td class="l">Margen de Seguridad</td><td class="val ${beOcc<1?'pos':'neg'}">${bePax === Infinity ? '-' : (totalMaxPax - bePax) + ' pax'}</td></tr>
+  `;
+
+  // Break-even chart
+  const ctxBE = $('chartBreakeven').getContext('2d');
+  if (chartBE) chartBE.destroy();
+  const bePoints = [], revPoints = [], costPoints = [];
+  for (let pax = 0; pax <= totalMaxPax; pax += Math.max(1, Math.floor(totalMaxPax/30))) {
+    revPoints.push({ x: pax, y: pax * wAvgPrice });
+    costPoints.push({ x: pax, y: d.fixed + pax * wAvgVar });
+  }
+  chartBE = new Chart(ctxBE, {
+    type: 'line',
+    data: {
+      datasets: [
+        { label: 'Revenue', data: revPoints, borderColor: '#38bdf8', pointRadius: 0, tension: 0 },
+        { label: 'Costos Totales', data: costPoints, borderColor: '#f87171', pointRadius: 0, tension: 0, borderDash: [5,3] },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Pax', color: '#64748b' }, ticks: { color: '#94a3b8' } },
+        y: { ticks: { color: '#94a3b8', callback: v => '$'+v.toLocaleString() }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+
+  // Pricing optimizer table
+  let phtml = '<tr><td class="l" style="font-weight:700">Ocupación</td><td class="val" style="font-weight:700;color:#64748b">Pax</td><td class="val" style="font-weight:700;color:#64748b">Precio Mín.</td><td class="val" style="font-weight:700;color:#64748b">Precio Actual Avg</td><td class="val" style="font-weight:700;color:#64748b">Margen vs Mín</td></tr>';
+  [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0].forEach(occ => {
+    const pax = Math.round(totalMaxPax * occ);
+    // minPrice: (fixed + pax * varAvg) / pax = fixed/pax + varAvg
+    const minPrice = pax > 0 ? d.fixed / pax + wAvgVar : Infinity;
+    const diff = wAvgPrice - minPrice;
+    phtml += `<tr><td class="l">${(occ*100).toFixed(0)}%</td><td class="val">${pax}</td><td class="val">${minPrice === Infinity ? '∞' : fmt(minPrice)}</td><td class="val">${fmt(wAvgPrice)}</td><td class="val ${diff>=0?'pos':'neg'}">${minPrice === Infinity ? '-' : fmt(diff)}</td></tr>`;
+  });
+  $('pricingTable').innerHTML = phtml;
+}
+
+function renderMonteCarlo(d) {
+  const N = 1000;
+  const results = [];
+  const totalMaxPax = d.weeksAlta * d.capWeek + d.weeksMedia * d.capWeek + d.weeksBaja * d.capWeek;
+
+  for (let i = 0; i < N; i++) {
+    // Random variation
+    const occVar = () => (Math.random() - 0.5) * 0.30; // ±15%
+    const costVar = 1 + (Math.random() - 0.5) * 0.10; // ±5%
+
+    const oA = Math.max(0, Math.min(1, d.occAlta + occVar()));
+    const oM = Math.max(0, Math.min(1, d.occMedia + occVar()));
+    const oB = Math.max(0, Math.min(1, d.occBaja + occVar()));
+
+    const dd = {...d, vPase: d.vPase * costVar, vTransfer: d.vTransfer * costVar, vEquipos: d.vEquipos * costVar, fixed: d.fixed * costVar};
+
+    const a = computeSeason(dd, d.pAlta, d.weeksAlta, oA);
+    const m = computeSeason(dd, d.pMedia, d.weeksMedia, oM);
+    const b = computeSeason(dd, d.pBaja, d.weeksBaja, oB);
+
+    const rev = a.revenue + m.revenue + b.revenue;
+    const costs = a.varCost + m.varCost + b.varCost + dd.fixed;
+    results.push(rev - costs);
+  }
+
+  results.sort((a, b) => a - b);
+  const avg = results.reduce((s, v) => s + v, 0) / N;
+  const p10 = results[Math.floor(N * 0.10)];
+  const p50 = results[Math.floor(N * 0.50)];
+  const p90 = results[Math.floor(N * 0.90)];
+  const probLoss = results.filter(r => r < 0).length / N;
+
+  $('mcKpis').innerHTML = `
+    <div class="kpi"><div class="kl">P10 (Peor)</div><div class="kv ${p10>=0?'text-green-400':'text-red-400'}">${fmt(p10)}</div></div>
+    <div class="kpi"><div class="kl">Mediana</div><div class="kv ${p50>=0?'text-green-400':'text-red-400'}">${fmt(p50)}</div></div>
+    <div class="kpi"><div class="kl">P90 (Mejor)</div><div class="kv text-green-400">${fmt(p90)}</div></div>
+    <div class="kpi"><div class="kl">Prob. Pérdida</div><div class="kv ${probLoss>0.3?'text-red-400':probLoss>0.1?'text-amber-400':'text-green-400'}">${(probLoss*100).toFixed(1)}%</div></div>
+  `;
+
+  // Histogram
+  const bins = 25;
+  const min = results[0];
+  const max = results[N-1];
+  const binW = (max - min) / bins;
+  const hist = new Array(bins).fill(0);
+  results.forEach(r => {
+    const idx = Math.min(bins - 1, Math.floor((r - min) / binW));
+    hist[idx]++;
+  });
+
+  const ctxMC = $('chartMC').getContext('2d');
+  if (chartMC) chartMC.destroy();
+  chartMC = new Chart(ctxMC, {
+    type: 'bar',
+    data: {
+      labels: hist.map((_, i) => fmt(min + i * binW)),
+      datasets: [{
+        label: 'Frecuencia',
+        data: hist,
+        backgroundColor: hist.map((_, i) => (min + i * binW + binW/2) >= 0 ? 'rgba(74,222,128,0.6)' : 'rgba(248,113,113,0.6)'),
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 8 }, maxRotation: 45 } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+
+  // Distribution text
+  $('mcDistribution').innerHTML = `
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <div>
+        <div class="text-slate-500 mb-1">Rango de resultados</div>
+        <div>Mínimo: <span class="${results[0]>=0?'text-green-400':'text-red-400'}">${fmt(results[0])}</span></div>
+        <div>Máximo: <span class="text-green-400">${fmt(results[N-1])}</span></div>
+        <div>Promedio: <span class="${avg>=0?'text-green-400':'text-red-400'}">${fmt(avg)}</span></div>
+      </div>
+      <div>
+        <div class="text-slate-500 mb-1">Percentiles</div>
+        <div>P5: <span class="${results[Math.floor(N*0.05)]>=0?'text-green-400':'text-red-400'}">${fmt(results[Math.floor(N*0.05)])}</span></div>
+        <div>P25: <span class="${results[Math.floor(N*0.25)]>=0?'text-green-400':'text-red-400'}">${fmt(results[Math.floor(N*0.25)])}</span></div>
+        <div>P75: <span class="text-green-400">${fmt(results[Math.floor(N*0.75)])}</span></div>
+        <div>P95: <span class="text-green-400">${fmt(results[Math.floor(N*0.95)])}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function showTab(name, btn) {
+  ['pnl','escenarios','pricing','montecarlo'].forEach(t => {
+    $('tab-'+t).style.display = t === name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+calc();
+</script>
+</body>
+</html>

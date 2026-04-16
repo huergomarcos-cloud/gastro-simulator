@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e2e8f0; }
+  @page { size: 816px 1056px; margin: 0; }
+  .page {
+    width: 816px; height: 1056px; padding: 60px 65px;
+    page-break-after: always; position: relative;
+    background: #0a0a0a; overflow: hidden;
+  }
+  .page:last-child { page-break-after: avoid; }
+  .accent { color: #c43333; }
+  .red-line { width: 40px; height: 3px; background: #c43333; margin-bottom: 16px; }
+  .section-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 20px; }
+  .page-footer { position: absolute; bottom: 30px; left: 65px; right: 65px; text-align: center; font-size: 9px; color: #334155; letter-spacing: 2px; }
+
+  /* KPI Cards */
+  .kpi-row { display: flex; gap: 14px; margin-bottom: 24px; }
+  .kpi-card { flex: 1; background: #141414; border-radius: 10px; padding: 18px 16px; text-align: center; border: 1px solid #1e1e1e; }
+  .kpi-card .value { font-size: 28px; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
+  .kpi-card .value.green { color: #4ade80; }
+  .kpi-card .value.red { color: #c43333; }
+  .kpi-card .label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; font-weight: 600; }
+
+  /* Tables */
+  .fin-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+  .fin-table th { text-align: left; color: #64748b; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 10px; border-bottom: 1px solid #1e1e1e; font-weight: 600; }
+  .fin-table td { padding: 7px 10px; border-bottom: 1px solid #111; color: #cbd5e1; }
+  .fin-table td:first-child { color: #94a3b8; font-weight: 500; }
+  .fin-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .fin-table .sub { font-weight: 700; color: #f1f5f9; border-top: 1px solid #334155; }
+  .fin-table .total { font-weight: 800; color: #4ade80; border-top: 2px solid #c43333; font-size: 13px; }
+  .fin-table .neg { color: #f87171; }
+
+  /* Scenario cards */
+  .scenario { background: #141414; border-radius: 10px; padding: 16px 18px; margin-bottom: 10px; border-left: 4px solid #334155; }
+  .scenario .name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .scenario .desc { font-size: 10px; color: #94a3b8; margin-bottom: 8px; }
+  .scenario .metrics { display: flex; gap: 20px; }
+  .scenario .metric { text-align: center; }
+  .scenario .metric .mv { font-size: 16px; font-weight: 800; }
+  .scenario .metric .ml { font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+
+  .highlight-box { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; }
+  .highlight-box .title { font-size: 12px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+  .highlight-box p { font-size: 11px; color: #94a3b8; line-height: 1.6; }
+
+  .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .inv-item { background: #141414; border-radius: 8px; padding: 14px 16px; border: 1px solid #1e1e1e; }
+  .inv-item .iv { font-size: 20px; font-weight: 800; color: #ffffff; }
+  .inv-item .il { font-size: 10px; color: #64748b; margin-top: 2px; }
+  .inv-item .isub { font-size: 9px; color: #4a5568; margin-top: 4px; }
+
+  .timeline { display: flex; gap: 0; margin: 16px 0; }
+  .timeline .phase { flex: 1; text-align: center; padding: 12px 8px; position: relative; }
+  .timeline .phase .dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto 8px; }
+  .timeline .phase .plabel { font-size: 9px; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
+  .timeline .phase .pvalue { font-size: 14px; font-weight: 700; margin-top: 4px; }
+  .timeline .phase::after { content: ''; position: absolute; top: 17px; right: 0; width: 50%; height: 2px; background: #1e1e1e; }
+  .timeline .phase::before { content: ''; position: absolute; top: 17px; left: 0; width: 50%; height: 2px; background: #1e1e1e; }
+  .timeline .phase:first-child::before { display: none; }
+  .timeline .phase:last-child::after { display: none; }
+
+  .link-box { background: linear-gradient(135deg, #1a0a0a, #141414); border: 1px solid #c43333; border-radius: 10px; padding: 20px 24px; text-align: center; margin-top: 20px; }
+  .link-box .url { font-size: 12px; color: #c43333; font-weight: 700; letter-spacing: 0.5px; word-break: break-all; }
+  .link-box .hint { font-size: 9px; color: #64748b; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: RESUMEN EJECUTIVO -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Plan Financiero</div>
+
+  <div style="margin-bottom: 30px">
+    <div style="font-size: 36px; font-weight: 900; color: #ffffff; line-height: 1.1; margin-bottom: 8px">
+      SNACK<span class="accent">Z</span> IZAKAYA
+    </div>
+    <div style="font-size: 14px; color: #64748b; letter-spacing: 2px">RESUMEN EJECUTIVO &mdash; INVERSI&Oacute;N</div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="value">$235K</div><div class="label">Inversi&oacute;n Total</div></div>
+    <div class="kpi-card"><div class="value green">$684K</div><div class="label">Revenue Anual</div></div>
+    <div class="kpi-card"><div class="value green">20.3%</div><div class="label">Net Margin</div></div>
+    <div class="kpi-card"><div class="value">M24</div><div class="label">Payback Inversor</div></div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="title">La oportunidad</div>
+    <p>Snackz Izakaya proyecta un revenue bruto de <strong style="color:#fff">$57K/mes</strong> (USD) operando solo turno cena, martes a domingo, con 35 lugares en formato barra. Con un EBITDA margin del 32% y un net margin real del 20.3%, el negocio genera <strong style="color:#4ade80">$12.1K/mes de resultado neto</strong> despues de todos los impuestos. El inversor recupera su capital en el mes 24 y a partir de ahi cobra el 25% de las ganancias a perpetuidad.</p>
+  </div>
+
+  <div style="font-size: 10px; color: #64748b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-weight: 600">Estructura de la inversi&oacute;n</div>
+
+  <div class="inv-grid">
+    <div class="inv-item"><div class="iv">$150K</div><div class="il">Obra Civil / Reformas</div><div class="isub">Amortiza en 10 a&ntilde;os</div></div>
+    <div class="inv-item"><div class="iv">$55K</div><div class="il">Equipamiento Cocina</div><div class="isub">Amortiza en 5 a&ntilde;os</div></div>
+    <div class="inv-item"><div class="iv">$15K</div><div class="il">Mobiliario / Barra</div><div class="isub">Amortiza en 10 a&ntilde;os</div></div>
+    <div class="inv-item"><div class="iv">$10K</div><div class="il">Branding / Dise&ntilde;o</div><div class="isub">Amortiza en 3 a&ntilde;os</div></div>
+  </div>
+
+  <div style="display:flex;gap:14px">
+    <div class="inv-item" style="flex:1"><div class="iv">$5K</div><div class="il">Habilitaciones / Legales</div><div class="isub">Amortiza en 5 a&ntilde;os</div></div>
+    <div class="inv-item" style="flex:1;border-color:#c43333"><div class="iv" style="color:#c43333">$2.7K<span style="font-size:14px;color:#64748b">/mes</span></div><div class="il">Amortizaci&oacute;n Total</div><div class="isub">Deducible de Ganancias (ahorro fiscal $962/mes)</div></div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; DOCUMENTO CONFIDENCIAL &mdash; 2026</div>
+</div>
+
+<!-- PAGE 2: P&L -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Estado de Resultados &mdash; Promedio Mensual</div>
+
+  <table class="fin-table">
+    <tr><th style="width:50%"></th><th>Mensual (USD)</th><th>Anual (USD)</th><th>% Rev</th></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:10px;letter-spacing:2px;padding-top:14px">REVENUE</td></tr>
+    <tr><td>Covers / mes</td><td>1,386</td><td>16,632</td><td></td></tr>
+    <tr><td>Ticket promedio (cena)</td><td>$42</td><td></td><td></td></tr>
+    <tr class="sub"><td>Revenue Bruto Total</td><td>$57,000</td><td>$684,000</td><td>100%</td></tr>
+    <tr><td style="padding-left:20px">Rev. Blanco (80%)</td><td>$47,040</td><td>$564,480</td><td>82.5%</td></tr>
+    <tr><td style="padding-left:20px">Rev. Negro (20%, c/desc 10%)</td><td>$9,960</td><td>$119,520</td><td>17.5%</td></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:10px;letter-spacing:2px;padding-top:14px">COSTO MERCADER&Iacute;A</td></tr>
+    <tr><td style="padding-left:20px">Food Cost (25%)</td><td class="neg">-$14,250</td><td class="neg">-$171,000</td><td>25.0%</td></tr>
+    <tr><td style="padding-left:20px">Paper Cost (2.5%)</td><td class="neg">-$1,425</td><td class="neg">-$17,100</td><td>2.5%</td></tr>
+    <tr class="sub"><td>Gross Profit</td><td>$41,325</td><td>$495,900</td><td>72.5%</td></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:10px;letter-spacing:2px;padding-top:14px">GASTOS OPERATIVOS</td></tr>
+    <tr><td style="padding-left:20px">Crew Labor (12 &times; $1,150)</td><td class="neg">-$13,800</td><td class="neg">-$165,600</td><td>24.2%</td></tr>
+    <tr><td style="padding-left:20px">Alquiler + Servicios</td><td class="neg">-$4,300</td><td class="neg">-$51,600</td><td>7.5%</td></tr>
+    <tr><td style="padding-left:20px">OPEX + Marketing (5%)</td><td class="neg">-$2,850</td><td class="neg">-$34,200</td><td>5.0%</td></tr>
+    <tr><td style="padding-left:20px">Processing (1.5% s/blanco)</td><td class="neg">-$706</td><td class="neg">-$8,467</td><td>1.2%</td></tr>
+    <tr><td style="padding-left:20px">SG&A (contable + software)</td><td class="neg">-$800</td><td class="neg">-$9,600</td><td>1.4%</td></tr>
+
+    <tr class="sub"><td>EBITDA</td><td style="color:#4ade80">$18,869</td><td style="color:#4ade80">$226,433</td><td style="color:#4ade80">32.0%</td></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:10px;letter-spacing:2px;padding-top:14px">IMPUESTOS (s/ blanco)</td></tr>
+    <tr><td style="padding-left:20px">IVA neto (d&eacute;bito - cr&eacute;dito)</td><td class="neg">-$2,100</td><td class="neg">-$25,200</td><td></td></tr>
+    <tr><td style="padding-left:20px">IIBB (3.5%)</td><td class="neg">-$1,646</td><td class="neg">-$19,757</td><td></td></tr>
+    <tr><td style="padding-left:20px">D&eacute;b/Cr&eacute;d Bancarios</td><td class="neg">-$565</td><td class="neg">-$6,774</td><td></td></tr>
+    <tr><td style="padding-left:20px">Imp. Ganancias (35%)</td><td class="neg">-$2,050</td><td class="neg">-$24,600</td><td></td></tr>
+    <tr><td style="padding-left:20px">Costo facturas extra</td><td class="neg">-$434</td><td class="neg">-$5,207</td><td></td></tr>
+
+    <tr class="total"><td>RESULTADO NETO REAL</td><td>$12,074</td><td>$144,888</td><td>20.3%</td></tr>
+  </table>
+
+  <div style="display:flex;gap:14px;margin-top:8px">
+    <div class="highlight-box" style="flex:1;margin-bottom:0">
+      <div class="title">Break-even</div>
+      <p><span style="color:#fff;font-size:20px;font-weight:800">633</span> covers/mes<br><span style="color:#64748b">vs 1,386 actuales (margen 54%)</span></p>
+    </div>
+    <div class="highlight-box" style="flex:1;margin-bottom:0">
+      <div class="title">Prime Cost</div>
+      <p><span style="color:#fff;font-size:20px;font-weight:800">51.7%</span><br><span style="color:#4ade80">Benchmark gastro: &lt;60%</span></p>
+    </div>
+    <div class="highlight-box" style="flex:1;margin-bottom:0">
+      <div class="title">Labor %</div>
+      <p><span style="color:#fff;font-size:20px;font-weight:800">24.2%</span><br><span style="color:#4ade80">Benchmark: 25-33%</span></p>
+    </div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; DOCUMENTO CONFIDENCIAL &mdash; 2026</div>
+</div>
+
+<!-- PAGE 3: RETORNO DEL INVERSOR -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Retorno del Inversor</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="value">$235K</div><div class="label">Capital Invertido</div></div>
+    <div class="kpi-card"><div class="value green">M24</div><div class="label">Recupera Inversi&oacute;n</div></div>
+    <div class="kpi-card"><div class="value green">$118K</div><div class="label">Cobra A&ntilde;o 1</div></div>
+    <div class="kpi-card"><div class="value green">50%</div><div class="label">ROI A&ntilde;o 1</div></div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="title">Mec&aacute;nica del split</div>
+    <p>Hasta que el inversor recupere los $235K invertidos, se lleva el <strong style="color:#fff">80%</strong> de las ganancias mensuales. Una vez recuperada la inversi&oacute;n (estimado: mes 24), el split pasa a <strong style="color:#fff">25%</strong> para el inversor a perpetuidad.</p>
+  </div>
+
+  <div style="font-size: 10px; color: #64748b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-weight: 600">Retorno acumulado por a&ntilde;o</div>
+
+  <table class="fin-table">
+    <tr><th></th><th>Inversor cobra</th><th>vs Inversi&oacute;n</th><th>Operador cobra</th></tr>
+    <tr><td>A&ntilde;o 1</td><td style="color:#4ade80">$118,400</td><td class="neg">-$116,600</td><td>$29,600</td></tr>
+    <tr><td>A&ntilde;o 2</td><td style="color:#4ade80">$236,800</td><td style="color:#4ade80">+$1,800</td><td>$59,200</td></tr>
+    <tr><td>A&ntilde;o 3</td><td style="color:#4ade80">$273,000</td><td style="color:#4ade80">+$38,000</td><td>$167,400</td></tr>
+    <tr><td>A&ntilde;o 4</td><td style="color:#4ade80">$309,200</td><td style="color:#4ade80">+$74,200</td><td>$275,600</td></tr>
+    <tr class="sub"><td>A&ntilde;o 5</td><td style="color:#4ade80">$345,400</td><td style="color:#4ade80">+$110,400</td><td>$383,800</td></tr>
+  </table>
+
+  <div class="timeline">
+    <div class="phase"><div class="dot" style="background:#c43333"></div><div class="plabel">Apertura</div><div class="pvalue">M0</div></div>
+    <div class="phase"><div class="dot" style="background:#fbbf24"></div><div class="plabel">Break-even</div><div class="pvalue" style="color:#fbbf24">M3-4</div></div>
+    <div class="phase"><div class="dot" style="background:#4ade80"></div><div class="plabel">Payback Inv.</div><div class="pvalue" style="color:#4ade80">M24</div></div>
+    <div class="phase"><div class="dot" style="background:#38bdf8"></div><div class="plabel">Split 25%</div><div class="pvalue" style="color:#38bdf8">M25+</div></div>
+    <div class="phase"><div class="dot" style="background:#a78bfa"></div><div class="plabel">5 A&ntilde;os</div><div class="pvalue" style="color:#a78bfa">M60</div></div>
+  </div>
+
+  <div style="display:flex;gap:14px;margin-top:16px">
+    <div class="highlight-box" style="flex:1;margin-bottom:0;border-color:#c43333">
+      <div class="title" style="color:#c43333">Inversor &mdash; 5 a&ntilde;os</div>
+      <p>Invierte <strong style="color:#fff">$235K</strong>. Cobra <strong style="color:#4ade80">$345K</strong>. Ganancia neta: <strong style="color:#4ade80">$110K</strong>. Multiplo: <strong style="color:#fff">1.47x</strong>.</p>
+      <p style="margin-top:6px">Post-payback cobra ~<strong style="color:#fff">$3K/mes</strong> sin hacer nada.</p>
+    </div>
+    <div class="highlight-box" style="flex:1;margin-bottom:0;border-color:#4ade80">
+      <div class="title" style="color:#4ade80">Operador &mdash; 5 a&ntilde;os</div>
+      <p>No pone capital. Cobra <strong style="color:#4ade80">$384K</strong> en 5 a&ntilde;os. Pre-payback: ~$2.5K/mes. Post-payback: ~<strong style="color:#fff">$9K/mes</strong>.</p>
+    </div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; DOCUMENTO CONFIDENCIAL &mdash; 2026</div>
+</div>
+
+<!-- PAGE 4: ESCENARIOS -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">An&aacute;lisis de Escenarios</div>
+
+  <div class="scenario" style="border-color:#f87171">
+    <div class="name" style="color:#f87171">Pesimista &mdash; La zona no responde</div>
+    <div class="desc">Rotaciones -40%, ticket -12%, food cost +4pp. Competencia fuerte, boca a boca lento.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#f87171">$1.8K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#f87171">3.7%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#f87171">N/A</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">780</div><div class="ml">Covers/mes</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-color:#fbbf24">
+    <div class="name" style="color:#fbbf24">Conservador &mdash; Arranque normal</div>
+    <div class="desc">Rotaciones -20%, ticket -5%, food cost +2pp. Cuesta llenar mid-week.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#fbbf24">$7.2K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#fbbf24">14.8%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#fbbf24">M38</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">1,080</div><div class="ml">Covers/mes</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-color:#38bdf8;background:#0d1520">
+    <div class="name" style="color:#38bdf8">Base &mdash; Tu plan actual</div>
+    <div class="desc">Las rotaciones, tickets y costos que definimos. Escenario realista.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#4ade80">$12.1K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#4ade80">20.3%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#4ade80">M24</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">1,386</div><div class="ml">Covers/mes</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-color:#4ade80">
+    <div class="name" style="color:#4ade80">Optimista &mdash; Buen arranque</div>
+    <div class="desc">Rotaciones +15%, ticket +5%, food cost -1.5pp. Boca a boca r&aacute;pido.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#4ade80">$17.5K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#4ade80">24.1%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#4ade80">M18</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">1,620</div><div class="ml">Covers/mes</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-color:#22d3ee">
+    <div class="name" style="color:#22d3ee">Muy optimista &mdash; La marca pega</div>
+    <div class="desc">Rotaciones +30%, se activa after, ticket +10%. IG explota, demanda premium.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#22d3ee">$24K+</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#22d3ee">27%+</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#22d3ee">M14</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">2,100+</div><div class="ml">Covers/mes</div></div>
+    </div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; DOCUMENTO CONFIDENCIAL &mdash; 2026</div>
+</div>
+
+<!-- PAGE 5: SIMULADOR + CIERRE -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Modelo Financiero Interactivo</div>
+
+  <div style="margin-bottom: 30px">
+    <div style="font-size: 24px; font-weight: 800; color: #ffffff; line-height: 1.3; margin-bottom: 12px">
+      Todos los n&uacute;meros de este documento fueron generados con nuestro simulador financiero interactivo.
+    </div>
+    <div style="font-size: 13px; color: #94a3b8; line-height: 1.6">
+      El simulador permite modificar cualquier variable (capacidad, ticket, rotaciones, costos, impuestos, estructura de inversi&oacute;n) y ver el impacto en tiempo real sobre el P&L, cash flow, retorno del inversor y escenarios.
+    </div>
+  </div>
+
+  <div class="link-box">
+    <div style="font-size: 10px; color: #64748b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px">Acceder al simulador</div>
+    <div class="url">huergomarcos-cloud.github.io/gastro-simulator/snackz-v2.html</div>
+    <div class="hint">Se abre en cualquier navegador &mdash; no requiere instalaci&oacute;n</div>
+  </div>
+
+  <div style="margin-top: 30px">
+    <div style="font-size: 10px; color: #64748b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-weight: 600">El simulador incluye</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">P&L Real + Contable</div><p>Dos visiones: lo que pasa de verdad (caja) y lo que ve AFIP.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Cash Flow 60 meses</div><p>Proyecci&oacute;n mes a mes con payback y split socios.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Visi&oacute;n Inversor</div><p>Retorno acumulado, m&uacute;ltiplo, ROI, payback real del inversor.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Visi&oacute;n Operador</div><p>Unit economics, break-even, estructura de costos, eficiencia.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">5 Escenarios</div><p>De pesimista a muy optimista, todos basados en tus par&aacute;metros.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Estrategias Comerciales</div><p>8 iniciativas con impacto financiero simulado.</p></div>
+    </div>
+  </div>
+
+  <div style="position:absolute;bottom:80px;left:65px;right:65px;text-align:center">
+    <div style="font-size: 36px; font-weight: 900; color: #ffffff; margin-bottom: 4px">
+      SNACK<span class="accent">Z</span> IZAKAYA
+    </div>
+    <div style="font-size: 11px; color: #64748b; letter-spacing: 3px">EL PROYECTO EMPIEZA AC&Aacute;</div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; DOCUMENTO CONFIDENCIAL &mdash; 2026</div>
+</div>
+
+</body>
+</html>

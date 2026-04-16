@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SNACK — Simulador Financiero</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #0a0a0a; color: #e5e5e5; font-family: 'Inter', system-ui, sans-serif; }
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active { background: #1a1a2e; color: #00d4aa; border-bottom: 2px solid #00d4aa; }
+    .tab-btn:not(.active):hover { background: #111; }
+    .kpi-card { background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px 16px; }
+    .kpi-value { font-size: 1.5rem; font-weight: 700; color: #00d4aa; }
+    .kpi-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .heatmap-cell { width: 100%; text-align: center; font-size: 0.7rem; padding: 4px 2px; border-radius: 3px; }
+    .slider-group label { font-size: 0.8rem; color: #aaa; }
+    .slider-group input[type="range"] { width: 100%; accent-color: #00d4aa; }
+    .slider-val { color: #00d4aa; font-weight: 600; font-size: 0.9rem; }
+    .section-title { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+    .base-banner { background: #1a1a2e; border: 1px solid #00d4aa33; border-radius: 6px; padding: 8px 16px; font-size: 0.8rem; color: #aaa; }
+    .base-banner span { color: #00d4aa; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th { background: #1a1a2e; color: #aaa; padding: 8px; text-align: left; font-weight: 500; }
+    td { padding: 6px 8px; border-bottom: 1px solid #1a1a1a; }
+    .recommendation-box { background: linear-gradient(135deg, #0a2a1f, #1a1a2e); border: 2px solid #00d4aa; border-radius: 12px; padding: 24px; }
+    .rec-value { font-size: 2rem; font-weight: 800; color: #00d4aa; }
+    .rec-label { font-size: 0.75rem; color: #888; }
+    canvas { max-height: 300px; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ═══════════════════════ NAV ═══════════════════════ -->
+<nav class="flex items-center gap-2 px-4 py-3 border-b border-gray-800 bg-black/50 sticky top-0 z-50">
+  <h1 class="text-lg font-bold mr-6" style="color:#00d4aa">SNACK</h1>
+  <button class="tab-btn active px-4 py-2 text-sm rounded-t" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn px-4 py-2 text-sm rounded-t" data-tab="socios">Socios</button>
+  <button class="tab-btn px-4 py-2 text-sm rounded-t" data-tab="stress">Stress Test</button>
+  <button class="tab-btn px-4 py-2 text-sm rounded-t" data-tab="supuestos">Supuestos</button>
+</nav>
+
+<!-- ═══════════════════════ DASHBOARD ═══════════════════════ -->
+<div id="view-dashboard" class="view p-6">
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6" id="dash-kpis"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+    <!-- TODAS las variables manuales -->
+    <div class="lg:col-span-1 space-y-2" style="max-height:calc(100vh - 160px);overflow-y:auto;padding-right:8px">
+      <div class="section-title">Local</div>
+      <div class="slider-group"><label>Capacidad: <span class="slider-val" id="v-cap"></span> pax</label><input type="range" id="s-cap" min="10" max="60" step="1"></div>
+      <div class="slider-group"><label>Inversión: $<span class="slider-val" id="v-inversion"></span></label><input type="range" id="s-inversion" min="100000" max="350000" step="5000"></div>
+      <div class="slider-group"><label>Alquiler: $<span class="slider-val" id="v-alquiler"></span>/mes</label><input type="range" id="s-alquiler" min="1500" max="6000" step="100"></div>
+      <div class="slider-group"><label>Servicios: $<span class="slider-val" id="v-servicios"></span>/mes</label><input type="range" id="s-servicios" min="500" max="3000" step="50"></div>
+
+      <div class="section-title mt-3">Staff</div>
+      <div class="slider-group"><label>Staff Cena: <span class="slider-val" id="v-staffCena"></span> personas</label><input type="range" id="s-staffCena" min="3" max="25" step="1"></div>
+      <div class="slider-group"><label>Staff Almuerzo: <span class="slider-val" id="v-staffAlm"></span> personas</label><input type="range" id="s-staffAlm" min="2" max="15" step="1"></div>
+      <div class="slider-group"><label>Sueldo promedio: $<span class="slider-val" id="v-sueldo"></span></label><input type="range" id="s-sueldo" min="800" max="2000" step="50"></div>
+
+      <div class="section-title mt-3">Pricing</div>
+      <div class="slider-group"><label>Ticket Cena: $<span class="slider-val" id="v-ticketCena"></span></label><input type="range" id="s-ticketCena" min="25" max="60" step="1"></div>
+      <div class="slider-group"><label>Ticket Almuerzo: $<span class="slider-val" id="v-ticketAlm"></span></label><input type="range" id="s-ticketAlm" min="10" max="40" step="1"></div>
+      <div class="slider-group"><label>Food Cost: <span class="slider-val" id="v-foodCost"></span>%</label><input type="range" id="s-foodCost" min="15" max="40" step="1"></div>
+      <div class="slider-group"><label>Paper/Descartables: <span class="slider-val" id="v-paperCost"></span>%</label><input type="range" id="s-paperCost" min="0" max="8" step="0.5"></div>
+      <div class="slider-group"><label>Comisiones pago: <span class="slider-val" id="v-comisionPago"></span>%</label><input type="range" id="s-comisionPago" min="0" max="5" step="0.1"></div>
+
+      <div class="section-title mt-3">Mercado</div>
+      <div class="slider-group"><label>Demanda máx: <span class="slider-val" id="v-demanda"></span>%</label><input type="range" id="s-demanda" min="30" max="100" step="5"></div>
+      <div class="slider-group"><label>Ramp-up: <span class="slider-val" id="v-rampup"></span> meses</label><input type="range" id="s-rampup" min="3" max="18" step="1"></div>
+      <div class="slider-group"><label>% Negro: <span class="slider-val" id="v-negro"></span>%</label><input type="range" id="s-negro" min="0" max="50" step="5"></div>
+      <!-- Inflación eliminada: en USD constantes se cancela -->
+
+      <div class="section-title mt-3">Rotaciones por Día</div>
+      <div class="text-xs text-gray-500 mb-2">Veces que se llena cada lugar por servicio</div>
+      <table class="text-xs">
+        <thead><tr><th></th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th><th class="text-right">Avg</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="font-semibold" style="color:#00d4aa">Cena</td>
+            <td><input type="number" class="rot-input rot-cena" data-day="0" value="0.8" min="0" max="4" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-cena" data-day="1" value="1.0" min="0" max="4" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-cena" data-day="2" value="1.8" min="0" max="4" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-cena" data-day="3" value="2.8" min="0" max="4" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-cena" data-day="4" value="2.5" min="0" max="4" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-cena" data-day="5" value="2.0" min="0" max="4" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td class="text-right font-bold" style="color:#00d4aa" id="rot-cena-avg">1.82</td>
+          </tr>
+          <tr>
+            <td class="font-semibold" style="color:#4fc3f7">Alm</td>
+            <td><input type="number" class="rot-input rot-alm" data-day="0" value="0.4" min="0" max="3" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-alm" data-day="1" value="0.5" min="0" max="3" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-alm" data-day="2" value="0.9" min="0" max="3" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-alm" data-day="3" value="1.4" min="0" max="3" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-alm" data-day="4" value="1.3" min="0" max="3" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td><input type="number" class="rot-input rot-alm" data-day="5" value="1.0" min="0" max="3" step="0.1" style="width:44px;background:#1a1a2e;border:1px solid #333;color:#fff;text-align:center;border-radius:4px;padding:2px"></td>
+            <td class="text-right font-bold" style="color:#4fc3f7" id="rot-alm-avg">0.92</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Charts -->
+    <div class="lg:col-span-3 space-y-6">
+      <div>
+        <div class="section-title">Cash Flow Acumulado — 60 meses</div>
+        <canvas id="chart-cashflow"></canvas>
+        <div class="mt-3 overflow-x-auto" id="cashflow-table"></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div class="section-title">P&L Mensual</div>
+          <canvas id="chart-pnl"></canvas>
+        </div>
+        <div>
+          <div class="section-title">Composición de Costos</div>
+          <canvas id="chart-donut"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desglose semanal + ocupación -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <div class="section-title">Desglose Semanal (steady state)</div>
+      <canvas id="chart-weekly"></canvas>
+    </div>
+    <div>
+      <div class="section-title">Ocupación Promedio por Día</div>
+      <div id="occupancy-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SOCIOS ═══════════════════════ -->
+<div id="view-socios" class="view p-6 hidden">
+  <div class="base-banner mb-4" id="socios-base"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div>
+      <div class="section-title">6 Escenarios Comparados</div>
+      <div id="scenarios-table"></div>
+    </div>
+    <div>
+      <div class="section-title">Cash Flow — Inversor vs Operador</div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs text-gray-500">Escenario:</span>
+        <select id="socios-scenario-select" onchange="updateSociosChart()" style="background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:4px;padding:2px 8px;font-size:0.8rem"></select>
+      </div>
+      <div class="text-xs text-gray-500 mb-2" id="socios-chart-label"></div>
+      <canvas id="chart-socios"></canvas>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <div class="section-title">Tornado de Sensibilidad</div>
+      <canvas id="chart-tornado"></canvas>
+    </div>
+    <div>
+      <div class="section-title">Break-even</div>
+      <div id="breakeven-info"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ STRESS TEST ═══════════════════════ -->
+<div id="view-stress" class="view p-6 hidden">
+  <div class="base-banner mb-4" id="stress-base"></div>
+  <div class="max-w-4xl space-y-6" id="stress-content"></div>
+</div>
+
+<!-- ═══════════════════════ SUPUESTOS ═══════════════════════ -->
+<div id="view-supuestos" class="view p-6 hidden">
+  <div class="max-w-4xl mx-auto space-y-8" id="supuestos-content"></div>
+</div>
+
+<!-- ═══════════════════════ ENGINE ═══════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────
+const DAYS_OP = 26;
+const MONTHS = 60;
+
+// Rotaciones cena por día (Mar, Mié, Jue, Vie, Sáb, Dom)
+const ROT_CENA = [0.8, 1.0, 1.8, 2.8, 2.5, 2.0];
+const ROT_CENA_AVG = ROT_CENA.reduce((a, b) => a + b, 0) / ROT_CENA.length; // 1.817
+
+// Almuerzo = 50% de cena
+const ROT_ALM_FACTOR = 0.5;
+const ROT_ALM = ROT_CENA.map(r => r * ROT_ALM_FACTOR);
+const ROT_ALM_AVG = ROT_ALM.reduce((a, b) => a + b, 0) / ROT_ALM.length;
+
+const DAY_NAMES = ['Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+// Estacionalidad mensual (Ene=0 a Dic=11) — Buenos Aires
+const SEASONAL = [0.55, 0.60, 0.80, 0.90, 0.90, 0.75, 0.70, 0.75, 0.85, 0.95, 1.00, 1.05];
+
+// Impuestos (ley argentina)
+const IVA_RATE = 0.21;
+const IVA_CREDITO_FISCAL = 0.40;
+const IIBB_RATE = 0.035;
+const DEB_CRED_RATE = 0.012;
+const GANANCIAS_RATE = 0.35;
+
+// Costos variables
+const PAPER_COST = 0.025;
+const COMISION_PAGO = 0.012;
+
+// Costos fijos base
+const ALQUILER_BASE = 3000;
+const ALQUILER_PER_PAX = 40; // sobre 20 pax
+const SERVICIOS_BASE = 1200;
+const SERVICIOS_PER_PAX = 15; // sobre 20 pax
+const CONTADOR = 500;
+const SOFTWARE = 300;
+const SEGUROS = 300;
+
+// Inversión
+const INVERSION_BASE = 180000;
+const INVERSION_PER_PAX = 1500;
+
+// Staff
+const STAFF_CENA_RATIO = 6;    // 1 cocinero barra cada 6 pax
+const STAFF_ALM_RATIO = 10;    // 1 cocinero barra cada 10 pax
+const STAFF_CENA_FIJO = 4;     // cajero + host + 2 back
+const STAFF_ALM_FIJO = 2;      // cajero + 1 back
+const SUELDO = 1150;
+
+// Split socios
+const SPLIT_PRE_INVERSOR = 0.80;
+const SPLIT_POST_INVERSOR = 0.25;
+
+// ─────────────────────────────────────────────────────────
+// CORRELATIONS
+// ─────────────────────────────────────────────────────────
+
+// 1. Capacidad → demanda: -k * ln(cap/25)
+function capDemandAdj(cap) {
+  const k = 0.07;
+  return -k * Math.log(cap / 25);
+}
+
+// 2. Ticket → demanda: elasticidad -0.3 (ref $38 cena)
+function ticketDemandAdj(ticketCena, ref = 38) {
+  const elasticity = -0.3;
+  const pctChange = (ticketCena - ref) / ref;
+  return elasticity * pctChange;
+}
+
+// 3. Rotaciones → ticket: si rot cena promedio > 2.5, ticket baja
+function rotTicketAdj(rotCenaAvg) {
+  if (rotCenaAvg <= 2.5) return 0;
+  return -0.05 * (rotCenaAvg - 2.5); // -5% por cada 1.0 arriba de 2.5
+}
+
+// Staff calculation
+function calcStaff(cap) {
+  const cena = Math.ceil(cap / STAFF_CENA_RATIO) + STAFF_CENA_FIJO;
+  const alm = Math.ceil(cap / STAFF_ALM_RATIO) + STAFF_ALM_FIJO;
+  return { cena, alm, total: cena + alm };
+}
+
+// Derived costs from capacity
+function derivedCosts(cap) {
+  const paxOver20 = Math.max(0, cap - 20);
+  return {
+    alquiler: ALQUILER_BASE + ALQUILER_PER_PAX * paxOver20,
+    servicios: SERVICIOS_BASE + SERVICIOS_PER_PAX * paxOver20,
+    inversion: INVERSION_BASE + INVERSION_PER_PAX * cap,
+  };
+}
+
+// ─────────────────────────────────────────────────────────
+// CALC SCENARIO — pure function, 60 months
+// ─────────────────────────────────────────────────────────
+function calcScenario(p) {
+  const {
+    cap,            // capacidad
+    ticketCena,     // USD
+    ticketAlm,      // USD
+    foodCost,       // 0.25
+    pctNegro,       // 0.20
+    demandaMax,     // 0.90
+    rampupMeses,    // meses
+    rotCenaDay,     // array [6] rotaciones cena por día (Mar-Dom)
+    rotAlmDay,      // array [6] rotaciones almuerzo por día (Mar-Dom)
+    rotScale,       // multiplicador opcional (para escenarios)
+    // inflacion removed — model runs in constant USD
+    // Manual overrides
+    inversion: invOverride,
+    alquiler: alqOverride,
+    servicios: servOverride,
+    staffCena: staffCenaOverride,
+    staffAlm: staffAlmOverride,
+    sueldo: sueldoOverride,
+    paperCost: paperCostOverride,
+    comisionPago: comisionPagoOverride,
+  } = p;
+
+  const pctBlanco = 1 - pctNegro;
+
+  // Use manual values if provided, otherwise derive from capacity
+  const derived = derivedCosts(cap);
+  const autoStaff = calcStaff(cap);
+  const inversion = invOverride ?? derived.inversion;
+  const alquilerBase = alqOverride ?? derived.alquiler;
+  const serviciosBase = servOverride ?? derived.servicios;
+  const staffCenaCount = staffCenaOverride ?? autoStaff.cena;
+  const staffAlmCount = staffAlmOverride ?? autoStaff.alm;
+  const staffTotal = staffCenaCount + staffAlmCount;
+  const sueldoBase = sueldoOverride ?? SUELDO;
+
+  // Rotaciones por día (con scale opcional para escenarios)
+  const scale = rotScale ?? 1;
+  const rCena = (rotCenaDay ?? ROT_CENA).map(r => r * scale);
+  const rAlm = (rotAlmDay ?? ROT_ALM).map(r => r * scale);
+  const rotCenaAvg = rCena.reduce((a, b) => a + b, 0) / rCena.length;
+  const rotAlmAvg = rAlm.reduce((a, b) => a + b, 0) / rAlm.length;
+
+  // No auto-correlations — all values come from manual inputs
+
+  // No inflation — everything in constant USD
+  const months = [];
+  let cashAcum = -inversion;
+  let cashInversor = -inversion;
+  let cashOperador = 0;
+  let paybackMonth = null;
+
+  for (let m = 0; m < MONTHS; m++) {
+    // Ramp-up: 20% → demandaMax linearly
+    const rampup = Math.min(1, m / rampupMeses);
+    const demanda = 0.20 + (demandaMax - 0.20) * rampup;
+    const effectiveDemanda = Math.max(0, Math.min(1, demanda));
+
+    // Seasonality (start month = 0 = January for simplicity)
+    const seasonIdx = m % 12;
+    const seasonal = SEASONAL[seasonIdx];
+
+    // Covers
+    const coversCena = cap * rotCenaAvg * DAYS_OP * effectiveDemanda * seasonal;
+    const coversAlm = cap * rotAlmAvg * DAYS_OP * effectiveDemanda * seasonal;
+
+    // ── Revenue (constant USD) ──
+    const tCena = ticketCena;
+    const tAlm = ticketAlm;
+    const revenueCena = coversCena * tCena;
+    const revenueAlm = coversAlm * tAlm;
+    const revenue = revenueCena + revenueAlm;
+    const revenueBlanco = revenue * pctBlanco;
+    const revenueNegro = revenue * pctNegro;
+
+    // ── Costos variables ──
+    const costoFood = revenue * foodCost;
+    const costoPaper = revenue * (paperCostOverride ?? PAPER_COST);
+    const costoComision = revenueBlanco * (comisionPagoOverride ?? COMISION_PAGO);
+    const mktRate = m < 6 ? 0.05 : 0.03;
+    const costoMkt = revenue * mktRate;
+
+    // ── Costos fijos (inflation-adjusted) ──
+    const costoStaff = staffTotal * sueldoBase;
+    const costoAlquiler = alquilerBase;
+    const costoServicios = serviciosBase;
+    const costoContador = CONTADOR;
+    const costoSoftware = SOFTWARE;
+    const costoSeguros = SEGUROS;
+
+    const totalCostosVar = costoFood + costoPaper + costoComision + costoMkt;
+    const totalCostosFijos = costoStaff + costoAlquiler + costoServicios + costoContador + costoSoftware + costoSeguros;
+    const totalCostos = totalCostosVar + totalCostosFijos;
+
+    // ── EBITDA ──
+    const ebitda = revenue - totalCostos;
+
+    // ── Impuestos (sobre blanco) ──
+    // Tickets ya incluyen IVA (precios de menú Argentina)
+    // IVA débito = extraer el IVA que ya está dentro del precio
+    const ivaDebito = revenueBlanco * IVA_RATE / (1 + IVA_RATE);
+    // Crédito fiscal: IVA pagado en compras (food+paper)
+    const ivaCredito = (costoFood + costoPaper) * pctBlanco * IVA_RATE / (1 + IVA_RATE) * IVA_CREDITO_FISCAL;
+    const ivaNeto = Math.max(0, ivaDebito - ivaCredito);
+    // IIBB sobre revenue neto de IVA
+    const revenueNetoIVA = revenueBlanco / (1 + IVA_RATE);
+    const iibb = revenueNetoIVA * IIBB_RATE;
+    // Déb/Créd sobre el total facturado (incluye IVA)
+    const debCred = revenueBlanco * DEB_CRED_RATE;
+    // Ganancias sobre EBITDA (ya neto, blanco)
+    const ganancias = Math.max(0, ebitda * pctBlanco) * GANANCIAS_RATE;
+    const totalImpuestos = ivaNeto + iibb + debCred + ganancias;
+
+    // ── Net Income ──
+    const netIncome = ebitda - totalImpuestos;
+
+    // ── Cash flow ──
+    cashAcum += netIncome;
+
+    // ── Split socios ──
+    const prePB = cashInversor < 0;
+    const splitInv = prePB ? SPLIT_PRE_INVERSOR : SPLIT_POST_INVERSOR;
+    const splitOp = 1 - splitInv;
+
+    if (netIncome > 0) {
+      cashInversor += netIncome * splitInv;
+      cashOperador += netIncome * splitOp;
+    } else {
+      // Losses absorbed proportionally
+      cashInversor += netIncome * splitInv;
+      cashOperador += netIncome * splitOp;
+    }
+
+    if (paybackMonth === null && cashInversor >= 0) {
+      paybackMonth = m + 1;
+    }
+
+    months.push({
+      month: m + 1,
+      coversCena, coversAlm,
+      revenueCena, revenueAlm, revenue,
+      revenueBlanco, revenueNegro,
+      costoFood, costoPaper, costoComision, costoMkt,
+      costoStaff, costoAlquiler, costoServicios,
+      costoContador, costoSoftware, costoSeguros,
+      totalCostosVar, totalCostosFijos, totalCostos,
+      ebitda, totalImpuestos, ivaNeto, iibb, debCred, ganancias,
+      netIncome, cashAcum,
+      cashInversor, cashOperador,
+      effectiveDemanda, seasonal,
+    });
+  }
+
+  // Steady state = last 12 months average (constant USD, no inflation)
+  const last12 = months.slice(-12);
+  const avgNet = last12.reduce((s, m) => s + m.netIncome, 0) / 12;
+  const avgRevenue = last12.reduce((s, m) => s + m.revenue, 0) / 12;
+  const avgEbitda = last12.reduce((s, m) => s + m.ebitda, 0) / 12;
+
+  // ROI year 1
+  const year1Net = months.slice(0, 12).reduce((s, m) => s + m.netIncome, 0);
+  const roi1 = year1Net / inversion;
+
+  // Cash at 60 months (real terms)
+  const cash60 = months[MONTHS - 1].cashAcum; // nominal for actual cash
+  const cash60Real = cash60; // no inflation, same thing
+
+  // Break-even covers per day
+  // At steady state, find minimum covers to break even
+  const ssMonth = months[MONTHS - 1];
+  const fixedMonthly = ssMonth.totalCostosFijos;
+  const varPerCover = ssMonth.totalCostosVar / (ssMonth.coversCena + ssMonth.coversAlm || 1);
+  const taxRate = ssMonth.totalImpuestos / (ssMonth.revenue || 1);
+  const avgTicket = ssMonth.revenue / (ssMonth.coversCena + ssMonth.coversAlm || 1);
+  const ssMktRate = 0.03; // steady state
+  const beCovers = fixedMonthly / (avgTicket * (1 - foodCost - PAPER_COST - ssMktRate - taxRate) || 1);
+  const beCoversDay = beCovers / DAYS_OP;
+
+  return {
+    months,
+    paybackMonth: paybackMonth ?? '>60',
+    avgNetIncome: avgNet,
+    avgRevenue,
+    avgEbitda,
+    roi1,
+    cash60,
+    cash60Real,
+    inversion,
+    staff: { cena: staffCenaCount, alm: staffAlmCount, total: staffTotal },
+    staffCost: staffTotal * sueldoBase,
+    alquiler: alquilerBase,
+    servicios: serviciosBase,
+    sueldo: sueldoBase,
+    beCoversDay: Math.ceil(beCoversDay),
+    params: p,
+  };
+}
+
+// ─────────────────────────────────────────────────────────
+// (optimizer removed — all manual)
+// ─────────────────────────────────────────────────────────
+function _unusedOptimizer() {
+  // ── Grid ranges ──
+  const caps = [];
+  for (let c = 15; c <= 50; c += 1) caps.push(c);
+  const ticketsCena = [];
+  for (let t = 30; t <= 50; t += 2) ticketsCena.push(t);
+  const ticketsAlm = [];
+  for (let t = 15; t <= 30; t += 2) ticketsAlm.push(t);
+  const rotScales = [];
+  for (let s = 0.5; s <= 1.5; s += 0.1) rotScales.push(Math.round(s * 10) / 10);
+
+  // ── Stress scenarios for robustness ──
+  // Each combo gets tested under 9 conditions (3 demand × 3 ramp-up)
+  const demands = [0.65, 0.80, 0.90];       // pesimista, normal, optimista
+  const rampups = [12, 9, 6];               // lento, normal, rápido
+  const demandWeights = [0.3, 0.5, 0.2];    // más peso al pesimista y normal
+  const rampWeights = [0.25, 0.5, 0.25];
+
+  function robustScore(params) {
+    let weightedNet = 0;
+    let worstNet = Infinity;
+    let worstPayback = 0;
+    let scenariosInRed = 0;
+    let totalWeight = 0;
+
+    for (let di = 0; di < demands.length; di++) {
+      for (let ri = 0; ri < rampups.length; ri++) {
+        const w = demandWeights[di] * rampWeights[ri];
+        const r = calcScenario({ ...params, demandaMax: demands[di], rampupMeses: rampups[ri] });
+        const net = r.avgNetIncome;
+        const pb = typeof r.paybackMonth === 'number' ? r.paybackMonth : 999;
+
+        weightedNet += net * w;
+        totalWeight += w;
+        if (net < worstNet) worstNet = net;
+        if (pb > worstPayback) worstPayback = pb;
+        if (net < 0) scenariosInRed++;
+      }
+    }
+
+    const avgNet = weightedNet / totalWeight;
+    // Penalizar fuerte: si algún escenario pierde plata, -50K por cada uno
+    // Si el peor caso es muy negativo, penalizar más
+    const penalty = scenariosInRed * 50000 + Math.max(0, -worstNet) * 24;
+    return { score: avgNet * 12 - penalty, avgNet, worstNet, worstPayback, scenariosInRed };
+  }
+
+  // ── Phase 1: Find best cap × ticketCena ──
+  let bestScore = -Infinity;
+  let bestParams = null;
+  let bestMeta = null;
+  const fixedP = { foodCost: 0.25, pctNegro: 0.20 };
+
+  for (const cap of caps) {
+    for (const tc of ticketsCena) {
+      const params = { ...fixedP, cap, ticketCena: tc, ticketAlm: Math.round(tc * 0.55), demandaMax: 0.90, rampupMeses: 9 };
+      const meta = robustScore(params);
+      if (meta.score > bestScore) {
+        bestScore = meta.score;
+        bestParams = params;
+        bestMeta = meta;
+      }
+    }
+  }
+
+  // ── Phase 2: Refine ticket almuerzo ──
+  for (const ta of ticketsAlm) {
+    const params = { ...bestParams, ticketAlm: ta };
+    const meta = robustScore(params);
+    if (meta.score > bestScore) {
+      bestScore = meta.score;
+      bestParams = params;
+      bestMeta = meta;
+    }
+  }
+
+  // ── Heatmaps (all use robustScore for consistency) ──
+  const results = { capTicket: [], capRot: [], tickets: [] };
+
+  // 1. Cap × Ticket Cena → robustness score
+  for (const cap of caps) {
+    const row = [];
+    for (const tc of ticketsCena) {
+      const p = { ...fixedP, cap, ticketCena: tc, ticketAlm: bestParams.ticketAlm, demandaMax: 0.90, rampupMeses: 9 };
+      const meta = robustScore(p);
+      const base = calcScenario(p);
+      row.push({ avgNet: meta.avgNet, worstNet: meta.worstNet, inRed: meta.scenariosInRed, payback: base.paybackMonth, isOptimal: cap === bestParams.cap && tc === bestParams.ticketCena });
+    }
+    results.capTicket.push(row);
+  }
+
+  // 2. Cap × Rotaciones → payback en caso base
+  for (const cap of caps) {
+    const row = [];
+    for (const rs of rotScales) {
+      const r = calcScenario({ ...bestParams, cap, rotScale: rs });
+      row.push({ netIncome: r.avgNetIncome, payback: r.paybackMonth, rotAvg: ROT_CENA_AVG * rs });
+    }
+    results.capRot.push(row);
+  }
+
+  // 3. Ticket Cena × Ticket Almuerzo
+  for (const tc of ticketsCena) {
+    const row = [];
+    for (const ta of ticketsAlm) {
+      const p = { ...bestParams, ticketCena: tc, ticketAlm: ta };
+      const meta = robustScore(p);
+      row.push({ avgNet: meta.avgNet, worstNet: meta.worstNet, inRed: meta.scenariosInRed });
+    }
+    results.tickets.push(row);
+  }
+
+  // Run the base result for KPIs
+  const bestResult = calcScenario(bestParams);
+
+  return { bestParams, bestResult, bestMeta, results, caps, ticketsCena, ticketsAlm, rotScales, demands, rampups };
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDERING HELPERS
+// ─────────────────────────────────────────────────────────
+function fmt(n, dec = 0) {
+  if (typeof n !== 'number' || isNaN(n)) return '—';
+  return n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function fmtUSD(n) {
+  if (typeof n !== 'number' || isNaN(n)) return '—';
+  return '$' + fmt(n);
+}
+
+function heatColor(val, min, max, invert = false) {
+  if (typeof val !== 'number') return '#333';
+  let ratio = (val - min) / (max - min || 1);
+  if (invert) ratio = 1 - ratio;
+  ratio = Math.max(0, Math.min(1, ratio));
+  // Red → Yellow → Green
+  const r = ratio < 0.5 ? 255 : Math.round(255 * (1 - ratio) * 2);
+  const g = ratio > 0.5 ? 255 : Math.round(255 * ratio * 2);
+  return `rgb(${r},${g},0)`;
+}
+
+function buildHeatmap(containerId, data, rowLabels, colLabels, valueFn, colorFn, labelFn) {
+  const container = document.getElementById(containerId);
+  let html = '<table><thead><tr><th></th>';
+  for (const cl of colLabels) html += `<th class="text-center">${cl}</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (let i = 0; i < data.length; i++) {
+    html += `<tr><td class="font-semibold text-right pr-2">${rowLabels[i]}</td>`;
+    for (let j = 0; j < data[i].length; j++) {
+      const val = valueFn(data[i][j]);
+      const color = colorFn(val);
+      const label = labelFn(data[i][j]);
+      const textColor = val > 0 ? '#000' : '#fff';
+      html += `<td><div class="heatmap-cell" style="background:${color};color:${textColor}">${label}</div></td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────────
+// TAB NAVIGATION
+// ─────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-' + btn.dataset.tab).classList.remove('hidden');
+
+    // Trigger renders on tab switch
+    if (btn.dataset.tab === 'dashboard') renderDashboard();
+    if (btn.dataset.tab === 'socios') renderSocios();
+    if (btn.dataset.tab === 'stress') renderStress();
+    if (btn.dataset.tab === 'supuestos') renderSupuestos();
+  });
+});
+
+// ─────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────
+let dashState = {};
+let chartInstances = {};
+let cachedScenResults = [];
+
+function destroyChart(id) {
+  if (chartInstances[id]) {
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// OPTIMIZER VIEW
+// ─────────────────────────────────────────────────────────
+function renderOptimizer() {
+  optResult = runOptimizer();
+  const { bestParams: bp, bestResult: br, bestMeta: bm, results: res, caps, ticketsCena, ticketsAlm, rotScales } = optResult;
+  const staff = br.staff;
+  const derived = br.derived;
+
+  // Recommendation KPIs
+  const kpis = [
+    { label: 'Capacidad', value: bp.cap + ' pax' },
+    { label: 'Ticket Cena', value: fmtUSD(bp.ticketCena) },
+    { label: 'Ticket Almuerzo', value: fmtUSD(bp.ticketAlm) },
+    { label: 'Staff Total', value: staff.total + ' pers.' },
+    { label: 'Inversión', value: fmtUSD(derived.inversion) },
+    { label: 'Payback', value: (typeof br.paybackMonth === 'number' ? br.paybackMonth + 'm' : br.paybackMonth) },
+    { label: 'Net Income/mes', value: fmtUSD(Math.round(br.avgNetIncome)) },
+    { label: 'ROI Año 1', value: (br.roi1 * 100).toFixed(1) + '%' },
+  ];
+
+  document.getElementById('rec-kpis').innerHTML = kpis.map(k =>
+    `<div class="text-center"><div class="rec-value text-lg md:text-xl">${k.value}</div><div class="rec-label">${k.label}</div></div>`
+  ).join('');
+
+  // Robustness detail
+  const robColor = bm.scenariosInRed === 0 ? '#00d4aa' : bm.scenariosInRed <= 2 ? '#ffa726' : '#ff4444';
+  document.getElementById('rec-robustness').innerHTML = `
+    <span style="color:${robColor}">■</span> ${bm.scenariosInRed === 0 ? 'Robusto: gana en los 9 escenarios' : bm.scenariosInRed + ' de 9 escenarios en rojo'}
+    · Peor caso: <span style="color:${bm.worstNet >= 0 ? '#00d4aa' : '#ff4444'}">${fmtUSD(Math.round(bm.worstNet))}/mes</span>
+    · Promedio ponderado: <span style="color:#00d4aa">${fmtUSD(Math.round(bm.avgNet))}/mes</span>
+  `;
+
+  // ── Heatmap 1: Cap × Ticket Cena (robustness) ──
+  // Color by: avgNet, mark cells where worstNet < 0 with border
+  const allAvg1 = res.capTicket.flat().map(d => d.avgNet);
+  const minA1 = Math.min(...allAvg1), maxA1 = Math.max(...allAvg1);
+
+  // Custom heatmap with robustness indicators
+  const ct = document.getElementById('heatmap-cap-ticket');
+  let html1 = '<table><thead><tr><th></th>';
+  for (const tc of ticketsCena) html1 += `<th class="text-center">$${tc}</th>`;
+  html1 += '</tr></thead><tbody>';
+  // Show every 3rd cap to keep table manageable
+  const capStep = 3;
+  for (let ci = 0; ci < caps.length; ci += capStep) {
+    const cap = caps[ci];
+    html1 += `<tr><td class="font-semibold text-right pr-2">${cap}p</td>`;
+    for (let ti = 0; ti < ticketsCena.length; ti++) {
+      const d = res.capTicket[ci][ti];
+      const color = heatColor(d.avgNet, minA1, maxA1);
+      const border = d.worstNet < 0 ? 'border:2px solid #ff4444' : d.isOptimal ? 'border:2px solid #fff' : '';
+      const symbol = d.inRed > 0 ? ` (${d.inRed}⚠)` : '';
+      const textColor = d.avgNet > (maxA1 - minA1) * 0.4 + minA1 ? '#000' : '#fff';
+      html1 += `<td><div class="heatmap-cell" style="background:${color};color:${textColor};${border}">${fmtUSD(Math.round(d.avgNet))}${symbol}</div></td>`;
+    }
+    html1 += '</tr>';
+  }
+  html1 += '</tbody></table>';
+  html1 += '<div class="text-xs text-gray-500 mt-1">Valores = net income promedio ponderado. <span style="color:#ff4444">⚠ = pierde plata en escenarios malos</span>. <span style="border:1px solid #fff;padding:0 4px">Borde blanco</span> = óptimo.</div>';
+  ct.innerHTML = html1;
+
+  // ── Heatmap 2: Cap × Rotaciones → Payback ──
+  const allPB2 = res.capRot.flat().map(d => typeof d.payback === 'number' ? d.payback : 61);
+  const minPB2 = Math.min(...allPB2), maxPB2 = Math.max(...allPB2);
+
+  const cr = document.getElementById('heatmap-cap-rot');
+  let html2 = '<table><thead><tr><th></th>';
+  for (const rs of rotScales) html2 += `<th class="text-center">${(ROT_CENA_AVG * rs).toFixed(1)}</th>`;
+  html2 += '</tr></thead><tbody>';
+  for (let ci = 0; ci < caps.length; ci += capStep) {
+    html2 += `<tr><td class="font-semibold text-right pr-2">${caps[ci]}p</td>`;
+    for (let ri = 0; ri < rotScales.length; ri++) {
+      const d = res.capRot[ci][ri];
+      const pb = typeof d.payback === 'number' ? d.payback : 61;
+      const color = heatColor(pb, minPB2, maxPB2, true);
+      const textColor = pb < (maxPB2 - minPB2) * 0.5 + minPB2 ? '#000' : '#fff';
+      html2 += `<td><div class="heatmap-cell" style="background:${color};color:${textColor}">${typeof d.payback === 'number' ? d.payback + 'm' : '>60'}</div></td>`;
+    }
+    html2 += '</tr>';
+  }
+  html2 += '</tbody></table>';
+  html2 += '<div class="text-xs text-gray-500 mt-1">Columnas = rotaciones promedio cena/noche. Verde = payback rápido.</div>';
+  cr.innerHTML = html2;
+
+  // ── Heatmap 3: Ticket Cena × Ticket Almuerzo ──
+  const allAvg3 = res.tickets.flat().map(d => d.avgNet);
+  const minA3 = Math.min(...allAvg3), maxA3 = Math.max(...allAvg3);
+  buildHeatmap('heatmap-tickets', res.tickets,
+    ticketsCena.map(t => '$' + t + 'c'),
+    ticketsAlm.map(t => '$' + t + 'a'),
+    d => d.avgNet,
+    v => heatColor(v, minA3, maxA3),
+    d => fmtUSD(Math.round(d.avgNet)) + (d.inRed > 0 ? ' ⚠' : '')
+  );
+
+  // ── Detail panel for optimal ──
+  const det = document.getElementById('optimal-detail');
+  det.innerHTML = `
+    <div class="space-y-3">
+      <div class="kpi-card">
+        <div class="kpi-label">Cómo se eligió</div>
+        <p class="text-xs text-gray-400 mt-1">Cada combinación cap × ticket se testeó bajo:</p>
+        <ul class="text-xs text-gray-400 mt-1 list-disc pl-4">
+          <li>Demanda: 65% (pesimista), 80% (normal), 90% (optimista)</li>
+          <li>Ramp-up: 12 meses (lento), 9 (normal), 6 (rápido)</li>
+          <li>= 9 escenarios por combinación</li>
+        </ul>
+        <p class="text-xs text-gray-400 mt-1">Score = promedio ponderado (más peso a pesimista) − penalización por escenarios en rojo.</p>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Desglose del óptimo</div>
+        <div class="text-xs space-y-1 mt-2">
+          <div class="flex justify-between"><span class="text-gray-500">Staff cena</span><span>${staff.cena} (${Math.ceil(bp.cap/STAFF_CENA_RATIO)} cocina + ${STAFF_CENA_FIJO} fijos)</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Staff almuerzo</span><span>${staff.alm} (${Math.ceil(bp.cap/STAFF_ALM_RATIO)} cocina + ${STAFF_ALM_FIJO} fijos)</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Costo staff</span><span style="color:#ff6b6b">${fmtUSD(staff.total * SUELDO)}/mes</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Alquiler</span><span style="color:#ff6b6b">${fmtUSD(derived.alquiler)}/mes</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Servicios</span><span style="color:#ff6b6b">${fmtUSD(derived.servicios)}/mes</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Inversión</span><span style="color:#ffa726">${fmtUSD(derived.inversion)}</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function loadOptimalToDashboard() {
+  if (!optResult) return;
+  const bp = optResult.bestParams;
+  dashState = { ...bp };
+  setSliders(bp);
+  document.querySelector('[data-tab="dashboard"]').click();
+}
+
+// ─────────────────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────────────────
+const sliderMap = {
+  'cap': { key: 'cap' },
+  'inversion': { key: 'inversion' },
+  'alquiler': { key: 'alquiler' },
+  'servicios': { key: 'servicios' },
+  'staffCena': { key: 'staffCena' },
+  'staffAlm': { key: 'staffAlm' },
+  'sueldo': { key: 'sueldo' },
+  'ticketCena': { key: 'ticketCena' },
+  'ticketAlm': { key: 'ticketAlm' },
+  'foodCost': { key: 'foodCost', scale: 100 },
+  'paperCost': { key: 'paperCost', scale: 100 },
+  'comisionPago': { key: 'comisionPago', scale: 100 },
+  'demanda': { key: 'demandaMax', scale: 100 },
+  'rampup': { key: 'rampupMeses' },
+  'negro': { key: 'pctNegro', scale: 100 },
+};
+
+function readRotInputs() {
+  const cena = [], alm = [];
+  document.querySelectorAll('.rot-cena').forEach(el => cena[parseInt(el.dataset.day)] = parseFloat(el.value) || 0);
+  document.querySelectorAll('.rot-alm').forEach(el => alm[parseInt(el.dataset.day)] = parseFloat(el.value) || 0);
+  // Update averages
+  const cenaAvg = cena.reduce((a, b) => a + b, 0) / cena.length;
+  const almAvg = alm.reduce((a, b) => a + b, 0) / alm.length;
+  document.getElementById('rot-cena-avg').textContent = cenaAvg.toFixed(2);
+  document.getElementById('rot-alm-avg').textContent = almAvg.toFixed(2);
+  return { rotCenaDay: cena, rotAlmDay: alm };
+}
+
+function setSliders(p) {
+  for (const [sliderId, cfg] of Object.entries(sliderMap)) {
+    const el = document.getElementById('s-' + sliderId);
+    if (!el) continue;
+    const val = cfg.scale ? p[cfg.key] * cfg.scale : p[cfg.key];
+    el.value = val;
+    document.getElementById('v-' + sliderId).textContent = cfg.scale ? val : val;
+  }
+  // Set rotation inputs if provided
+  if (p.rotCenaDay) {
+    document.querySelectorAll('.rot-cena').forEach(el => {
+      el.value = p.rotCenaDay[parseInt(el.dataset.day)];
+    });
+  }
+  if (p.rotAlmDay) {
+    document.querySelectorAll('.rot-alm').forEach(el => {
+      el.value = p.rotAlmDay[parseInt(el.dataset.day)];
+    });
+  }
+  readRotInputs(); // update averages
+}
+
+function readSliders() {
+  const p = {};
+  for (const [sliderId, cfg] of Object.entries(sliderMap)) {
+    const el = document.getElementById('s-' + sliderId);
+    if (!el) continue;
+    const raw = parseFloat(el.value);
+    p[cfg.key] = cfg.scale ? raw / cfg.scale : raw;
+    document.getElementById('v-' + sliderId).textContent = cfg.scale ? raw : raw;
+  }
+  const rots = readRotInputs();
+  p.rotCenaDay = rots.rotCenaDay;
+  p.rotAlmDay = rots.rotAlmDay;
+  return p;
+}
+
+// Attach slider listeners
+document.querySelectorAll('input[type="range"]').forEach(el => {
+  el.addEventListener('input', () => {
+    dashState = readSliders();
+    renderDashboard();
+  });
+});
+
+// Attach rotation input listeners
+document.querySelectorAll('.rot-input').forEach(el => {
+  el.addEventListener('input', () => {
+    dashState = readSliders();
+    renderDashboard();
+  });
+});
+
+function renderDashboard() {
+  const p = dashState;
+  if (!p.cap) return;
+  const r = calcScenario(p);
+
+  // KPIs
+  const ss = r.months[MONTHS - 1]; // last month as proxy for steady state
+  // Net income split: negro = EBITDA × %negro (no paga impuestos), blanco = net income - negro
+  const last12 = r.months.slice(-12);
+  const avgEbitdaNegro = last12.reduce((s, m) => s + m.ebitda * p.pctNegro, 0) / 12;
+  const avgNetBlanco = r.avgNetIncome - avgEbitdaNegro;
+
+  const kpis = [
+    { label: 'Revenue / mes', value: fmtUSD(Math.round(r.avgRevenue)), color: '#00d4aa' },
+    { label: 'EBITDA / mes', value: fmtUSD(Math.round(r.avgEbitda)), color: '#00d4aa' },
+    { label: 'Net Income / mes', value: fmtUSD(Math.round(r.avgNetIncome)), color: r.avgNetIncome >= 0 ? '#00d4aa' : '#ff4444' },
+    { label: 'Net Blanco / mes', value: fmtUSD(Math.round(avgNetBlanco)), color: avgNetBlanco >= 0 ? '#4fc3f7' : '#ff4444' },
+    { label: 'Net Negro / mes', value: fmtUSD(Math.round(avgEbitdaNegro)), color: '#888' },
+    { label: 'Payback', value: typeof r.paybackMonth === 'number' ? r.paybackMonth + ' meses' : r.paybackMonth, color: '#00d4aa' },
+    { label: 'ROI Año 1', value: (r.roi1 * 100).toFixed(1) + '%', color: r.roi1 >= 0 ? '#00d4aa' : '#ff4444' },
+  ];
+
+  document.getElementById('dash-kpis').innerHTML = kpis.map(k =>
+    `<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value" style="color:${k.color}">${k.value}</div></div>`
+  ).join('');
+
+  // Cash flow chart
+  destroyChart('chart-cashflow');
+  const ctx1 = document.getElementById('chart-cashflow').getContext('2d');
+  chartInstances['chart-cashflow'] = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: r.months.map(m => m.month),
+      datasets: [{
+        label: 'Cash Acumulado',
+        data: r.months.map(m => Math.round(m.cashAcum)),
+        borderColor: '#00d4aa',
+        backgroundColor: 'rgba(0,212,170,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { title: { display: true, text: 'Mes', color: '#888' }, ticks: { color: '#666' }, grid: { color: '#1a1a1a' } },
+        y: { title: { display: true, text: 'USD', color: '#888' }, ticks: { color: '#666', callback: v => fmtUSD(v) }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });
+
+  // Cash flow table (show key months, especially early ones for working capital)
+  const cfMonths = [0,1,2,3,5,8,11,17,23,35,47,59].filter(i => i < r.months.length);
+  let cfHTML = '<table class="text-xs"><thead><tr><th>Mes</th><th>Revenue</th><th>Costos</th><th>Impuestos</th><th>Net Income</th><th>Cash Acumulado</th></tr></thead><tbody>';
+  cfMonths.forEach(i => {
+    const m = r.months[i];
+    const cashColor = m.cashAcum >= 0 ? '#00d4aa' : '#ff4444';
+    const netColor = m.netIncome >= 0 ? '#00d4aa' : '#ff4444';
+    cfHTML += `<tr>
+      <td class="font-semibold">M${m.month}</td>
+      <td>${fmtUSD(Math.round(m.revenue))}</td>
+      <td style="color:#ff6b6b">${fmtUSD(Math.round(m.totalCostos))}</td>
+      <td style="color:#ffa726">${fmtUSD(Math.round(m.totalImpuestos))}</td>
+      <td style="color:${netColor}">${fmtUSD(Math.round(m.netIncome))}</td>
+      <td style="color:${cashColor};font-weight:700">${fmtUSD(Math.round(m.cashAcum))}</td>
+    </tr>`;
+  });
+  // Min cash = worst point (working capital needed)
+  const minCash = Math.min(...r.months.map(m => m.cashAcum));
+  const minCashMonth = r.months.find(m => m.cashAcum === minCash);
+  cfHTML += '</tbody></table>';
+  cfHTML += `<div class="mt-2 text-xs p-2 rounded" style="background:#2a0a0a;border:1px solid #ff444433">
+    <strong style="color:#ff4444">Piso de caja: ${fmtUSD(Math.round(minCash))}</strong> en el mes ${minCashMonth.month}.
+    Esto es la inversión + pérdidas del ramp-up. <strong>Necesitás al menos ${fmtUSD(Math.round(Math.abs(minCash)))} de capital total</strong> (inversión + working capital).
+  </div>`;
+  document.getElementById('cashflow-table').innerHTML = cfHTML;
+
+  // P&L chart (monthly bars, show 12 representative months)
+  const pnlMonths = r.months.filter((_, i) => i % 5 === 0 || i === MONTHS - 1);
+  destroyChart('chart-pnl');
+  const ctx2 = document.getElementById('chart-pnl').getContext('2d');
+  chartInstances['chart-pnl'] = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: pnlMonths.map(m => 'M' + m.month),
+      datasets: [
+        { label: 'Revenue', data: pnlMonths.map(m => Math.round(m.revenue)), backgroundColor: '#00d4aa' },
+        { label: 'Costos', data: pnlMonths.map(m => -Math.round(m.totalCostos)), backgroundColor: '#ff6b6b' },
+        { label: 'Impuestos', data: pnlMonths.map(m => -Math.round(m.totalImpuestos)), backgroundColor: '#ffa726' },
+        { label: 'Net Income', data: pnlMonths.map(m => Math.round(m.netIncome)), backgroundColor: m => m.raw >= 0 ? '#4fc3f7' : '#ff4444' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#888' } } },
+      scales: {
+        x: { ticks: { color: '#666' }, grid: { color: '#1a1a1a' } },
+        y: { ticks: { color: '#666', callback: v => fmtUSD(v) }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });
+
+  // Donut — cost composition (steady state)
+  const ssM = r.months[MONTHS - 1];
+  destroyChart('chart-donut');
+  const ctx3 = document.getElementById('chart-donut').getContext('2d');
+  chartInstances['chart-donut'] = new Chart(ctx3, {
+    type: 'doughnut',
+    data: {
+      labels: ['Food Cost', 'Paper', 'Comisiones', 'Marketing', 'Staff', 'Alquiler', 'Servicios', 'Otros Fijos', 'Impuestos'],
+      datasets: [{
+        data: [
+          ssM.costoFood, ssM.costoPaper, ssM.costoComision, ssM.costoMkt,
+          ssM.costoStaff, ssM.costoAlquiler, ssM.costoServicios,
+          ssM.costoContador + ssM.costoSoftware + ssM.costoSeguros,
+          ssM.totalImpuestos
+        ].map(Math.round),
+        backgroundColor: ['#ff6b6b', '#ff9a76', '#ffa726', '#ffcc02', '#4fc3f7', '#7e57c2', '#26a69a', '#78909c', '#ef5350'],
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'right', labels: { color: '#888', font: { size: 11 } } } }
+    }
+  });
+
+  // Weekly breakdown
+  destroyChart('chart-weekly');
+  const ctx4 = document.getElementById('chart-weekly').getContext('2d');
+  const rCenaDay = p.rotCenaDay ?? ROT_CENA;
+  const rAlmDay = p.rotAlmDay ?? ROT_ALM;
+  const weeklyCovers = rCenaDay.map((rc, i) => {
+    const coversCena = p.cap * rc * (p.demandaMax ?? 0.9);
+    const coversAlm = p.cap * rAlmDay[i] * (p.demandaMax ?? 0.9);
+    return { cena: Math.round(coversCena), alm: Math.round(coversAlm) };
+  });
+  chartInstances['chart-weekly'] = new Chart(ctx4, {
+    type: 'bar',
+    data: {
+      labels: DAY_NAMES,
+      datasets: [
+        { label: 'Covers Cena', data: weeklyCovers.map(w => w.cena), backgroundColor: '#00d4aa' },
+        { label: 'Covers Almuerzo', data: weeklyCovers.map(w => w.alm), backgroundColor: '#4fc3f7' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#888' } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#666' }, grid: { color: '#1a1a1a' } },
+        y: { stacked: true, title: { display: true, text: 'Covers/día', color: '#888' }, ticks: { color: '#666' }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });
+
+  // Occupancy table
+  const totalCovers = weeklyCovers.reduce((s, w) => s + w.cena + w.alm, 0);
+  const avgCoversDay = Math.round(totalCovers / 6);
+  let occHTML = '<table><thead><tr><th>Día</th><th>Cena</th><th>Almuerzo</th><th>Total</th><th>% Capacidad</th></tr></thead><tbody>';
+  weeklyCovers.forEach((w, i) => {
+    const total = w.cena + w.alm;
+    const pct = ((total / (p.cap * 2)) * 100).toFixed(0); // 2 services
+    occHTML += `<tr><td>${DAY_NAMES[i]}</td><td>${w.cena}</td><td>${w.alm}</td><td>${total}</td><td>${pct}%</td></tr>`;
+  });
+  occHTML += `<tr class="font-bold" style="border-top:2px solid #333"><td>Promedio</td><td>${Math.round(weeklyCovers.reduce((s,w)=>s+w.cena,0)/6)}</td><td>${Math.round(weeklyCovers.reduce((s,w)=>s+w.alm,0)/6)}</td><td>${avgCoversDay}</td><td>${((avgCoversDay / (p.cap * 2)) * 100).toFixed(0)}%</td></tr>`;
+  occHTML += '</tbody></table>';
+  document.getElementById('occupancy-table').innerHTML = occHTML;
+}
+
+// ─────────────────────────────────────────────────────────
+// SOCIOS VIEW
+// ─────────────────────────────────────────────────────────
+function updateSociosChart() {
+  const idx = parseInt(document.getElementById('socios-scenario-select').value);
+  const s = cachedScenResults[idx];
+  if (!s) return;
+  const r = s.result;
+  const cenaAvg = (dashState.rotCenaDay ?? ROT_CENA).reduce((a,b) => a+b, 0) / 6;
+
+  document.getElementById('socios-chart-label').innerHTML =
+    `Escenario <strong style="color:#00d4aa">${s.name}</strong>: rotaciones promedio ${(cenaAvg * s.rotScale).toFixed(1)}/noche (${s.rotScale}x tus valores) · Payback: ${typeof r.paybackMonth === 'number' ? r.paybackMonth + ' meses' : r.paybackMonth} · Net Income: ${fmtUSD(Math.round(r.avgNetIncome))}/mes`;
+
+  destroyChart('chart-socios');
+  const ctx = document.getElementById('chart-socios').getContext('2d');
+  chartInstances['chart-socios'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: r.months.map(m => m.month),
+      datasets: [
+        { label: 'Inversor (acumulado)', data: r.months.map(m => Math.round(m.cashInversor)), borderColor: '#00d4aa', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+        { label: 'Operador (acumulado)', data: r.months.map(m => Math.round(m.cashOperador)), borderColor: '#4fc3f7', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#888' } } },
+      scales: {
+        x: { title: { display: true, text: 'Mes', color: '#888' }, ticks: { color: '#666' }, grid: { color: '#1a1a1a' } },
+        y: { title: { display: true, text: 'USD Acumulado', color: '#888' }, ticks: { color: '#666', callback: v => fmtUSD(v) }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });
+}
+
+function renderSocios() {
+  const p = dashState;
+  if (!p.cap) return;
+
+  // Base banner
+  document.getElementById('socios-base').innerHTML =
+    `Base: <span>${p.cap} pax</span> | Ticket cena <span>$${p.ticketCena}</span> | Ticket alm <span>$${p.ticketAlm}</span> | Demanda <span>${(p.demandaMax*100).toFixed(0)}%</span> | Staff <span>${(p.staffCena ?? 0) + (p.staffAlm ?? 0)}</span> | USD constantes`;
+
+  // 6 scenarios varying rotations
+  const scenarios = [
+    { name: 'Pesimista', rotScale: 0.6 },
+    { name: 'Conservador', rotScale: 0.8 },
+    { name: 'Base', rotScale: 1.0 },
+    { name: 'Optimista', rotScale: 1.2 },
+    { name: 'Muy bueno', rotScale: 1.4 },
+    { name: 'Boom', rotScale: 1.6 },
+  ];
+
+  const scenResults = scenarios.map(s => ({
+    ...s,
+    result: calcScenario({ ...p, rotScale: s.rotScale }),
+  }));
+
+  // Scenarios table
+  let stHTML = '<table><thead><tr><th>Escenario</th><th>Rot Factor</th><th>Net Income/mes</th><th>Payback</th><th>ROI Año 1</th><th>Cash 60m</th></tr></thead><tbody>';
+  scenResults.forEach(s => {
+    const r = s.result;
+    stHTML += `<tr>
+      <td class="font-semibold">${s.name}</td>
+      <td>${(ROT_CENA_AVG * s.rotScale).toFixed(1)} rot/noche</td>
+      <td style="color:${r.avgNetIncome >= 0 ? '#00d4aa' : '#ff4444'}">${fmtUSD(Math.round(r.avgNetIncome))}</td>
+      <td>${typeof r.paybackMonth === 'number' ? r.paybackMonth + 'm' : r.paybackMonth}</td>
+      <td>${(r.roi1 * 100).toFixed(1)}%</td>
+      <td style="color:${r.cash60 >= 0 ? '#00d4aa' : '#ff4444'}">${fmtUSD(Math.round(r.cash60))}</td>
+    </tr>`;
+  });
+  stHTML += '</tbody></table>';
+  document.getElementById('scenarios-table').innerHTML = stHTML;
+
+  // Socios chart — dropdown selector
+  cachedScenResults = scenResults; // store for dropdown updates
+  const select = document.getElementById('socios-scenario-select');
+  select.innerHTML = scenResults.map((s, i) => {
+    const cenaAvg = (p.rotCenaDay ?? ROT_CENA).reduce((a,b) => a+b, 0) / 6;
+    return `<option value="${i}"${s.name === 'Base' ? ' selected' : ''}>${s.name} (${(cenaAvg * s.rotScale).toFixed(1)} rot/noche)</option>`;
+  }).join('');
+  updateSociosChart();
+
+  // Tornado sensitivity
+  const baseR = calcScenario(p);
+  const baseNet = baseR.avgNetIncome;
+  const vars = [
+    { name: 'Ticket Cena +10%', calc: () => calcScenario({ ...p, ticketCena: p.ticketCena * 1.1 }).avgNetIncome },
+    { name: 'Ticket Cena -10%', calc: () => calcScenario({ ...p, ticketCena: p.ticketCena * 0.9 }).avgNetIncome },
+    { name: 'Food Cost +5pp', calc: () => calcScenario({ ...p, foodCost: p.foodCost + 0.05 }).avgNetIncome },
+    { name: 'Food Cost -5pp', calc: () => calcScenario({ ...p, foodCost: p.foodCost - 0.05 }).avgNetIncome },
+    { name: 'Demanda +10%', calc: () => calcScenario({ ...p, demandaMax: Math.min(1, p.demandaMax + 0.1) }).avgNetIncome },
+    { name: 'Demanda -10%', calc: () => calcScenario({ ...p, demandaMax: p.demandaMax - 0.1 }).avgNetIncome },
+    { name: 'Rotaciones +20%', calc: () => calcScenario({ ...p, rotScale: 1.2 }).avgNetIncome },
+    { name: 'Rotaciones -20%', calc: () => calcScenario({ ...p, rotScale: 0.8 }).avgNetIncome },
+    { name: 'Cap +5 pax', calc: () => calcScenario({ ...p, cap: p.cap + 5 }).avgNetIncome },
+    { name: 'Cap -5 pax', calc: () => calcScenario({ ...p, cap: p.cap - 5 }).avgNetIncome },
+  ];
+
+  const tornadoData = vars.map(v => ({ name: v.name, delta: v.calc() - baseNet }));
+  tornadoData.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  destroyChart('chart-tornado');
+  const ctx2 = document.getElementById('chart-tornado').getContext('2d');
+  chartInstances['chart-tornado'] = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: tornadoData.map(d => d.name),
+      datasets: [{
+        label: 'Impacto en Net Income',
+        data: tornadoData.map(d => Math.round(d.delta)),
+        backgroundColor: tornadoData.map(d => d.delta >= 0 ? '#00d4aa' : '#ff4444'),
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { title: { display: true, text: 'Δ Net Income USD/mes', color: '#888' }, ticks: { color: '#666', callback: v => fmtUSD(v) }, grid: { color: '#1a1a1a' } },
+        y: { ticks: { color: '#aaa' }, grid: { color: '#1a1a1a' } }
+      }
+    }
+  });
+
+  // Break-even
+  const be = baseR.beCoversDay;
+  const avgCovers = Math.round((baseR.months[MONTHS - 1].coversCena + baseR.months[MONTHS - 1].coversAlm) / DAYS_OP);
+  document.getElementById('breakeven-info').innerHTML = `
+    <div class="kpi-card mb-3">
+      <div class="kpi-label">Break-even</div>
+      <div class="kpi-value">${be} covers/día</div>
+      <div class="text-sm text-gray-500 mt-1">Actualmente proyectás ~${avgCovers} covers/día en steady state</div>
+    </div>
+    <div class="text-sm text-gray-400">
+      <p>Con menos de <strong style="color:#ff4444">${be} covers/día</strong> el negocio pierde plata.</p>
+      <p class="mt-1">Margen de seguridad: <strong style="color:#00d4aa">${avgCovers > be ? '+' + (avgCovers - be) : avgCovers - be}</strong> covers/día sobre break-even.</p>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────────────────
+// STRESS TEST VIEW
+// ─────────────────────────────────────────────────────────
+function renderStress() {
+  const p = dashState;
+  if (!p.cap) return;
+
+  const baseR = calcScenario(p);
+  const baseNet = baseR.avgNetIncome;
+
+  // Base banner
+  document.getElementById('stress-base').innerHTML =
+    `Todos los análisis parten de tu configuración actual: <span>${p.cap} pax</span> · Ticket cena <span>$${p.ticketCena}</span> · Demanda <span>${(p.demandaMax*100).toFixed(0)}%</span> · Net Income <span>${fmtUSD(Math.round(baseNet))}/mes</span> · USD constantes (sin inflación)`;
+
+  // ── Sensitivity: rangos REALISTAS para cada variable ──
+  // Cada variable se mueve en el rango que realmente podría pasar
+  const sensVars = [
+    { name: 'Rotaciones', key: 'rotScale', up: 1.4, down: 0.5, upLabel: 'Buen escenario (+40%)', downLabel: 'Mal escenario (-50%)', isScale: true },
+    { name: 'Demanda', key: 'demandaMax', up: Math.min(1, p.demandaMax * 1.15), down: p.demandaMax * 0.6, upLabel: 'Lleno casi siempre', downLabel: 'Caída fuerte (-40%)' },
+    { name: 'Ticket Cena', key: 'ticketCena', up: p.ticketCena * 1.15, down: p.ticketCena * 0.85, upLabel: 'Subís precios +15%', downLabel: 'Bajás precios -15%' },
+    { name: 'Food Cost', key: 'foodCost', up: Math.min(0.40, p.foodCost + 0.07), down: Math.max(0.15, p.foodCost - 0.05), upLabel: 'Proveedores suben (+7pp)', downLabel: 'Optimizás compras (-5pp)' },
+    { name: 'Staff (sueldo)', key: 'sueldo', up: (p.sueldo ?? SUELDO) * 1.3, down: (p.sueldo ?? SUELDO) * 0.9, upLabel: 'Paritaria fuerte +30%', downLabel: 'Optimizás -10%' },
+    { name: 'Alquiler', key: 'alquiler', up: (p.alquiler ?? 3400) * 1.3, down: (p.alquiler ?? 3400) * 0.85, upLabel: 'Sube 30% post-contrato', downLabel: 'Negociás -15%' },
+  ];
+
+  const sensResults = sensVars.map(v => {
+    const pUp = { ...p, [v.key]: v.up };
+    const pDown = { ...p, [v.key]: v.down };
+    const netUp = calcScenario(pUp).avgNetIncome;
+    const netDown = calcScenario(pDown).avgNetIncome;
+    const impact = Math.abs(netUp - netDown);
+    return { ...v, netUp, netDown, impact, deltaUp: netUp - baseNet, deltaDown: netDown - baseNet };
+  });
+
+  sensResults.sort((a, b) => b.impact - a.impact);
+
+  // ── Find thresholds: at what value does each variable make you lose money? ──
+  function findThreshold(key, start, step, limit, isScale) {
+    for (let v = start; (step > 0 ? v <= limit : v >= limit); v += step) {
+      const params = isScale ? { ...p, rotScale: v } : { ...p, [key]: v };
+      const r = calcScenario(params);
+      if (r.avgNetIncome < 0) return step > 0 ? v : v; // crossed zero
+    }
+    return null; // never crosses
+  }
+
+  const thresholds = [
+    { name: 'Demanda', threshold: findThreshold('demandaMax', p.demandaMax, -0.05, 0.1), actual: p.demandaMax, fmt: v => (v*100).toFixed(0) + '%', direction: 'baja' },
+    { name: 'Food Cost', threshold: findThreshold('foodCost', p.foodCost, 0.01, 0.50), actual: p.foodCost, fmt: v => (v*100).toFixed(0) + '%', direction: 'sube' },
+    { name: 'Rotaciones', threshold: findThreshold('rotScale', 1.0, -0.1, 0.1, true), actual: 1.0, fmt: v => { const avg = (p.rotCenaDay ?? ROT_CENA).reduce((a,b)=>a+b,0)/6; return (avg * v).toFixed(1) + ' rot/noche'; }, direction: 'bajan' },
+    // Inflación no se incluye: en USD reales se cancela (precios suben con costos)
+  ];
+
+  // ── Combo scenarios ──
+  const combos = [
+    // Negativos
+    { name: 'Verano flojo', desc: 'Demanda -30% (enero-marzo, la gente se fue de vacaciones)', demMult: 0.7, type: 'bad' },
+    { name: 'Rotaciones bajas', desc: 'Rotaciones -40% (la gente no vuelve, no funcionó el formato)', rotMult: 0.6, type: 'bad' },
+    { name: 'Peor caso realista', desc: 'Demanda -30% + rotaciones -20% + food cost +5pp (todo junto)', demMult: 0.7, rotMult: 0.8, fcAdd: 0.05, type: 'bad' },
+    // Positivos
+    { name: 'Buen invierno', desc: 'Demanda +15% (frío = la gente sale a comer)', demMult: 1.15, type: 'good' },
+    { name: 'El formato pegó', desc: 'Rotaciones +30% (la gente vuelve, reservas llenas)', rotMult: 1.3, type: 'good' },
+    { name: 'Mejor caso realista', desc: 'Demanda +15% + rotaciones +20% + food cost -3pp', demMult: 1.15, rotMult: 1.2, fcAdd: -0.03, type: 'good' },
+  ];
+
+  const comboResults = combos.map(c => {
+    const cp = {
+      ...p,
+      demandaMax: p.demandaMax * (c.demMult ?? 1),
+      rotScale: c.rotMult ?? 1,
+      foodCost: p.foodCost + (c.fcAdd ?? 0),
+    };
+    return { ...c, result: calcScenario(cp) };
+  });
+
+  // ── Build HTML ──
+  let html = '';
+
+  // 1. Ranking de importancia
+  html += `<div class="kpi-card">
+    <div class="section-title" style="border:0;margin:0;padding:0">¿Qué variables más te afectan?</div>
+    <p class="text-xs text-gray-500 mb-3">Moví cada variable en su rango realista (no todas se mueven igual) y medí cuánto cambia el net income.</p>
+    <div class="space-y-3">`;
+
+  sensResults.forEach((v, i) => {
+    const rank = i + 1;
+    const barWidth = Math.round((v.impact / sensResults[0].impact) * 100);
+    const emoji = rank <= 2 ? '🔴' : rank <= 4 ? '🟡' : '🟢';
+    html += `
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-sm font-semibold">${rank}. ${v.name}</span>
+          <span class="text-xs text-gray-500">Rango total: ${fmtUSD(Math.round(v.impact))}/mes</span>
+        </div>
+        <div class="flex gap-2 items-center">
+          <div style="background:#1a1a2e;border-radius:4px;height:20px;flex:1;position:relative">
+            <div style="background:${rank <= 2 ? '#ff4444' : rank <= 4 ? '#ffa726' : '#00d4aa'};height:100%;width:${barWidth}%;border-radius:4px"></div>
+          </div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+          <span>${v.downLabel}: <span style="color:${v.deltaDown >= 0 ? '#00d4aa' : '#ff4444'}">${v.deltaDown >= 0 ? '+' : ''}${fmtUSD(Math.round(v.deltaDown))}/mes</span></span>
+          <span>${v.upLabel}: <span style="color:${v.deltaUp >= 0 ? '#00d4aa' : '#ff4444'}">${v.deltaUp >= 0 ? '+' : ''}${fmtUSD(Math.round(v.deltaUp))}/mes</span></span>
+        </div>
+      </div>`;
+  });
+
+  html += `</div></div>`;
+
+  // 2. Umbrales — en qué punto perdés plata
+  html += `<div class="kpi-card">
+    <div class="section-title" style="border:0;margin:0;padding:0">¿Cuándo empezás a perder plata?</div>
+    <p class="text-xs text-gray-500 mb-3">Busqué el punto exacto donde el net income se hace negativo para cada variable. Las demás quedan en tu valor actual.</p>
+    <div class="space-y-3">`;
+
+  thresholds.forEach(t => {
+    if (t.threshold === null) {
+      html += `<div class="flex justify-between items-center p-2 rounded" style="background:#0a2a1f;border:1px solid #00d4aa33">
+        <span class="text-sm">${t.name}</span>
+        <span class="text-xs" style="color:#00d4aa">No pierde plata ni en el peor caso testeado</span>
+      </div>`;
+    } else {
+      const margin = Math.abs(t.threshold - t.actual);
+      const marginPct = t.actual !== 0 ? Math.abs(margin / t.actual * 100) : 0;
+      const tight = marginPct < 15;
+      html += `<div class="p-2 rounded" style="background:${tight ? '#2a1a0a' : '#0d0d1a'};border:1px solid ${tight ? '#ff444433' : '#1a1a2e'}">
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-semibold">${t.name}</span>
+          <span class="text-xs" style="color:${tight ? '#ff4444' : '#ffa726'}">Margen: ${marginPct.toFixed(0)}%</span>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">
+          Si la ${t.name.toLowerCase()} ${t.direction} a <strong style="color:#ff4444">${t.fmt(t.threshold)}</strong>, el negocio pierde plata.
+          Hoy estás en <strong style="color:#00d4aa">${t.fmt(t.actual)}</strong>.
+          ${tight ? '<span style="color:#ff4444"> ⚠ Margen chico, cuidado.</span>' : ''}
+        </p>
+      </div>`;
+    }
+  });
+
+  html += `</div></div>`;
+
+  // 3. Escenarios combo
+  html += `<div class="kpi-card">
+    <div class="section-title" style="border:0;margin:0;padding:0">Escenarios: ¿qué pasa si...?</div>
+    <p class="text-xs text-gray-500 mb-3">Situaciones realistas donde varias cosas se mueven juntas. Todos parten de tu configuración actual.</p>
+    <div class="space-y-3">`;
+
+  // Split bad / good
+  const badCombos = comboResults.filter(c => c.type === 'bad');
+  const goodCombos = comboResults.filter(c => c.type === 'good');
+
+  html += `<div class="text-xs font-semibold text-gray-500 mb-2">SI SALE MAL</div>`;
+  badCombos.forEach(c => {
+    const r = c.result;
+    const survives = r.avgNetIncome >= 0;
+    html += `<div class="p-3 rounded mb-2" style="background:${survives ? '#0a2a1f' : '#2a0a0a'};border:1px solid ${survives ? '#00d4aa33' : '#ff444433'}">
+      <div class="flex justify-between items-center">
+        <span class="text-sm font-semibold">${c.name}</span>
+        <span class="text-sm font-bold" style="color:${survives ? '#00d4aa' : '#ff4444'}">${survives ? 'Sobrevive' : 'Pierde plata'}</span>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">${c.desc}</p>
+      <div class="flex gap-6 mt-2 text-xs">
+        <span>Net Income: <strong style="color:${r.avgNetIncome >= 0 ? '#00d4aa' : '#ff4444'}">${fmtUSD(Math.round(r.avgNetIncome))}/mes</strong></span>
+        <span>Payback: <strong>${typeof r.paybackMonth === 'number' ? r.paybackMonth + ' meses' : r.paybackMonth}</strong></span>
+        <span>Cash 60m: <strong style="color:${r.cash60 >= 0 ? '#00d4aa' : '#ff4444'}">${fmtUSD(Math.round(r.cash60))}</strong></span>
+      </div>
+    </div>`;
+  });
+
+  html += `<div class="text-xs font-semibold text-gray-500 mb-2 mt-4">SI SALE BIEN</div>`;
+  goodCombos.forEach(c => {
+    const r = c.result;
+    html += `<div class="p-3 rounded mb-2" style="background:#0a2a1f;border:1px solid #00d4aa33">
+      <div class="flex justify-between items-center">
+        <span class="text-sm font-semibold">${c.name}</span>
+        <span class="text-sm font-bold" style="color:#00d4aa">${fmtUSD(Math.round(r.avgNetIncome))}/mes</span>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">${c.desc}</p>
+      <div class="flex gap-6 mt-2 text-xs">
+        <span>Payback: <strong>${typeof r.paybackMonth === 'number' ? r.paybackMonth + ' meses' : r.paybackMonth}</strong></span>
+        <span>Cash 60m: <strong style="color:#00d4aa">${fmtUSD(Math.round(r.cash60))}</strong></span>
+        <span>ROI Año 1: <strong style="color:#00d4aa">${(r.roi1 * 100).toFixed(1)}%</strong></span>
+      </div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+
+  document.getElementById('stress-content').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────────
+// SUPUESTOS VIEW
+// ─────────────────────────────────────────────────────────
+function renderSupuestos() {
+  document.getElementById('supuestos-content').innerHTML = `
+    <div>
+      <div class="section-title">1. Modelo de Covers</div>
+      <p class="text-sm text-gray-400 mb-3">Cuánta gente se sienta por mes = capacidad × rotaciones × 26 días × demanda × estacionalidad × ajustes</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h4 class="text-sm font-semibold mb-2">Rotaciones Cena por Día</h4>
+          <table>
+            <thead><tr>${DAY_NAMES.map(d => '<th>' + d + '</th>').join('')}<th>Promedio</th></tr></thead>
+            <tbody><tr>${ROT_CENA.map(r => '<td>' + r.toFixed(1) + '</td>').join('')}<td class="font-bold">${ROT_CENA_AVG.toFixed(2)}</td></tr></tbody>
+          </table>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold mb-2">Rotaciones Almuerzo por Día (50% de cena)</h4>
+          <table>
+            <thead><tr>${DAY_NAMES.map(d => '<th>' + d + '</th>').join('')}<th>Promedio</th></tr></thead>
+            <tbody><tr>${ROT_ALM.map(r => '<td>' + r.toFixed(1) + '</td>').join('')}<td class="font-bold">${ROT_ALM_AVG.toFixed(2)}</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">2. Estacionalidad Mensual (Buenos Aires)</div>
+      <p class="text-sm text-gray-400 mb-3">Enero/febrero la ciudad se vacía. Noviembre/diciembre pico por fiestas y eventos corporativos.</p>
+      <table>
+        <thead><tr><th>Ene</th><th>Feb</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead>
+        <tbody><tr>${SEASONAL.map(s => '<td>' + (s*100).toFixed(0) + '%</td>').join('')}</tr></tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="section-title">3. Qué es input manual y qué calcula el modelo</div>
+      <p class="text-sm text-gray-400 mb-3">Todo lo que ves en los sliders del Dashboard es input tuyo. El modelo NO auto-deriva nada: no ajusta staff por capacidad, no ajusta alquiler, no ajusta demanda por ticket. Vos ponés cada número.</p>
+      <table>
+        <thead><tr><th>Variable</th><th>Fuente</th></tr></thead>
+        <tbody>
+          <tr><td>Capacidad, Inversión, Alquiler, Servicios</td><td>Input manual</td></tr>
+          <tr><td>Staff cena, Staff almuerzo, Sueldo</td><td>Input manual</td></tr>
+          <tr><td>Ticket cena, Ticket almuerzo</td><td>Input manual</td></tr>
+          <tr><td>Food cost, Paper cost, Comisiones</td><td>Input manual</td></tr>
+          <tr><td>Demanda, Ramp-up, % Negro</td><td>Input manual</td></tr>
+          <tr><td>Rotaciones por día (cena/almuerzo)</td><td>Input manual</td></tr>
+          <tr><td>Impuestos</td><td>Ley argentina (fijo)</td></tr>
+          <tr><td>Estacionalidad mensual</td><td>Estimación BA (fijo)</td></tr>
+          <tr><td>Marketing (5% → 3%)</td><td>Regla fija (primeros 6 meses más alto)</td></tr>
+          <tr><td>Split socios (80/20 → 25/75)</td><td>Regla fija</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="section-title">4. Impuestos (Ley Argentina)</div>
+      <p class="text-sm text-gray-400 mb-3">Aplican sobre la parte en blanco. El % negro lo ponés vos en el Dashboard.</p>
+      <table>
+        <thead><tr><th>Impuesto</th><th>Cálculo</th></tr></thead>
+        <tbody>
+          <tr><td>IVA neto</td><td>Revenue blanco × 21% − (compras × 21% × 40% crédito fiscal)</td></tr>
+          <tr><td>IIBB (CABA)</td><td>Revenue blanco × 3.5%</td></tr>
+          <tr><td>Déb/Créd bancarios</td><td>Revenue blanco con IVA × 1.2%</td></tr>
+          <tr><td>Ganancias</td><td>max(0, EBITDA × % blanco) × 35%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="section-title">5. Split Socios</div>
+      <table>
+        <thead><tr><th>Fase</th><th>Inversor</th><th>Operador</th></tr></thead>
+        <tbody>
+          <tr><td>Pre-payback (inversor no recuperó)</td><td class="font-bold">80%</td><td>20%</td></tr>
+          <tr><td>Post-payback (inversor ya recuperó)</td><td>25%</td><td class="font-bold">75%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="section-title">6. Inflación</div>
+      <p class="text-sm text-gray-400">El modelo corre en <strong>USD constantes (sin inflación)</strong>. En Argentina, la inflación sube costos y precios casi en la misma proporción, así que el efecto neto es mínimo. Todos los valores son en dólares de hoy.</p>
+    </div>
+
+    <div>
+      <div class="section-title">7. Costos (valores por defecto)</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <h4 class="text-sm font-semibold mb-2">Variables (% de revenue)</h4>
+          <table>
+            <tbody>
+              <tr><td>Food cost</td><td>25%</td></tr>
+              <tr><td>Paper/descartables</td><td>2.5%</td></tr>
+              <tr><td>Comisiones pago</td><td>1.2% (sobre blanco)</td></tr>
+              <tr><td>Marketing</td><td>5% (m1-6), 3% (m7+)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold mb-2">Fijos</h4>
+          <table>
+            <tbody>
+              <tr><td>Alquiler</td><td>$3,000 + $40/pax sobre 20</td></tr>
+              <tr><td>Servicios</td><td>$1,200 + $15/pax sobre 20</td></tr>
+              <tr><td>Contador</td><td>$500</td></tr>
+              <tr><td>Software</td><td>$300</td></tr>
+              <tr><td>Seguros</td><td>$300</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">8. Limitaciones del Modelo</div>
+      <ul class="text-sm text-gray-400 space-y-1 list-disc pl-5">
+        <li>Las rotaciones por día son estimaciones — no hay data pública de rotación por mesa en BA.</li>
+        <li>La elasticidad ticket → demanda (-0.3) es un supuesto razonable, no un dato medido.</li>
+        <li>El modelo no incluye inflación — todo en USD constantes. El efecto real es mínimo.</li>
+        <li>No se modelan eventos únicos (pandemia, crisis, obra en la cuadra).</li>
+        <li>El modelo de staff es simplificado — no incluye rotación de personal, capacitación, etc.</li>
+        <li>Estacionalidad basada en patrones generales de BA, puede variar por zona.</li>
+      </ul>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Defaults
+  dashState = {
+    cap: 30, ticketCena: 38, ticketAlm: 22, foodCost: 0.25, paperCost: 0.025, comisionPago: 0.012,
+    pctNegro: 0.20, demandaMax: 0.90, rampupMeses: 9,
+    inversion: 225000, alquiler: 3400, servicios: 1350,
+    staffCena: 9, staffAlm: 5, sueldo: 1150,
+    rotCenaDay: [0.8, 1.0, 1.8, 2.8, 2.5, 2.0],
+    rotAlmDay: [0.4, 0.5, 0.9, 1.4, 1.3, 1.0],
+  };
+  setSliders(dashState);
+  renderDashboard();
+});
+</script>
+</body>
+</html>

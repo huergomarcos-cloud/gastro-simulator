@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; }
+  @page { size: 816px 1056px; margin: 0; }
+  .page {
+    width: 816px; height: 1056px; padding: 50px 60px;
+    page-break-after: always; position: relative;
+    background: #fff; overflow: hidden;
+  }
+  .page:last-child { page-break-after: avoid; }
+  .accent { color: #c43333; }
+  .red-line { width: 40px; height: 3px; background: #c43333; margin-bottom: 14px; }
+  .section-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #888; font-weight: 600; margin-bottom: 18px; }
+  .page-footer { position: absolute; bottom: 25px; left: 60px; right: 60px; text-align: center; font-size: 8px; color: #bbb; letter-spacing: 2px; }
+
+  /* Photo pages */
+  .photo-page { padding: 0; }
+  .photo-page img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-page .overlay-title { position: absolute; top: 40px; left: 50px; }
+  .photo-page .overlay-title .red-line { background: #c43333; }
+  .photo-page .overlay-title .section-title { color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+
+  /* KPI Cards */
+  .kpi-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .kpi-card { flex: 1; background: #f8f8f8; border-radius: 8px; padding: 16px 14px; text-align: center; border: 1px solid #eee; }
+  .kpi-card .value { font-size: 26px; font-weight: 800; color: #1a1a1a; margin-bottom: 3px; }
+  .kpi-card .value.green { color: #16a34a; }
+  .kpi-card .value.red { color: #c43333; }
+  .kpi-card .label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; font-weight: 600; }
+
+  /* Tables */
+  .fin-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 14px; }
+  .fin-table th { text-align: left; color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 7px 8px; border-bottom: 1px solid #ddd; font-weight: 600; }
+  .fin-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; color: #444; }
+  .fin-table td:first-child { color: #666; font-weight: 500; }
+  .fin-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .fin-table .sub { font-weight: 700; color: #1a1a1a; border-top: 1px solid #ccc; }
+  .fin-table .total { font-weight: 800; color: #16a34a; border-top: 2px solid #c43333; font-size: 12px; }
+  .fin-table .neg { color: #c43333; }
+
+  .highlight-box { background: #f8f8f8; border: 1px solid #eee; border-radius: 8px; padding: 16px 20px; margin-bottom: 14px; }
+  .highlight-box .title { font-size: 12px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+  .highlight-box p { font-size: 11px; color: #555; line-height: 1.6; }
+
+  .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .inv-item { background: #f8f8f8; border-radius: 8px; padding: 14px 16px; border: 1px solid #eee; }
+  .inv-item .iv { font-size: 20px; font-weight: 800; color: #1a1a1a; }
+  .inv-item .il { font-size: 10px; color: #888; margin-top: 2px; }
+  .inv-item .isub { font-size: 9px; color: #aaa; margin-top: 4px; }
+
+  .scenario { background: #f8f8f8; border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; border-left: 4px solid #ccc; border: 1px solid #eee; }
+  .scenario .name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+  .scenario .desc { font-size: 10px; color: #888; margin-bottom: 6px; }
+  .scenario .metrics { display: flex; gap: 20px; }
+  .scenario .metric { text-align: center; }
+  .scenario .metric .mv { font-size: 15px; font-weight: 800; }
+  .scenario .metric .ml { font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+
+  .link-box { background: #fdf2f2; border: 1px solid #c43333; border-radius: 8px; padding: 18px 22px; text-align: center; margin-top: 16px; }
+  .link-box .url { font-size: 12px; color: #c43333; font-weight: 700; letter-spacing: 0.5px; }
+  .link-box .hint { font-size: 9px; color: #888; margin-top: 6px; }
+
+  /* Concepto boxes */
+  .concept-card { background: #1a1a1a; border-radius: 8px; padding: 18px 22px; color: #e5e5e5; margin-bottom: 10px; }
+  .concept-card .ct { font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .concept-card p { font-size: 11px; line-height: 1.6; color: #bbb; }
+  .concept-card ul { padding-left: 14px; margin-top: 4px; }
+  .concept-card li { font-size: 11px; color: #bbb; margin-bottom: 3px; }
+  .concept-card li strong { color: #fff; }
+
+  .status-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .status-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
+  .status-table .badge { font-size: 8px; padding: 2px 8px; border-radius: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .status-table .def { background: #dcfce7; color: #16a34a; }
+  .status-table .pen { background: #fef9c3; color: #a16207; }
+
+  .timeline { display: flex; gap: 0; margin: 14px 0; }
+  .timeline .phase { flex: 1; text-align: center; padding: 10px 6px; position: relative; }
+  .timeline .phase .dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto 6px; }
+  .timeline .phase .plabel { font-size: 9px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+  .timeline .phase .pvalue { font-size: 13px; font-weight: 700; margin-top: 3px; }
+  .timeline .phase::after { content: ''; position: absolute; top: 15px; right: 0; width: 50%; height: 2px; background: #e5e5e5; }
+  .timeline .phase::before { content: ''; position: absolute; top: 15px; left: 0; width: 50%; height: 2px; background: #e5e5e5; }
+  .timeline .phase:first-child::before { display: none; }
+  .timeline .phase:last-child::after { display: none; }
+
+  .socios-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .socio-card { background: #1a1a1a; border-radius: 8px; padding: 20px 22px; color: #e5e5e5; }
+  .socio-card .sname { font-size: 18px; font-weight: 900; text-transform: uppercase; color: #fff; margin-bottom: 10px; letter-spacing: 1px; }
+  .socio-card li { font-size: 11px; color: #bbb; margin-bottom: 5px; list-style: none; padding-left: 12px; border-left: 2px solid #c43333; }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1: PORTADA ============ -->
+<div class="page" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+  <div style="font-size: 64px; font-weight: 900; color: #1a1a1a; letter-spacing: 4px; line-height: 1">
+    SNACK<span class="accent">Z</span>
+  </div>
+  <div style="font-size: 24px; font-weight: 700; color: #c43333; letter-spacing: 8px; margin-top: 4px">
+    IZAKAYA
+  </div>
+  <div style="width: 40px; height: 3px; background: #c43333; margin: 24px auto"></div>
+  <div style="font-size: 12px; color: #666; letter-spacing: 4px; text-transform: uppercase">
+    Alta Cocina Callejera Japonesa
+  </div>
+  <div style="font-size: 11px; color: #999; letter-spacing: 4px; margin-top: 4px">
+    Buenos Aires
+  </div>
+  <div style="font-size: 10px; color: #bbb; letter-spacing: 3px; margin-top: 30px">
+    Documento de Proyecto &middot; 2026
+  </div>
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 2: QUÉ ES ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Qu&eacute; es Snackz Izakaya</div>
+
+  <div style="font-size: 14px; color: #333; line-height: 1.8; margin-bottom: 20px">
+    <strong>Snackz Izakaya</strong> es un restaurante de <strong>alta cocina callejera japonesa fusi&oacute;n</strong> en Buenos Aires. El nombre viene del japon&eacute;s <em>izakaya</em> &mdash; el formato informal de bar donde se come, se bebe y se comparte en la barra, mirando al chef trabajar.
+  </div>
+
+  <div style="font-size: 13px; color: #444; line-height: 1.8; margin-bottom: 20px">
+    Es una versi&oacute;n evolucionada: t&eacute;cnicas de alta cocina aplicadas a street food de todo el mundo, filtrado por la lente japonesa. Todo preparado frente al comensal en formato barra, donde <strong>el que cocina es el que te sirve</strong>. Sin mozos. Sin intermediarios.
+  </div>
+
+  <div style="font-size: 13px; color: #444; line-height: 1.8; margin-bottom: 24px">
+    El local busca esa tensi&oacute;n entre lo &iacute;ntimo y lo ca&oacute;tico: un espacio oscuro y misterioso con destellos de ne&oacute;n rojo, hormig&oacute;n crudo, madera y acero. La experiencia es tan importante como lo que com&eacute;s.
+  </div>
+
+  <div class="concept-card">
+    <div class="ct">Lo que nos diferencia</div>
+    <p><strong style="color:#c43333">La cocina es de alta gama.</strong> A pesar de una imagen callejera e informal, cada plato tiene detr&aacute;s t&eacute;cnica de autor, ingredientes premium y presentaci&oacute;n impecable. Es cocina de autor sin la solemnidad del fine dining. Street food sin la precariedad del puesto callejero.</p>
+  </div>
+
+  <div class="concept-card">
+    <div class="ct">La marca</div>
+    <p>En una Buenos Aires saturada de propuestas gastron&oacute;micas minimalistas, Snackz propone lo opuesto &mdash; una marca fuerte, ruidosa, con personalidad propia. Un lugar donde la experiencia, la comida y la marca son inseparables.</p>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 3: ARQUITECTURA (foto) ============ -->
+<div class="page photo-page">
+  <img src="pitch-assets/arch-03.png" alt="Estilo y Arquitectura">
+  <div class="page-footer" style="color:rgba(255,255,255,0.4)">SNACKZ IZAKAYA &mdash; ESTILO &amp; ARQUITECTURA</div>
+</div>
+
+<!-- ============ PAGE 4: ARQUITECTURA 2 (foto) ============ -->
+<div class="page photo-page">
+  <img src="pitch-assets/arch2-04.png" alt="Arquitectura 2">
+  <div class="page-footer" style="color:rgba(255,255,255,0.4)">SNACKZ IZAKAYA &mdash; MATERIALIDAD &amp; DETALLES</div>
+</div>
+
+<!-- ============ PAGE 5: FOOD 1 (foto) ============ -->
+<div class="page photo-page">
+  <img src="pitch-assets/food1-06.png" alt="Food referencias">
+  <div class="page-footer" style="color:rgba(255,255,255,0.4)">SNACKZ IZAKAYA &mdash; FOOD REFERENCES</div>
+</div>
+
+<!-- ============ PAGE 6: FOOD 2 (foto) ============ -->
+<div class="page photo-page">
+  <img src="pitch-assets/food2-07.png" alt="Food referencias 2">
+  <div class="page-footer" style="color:rgba(255,255,255,0.4)">SNACKZ IZAKAYA &mdash; FOOD REFERENCES</div>
+</div>
+
+<!-- ============ PAGE 7: SOCIOS FUNDADORES ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Socios Fundadores</div>
+
+  <div class="socios-grid">
+    <div class="socio-card">
+      <div class="sname">Marcos</div>
+      <li>Emprendedor con experiencia amplia en turismo y eventos</li>
+      <li>Dos empresas exitosas en funcionamiento</li>
+      <li>Habilidad con n&uacute;meros y finanzas</li>
+      <li>Creatividad y conocimiento de marketing y construcci&oacute;n de marca</li>
+    </div>
+    <div class="socio-card">
+      <div class="sname">Ram&oacute;n</div>
+      <li>Amplia experiencia en gastronom&iacute;a</li>
+      <li>Varios restaurantes exitosos en su trayectoria</li>
+      <li>Dominio de operaciones y procesos eficientes</li>
+      <li>Red de proveedores y conocimiento del sector</li>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="title">Complementariedad</div>
+    <p>Un socio con visi&oacute;n de negocio, n&uacute;meros y marca. Otro con la operaci&oacute;n gastron&oacute;mica, experiencia sectorial y red de contactos. Ambos capaces de intervenir en cualquier &aacute;rea &mdash; las cualidades descritas no son roles fijos sino fortalezas individuales.</p>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 9: CÓMO FUNCIONA (actualizado) ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">C&oacute;mo Funciona Snackz Izakaya</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="value">35</div><div class="label">Comensales</div></div>
+    <div class="kpi-card"><div class="value">150m&sup2;</div><div class="label">Local</div></div>
+    <div class="kpi-card"><div class="value">$42</div><div class="label">Ticket USD</div></div>
+    <div class="kpi-card"><div class="value">1:3</div><div class="label">Chef / Comensal</div></div>
+  </div>
+
+  <div style="font-size: 12px; color: #444; line-height: 1.7; margin-bottom: 16px">
+    <strong>Formato barra izakaya:</strong> Los comensales se sientan en la barra frente a la cocina abierta. El chef que prepara tu plato es el mismo que te lo sirve. Sin mozos, sin intermediarios.
+  </div>
+
+  <div style="font-size: 12px; color: #444; line-height: 1.7; margin-bottom: 16px">
+    <strong>Ticket promedio:</strong> USD 42 por persona incluyendo comida y bebida. Posiciona a Snackz en el segmento medio-alto de Buenos Aires &mdash; accesible para el p&uacute;blico objetivo pero con margen para ofrecer calidad premium.
+  </div>
+
+  <div style="font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin: 16px 0 8px; font-weight: 600">Dotaci&oacute;n por turno</div>
+  <table class="fin-table" style="font-size:11px">
+    <tr><td>Encargado</td><td>1</td></tr>
+    <tr><td>Cajero</td><td>1</td></tr>
+    <tr><td>Recepci&oacute;n</td><td>1</td></tr>
+    <tr><td>Bachero</td><td>1</td></tr>
+    <tr><td>Barman</td><td>1</td></tr>
+    <tr><td>Cocineros</td><td>5 (1 cada 7 comensales)</td></tr>
+    <tr><td>Apoyo</td><td>2</td></tr>
+    <tr class="sub"><td>Total por turno</td><td>12 personas</td></tr>
+  </table>
+
+  <div class="highlight-box">
+    <div class="title">Men&uacute; de pasos por reserva</div>
+    <p>Algunos d&iacute;as definidos (baja demanda) se ofrece un men&uacute; degustaci&oacute;n por reserva. Doble prop&oacute;sito: fomenta los d&iacute;as bajos y genera un producto premium adicional.</p>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 10: EXPERIENCIA + PÚBLICO (comprimido) ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">M&aacute;s que un Restaurante</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:6px">Ambiente</div>
+      <div style="font-size:11px;color:#555;line-height:1.7">Oscuro, misterioso, ca&oacute;tico pero controlado. Iluminaci&oacute;n dram&aacute;tica: neones rojos, luces c&aacute;lidas puntuales, sombras intencionales. Materiales honestos: hormig&oacute;n expuesto, madera, acero, azulejos.</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:6px">Marca</div>
+      <div style="font-size:11px;color:#555;line-height:1.7">Fuerte, memorable, que se recuerde. No es otro restaurante minimalista m&aacute;s. Snackz tiene personalidad propia, identidad visual potente, voz de marca clara.</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:6px">M&uacute;sica</div>
+      <div style="font-size:11px;color:#555;line-height:1.7">Un tocadiscos con vinilos como complemento del espacio. Un detalle visual que suma a la atm&oacute;sfera. Los discos se cambian en vivo.</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:6px">Redes Sociales</div>
+      <div style="font-size:11px;color:#555;line-height:1.7">Clave desde el d&iacute;a 1. La marca se construye antes de abrir. Cada plato, cada detalle, cada momento tiene que ser compartible.</div>
+    </div>
+  </div>
+
+  <div class="concept-card" style="margin-bottom:0">
+    <div class="ct">P&uacute;blico Objetivo</div>
+    <table style="width:100%;font-size:11px;color:#bbb;border-collapse:collapse">
+      <tr><td style="padding:8px;color:#c43333;font-weight:700;width:100px;vertical-align:top">Core: 30-50</td><td style="padding:8px">Les gusta la buena cocina, valoran los sabores. Buscan lifestyle, lo no tradicional. Les divierte lo disruptivo. Poder adquisitivo medio-alto / alto.</td></tr>
+      <tr><td style="padding:8px;color:#c43333;font-weight:700;vertical-align:top">Secundario: +50</td><td style="padding:8px">Buscan la experiencia gastron&oacute;mica top y la disrupci&oacute;n del formato. Valoran la calidad del producto y la cocina en vivo.</td></tr>
+      <tr><td style="padding:8px;color:#c43333;font-weight:700;vertical-align:top">Contexto</td><td style="padding:8px">Buenos Aires tiene mucha oferta gastron&oacute;mica buena. Snackz se diferencia por la combinaci&oacute;n de marca fuerte + cocina de autor + experiencia inmersiva.</td></tr>
+    </table>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 11: ESTADO + PRIORIDADES (comprimido) ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Estado del Proyecto &amp; Pr&oacute;ximos Pasos</div>
+
+  <table class="status-table" style="margin-bottom:24px">
+    <tr><td style="font-weight:600;color:#333;width:160px">Nombre</td><td><span class="badge def">Definido</span></td><td style="color:#555">Snackz Izakaya</td></tr>
+    <tr><td style="font-weight:600;color:#333">Concepto</td><td><span class="badge def">Definido</span></td><td style="color:#555">Alta cocina callejera japonesa fusi&oacute;n</td></tr>
+    <tr><td style="font-weight:600;color:#333">Socios</td><td><span class="badge def">Definido</span></td><td style="color:#555">Marcos + Ram&oacute;n, perfiles complementarios</td></tr>
+    <tr><td style="font-weight:600;color:#333">Formato</td><td><span class="badge def">Definido</span></td><td style="color:#555">Barra, cocina en vivo, sin mozos, 35 personas</td></tr>
+    <tr><td style="font-weight:600;color:#333">Ticket</td><td><span class="badge def">Definido</span></td><td style="color:#555">USD 42 por persona (comida + bebida)</td></tr>
+    <tr><td style="font-weight:600;color:#333">Refs visuales</td><td><span class="badge def">Definido</span></td><td style="color:#555">Moodboard de estilo, arquitectura y comida</td></tr>
+    <tr><td style="font-weight:600;color:#333">Plan financiero</td><td><span class="badge def">Definido</span></td><td style="color:#555">P&L, escenarios, retorno inversor (ver p&aacute;gs siguientes)</td></tr>
+    <tr><td style="font-weight:600;color:#333">Local</td><td><span class="badge pen">Pendiente</span></td><td style="color:#555">Buscando 150m&sup2;, posibilidad subsuelo</td></tr>
+    <tr><td style="font-weight:600;color:#333">Inversi&oacute;n total</td><td><span class="badge pen">Pendiente</span></td><td style="color:#555">Estimado USD 235K. Evaluando cr&eacute;dito vs socio capitalista</td></tr>
+    <tr><td style="font-weight:600;color:#333">Carta definitiva</td><td><span class="badge pen">Pendiente</span></td><td style="color:#555">Direcci&oacute;n clara, desarrollo en curso</td></tr>
+    <tr><td style="font-weight:600;color:#333">Identidad visual</td><td><span class="badge pen">Pendiente</span></td><td style="color:#555">Referencias definidas, falta cerrar brand book</td></tr>
+  </table>
+
+  <div style="font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; font-weight: 600">Prioridades para avanzar</div>
+
+  <div style="font-size:11px;color:#444;line-height:1.8">
+    <div style="display:flex;gap:10px;margin-bottom:6px"><span style="background:#c43333;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">1</span><span>Encontrar el local (150m&sup2;). La ubicaci&oacute;n define obra, capacidad, timeline e inversi&oacute;n.</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:6px"><span style="background:#c43333;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">2</span><span>Cerrar presupuesto de obra + equipamiento. Definir si cr&eacute;dito o socio capitalista.</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:6px"><span style="background:#c43333;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">3</span><span>Formalizar participaci&oacute;n del chef. Definir carta, costear, testear.</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:6px"><span style="background:#c43333;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">4</span><span>Cerrar marca: logo, tipograf&iacute;a, sistema de color, packaging, men&uacute; f&iacute;sico.</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:6px"><span style="background:#c43333;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">5</span><span>Abrir Instagram y generar expectativa antes de la apertura.</span></div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 12: RESUMEN EJECUTIVO FINANCIERO ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Plan Financiero &mdash; Resumen Ejecutivo</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="value">$235K</div><div class="label">Inversi&oacute;n Total</div></div>
+    <div class="kpi-card"><div class="value green">$684K</div><div class="label">Revenue Anual</div></div>
+    <div class="kpi-card"><div class="value green">20.3%</div><div class="label">Net Margin</div></div>
+    <div class="kpi-card"><div class="value">M24</div><div class="label">Payback Inversor</div></div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="title">La oportunidad</div>
+    <p>Snackz Izakaya proyecta un revenue bruto de <strong>$57K/mes</strong> (USD) operando solo turno cena, martes a domingo, con 35 lugares en formato barra. Con un EBITDA margin del 32% y un net margin real del 20.3%, el negocio genera <strong style="color:#16a34a">$12.1K/mes de resultado neto</strong> despu&eacute;s de todos los impuestos. El inversor recupera su capital en el mes 24.</p>
+  </div>
+
+  <div style="font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; font-weight: 600">Estructura de la inversi&oacute;n</div>
+
+  <div class="inv-grid">
+    <div class="inv-item"><div class="iv">$150K</div><div class="il">Obra Civil / Reformas</div><div class="isub">Amortiza en 10 a&ntilde;os</div></div>
+    <div class="inv-item"><div class="iv">$55K</div><div class="il">Equipamiento Cocina</div><div class="isub">Amortiza en 5 a&ntilde;os</div></div>
+    <div class="inv-item"><div class="iv">$15K</div><div class="il">Mobiliario / Barra</div><div class="isub">Amortiza en 10 a&ntilde;os</div></div>
+    <div class="inv-item"><div class="iv">$10K</div><div class="il">Branding / Dise&ntilde;o</div><div class="isub">Amortiza en 3 a&ntilde;os</div></div>
+  </div>
+
+  <div style="display:flex;gap:12px">
+    <div class="inv-item" style="flex:1"><div class="iv">$5K</div><div class="il">Habilitaciones / Legales</div><div class="isub">Amortiza en 5 a&ntilde;os</div></div>
+    <div class="inv-item" style="flex:1;border-color:#c43333"><div class="iv" style="color:#c43333">$2.7K<span style="font-size:14px;color:#888">/mes</span></div><div class="il">Amortizaci&oacute;n deducible</div><div class="isub">Ahorro fiscal: $962/mes en Ganancias</div></div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 13: P&L ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Estado de Resultados &mdash; Promedio Mensual</div>
+
+  <table class="fin-table">
+    <tr><th style="width:50%"></th><th>Mensual</th><th>Anual</th><th>% Rev</th></tr>
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:9px;letter-spacing:2px;padding-top:12px">REVENUE</td></tr>
+    <tr><td>Covers / mes</td><td>1,386</td><td>16,632</td><td></td></tr>
+    <tr><td>Ticket promedio</td><td>$42</td><td></td><td></td></tr>
+    <tr class="sub"><td>Revenue Bruto</td><td>$57,000</td><td>$684,000</td><td>100%</td></tr>
+    <tr><td style="padding-left:18px;color:#888">Blanco (80%)</td><td>$47,040</td><td>$564,480</td><td>82.5%</td></tr>
+    <tr><td style="padding-left:18px;color:#888">Negro (20%)</td><td>$9,960</td><td>$119,520</td><td>17.5%</td></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:9px;letter-spacing:2px;padding-top:12px">COSTO MERCADER&Iacute;A</td></tr>
+    <tr><td style="padding-left:18px">Food Cost (25%)</td><td class="neg">-$14,250</td><td class="neg">-$171,000</td><td>25.0%</td></tr>
+    <tr><td style="padding-left:18px">Paper Cost (2.5%)</td><td class="neg">-$1,425</td><td class="neg">-$17,100</td><td>2.5%</td></tr>
+    <tr class="sub"><td>Gross Profit</td><td>$41,325</td><td>$495,900</td><td>72.5%</td></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:9px;letter-spacing:2px;padding-top:12px">GASTOS OPERATIVOS</td></tr>
+    <tr><td style="padding-left:18px">Crew Labor (12 &times; $1,150)</td><td class="neg">-$13,800</td><td class="neg">-$165,600</td><td>24.2%</td></tr>
+    <tr><td style="padding-left:18px">Alquiler + Servicios</td><td class="neg">-$4,300</td><td class="neg">-$51,600</td><td>7.5%</td></tr>
+    <tr><td style="padding-left:18px">OPEX + Marketing (5%)</td><td class="neg">-$2,850</td><td class="neg">-$34,200</td><td>5.0%</td></tr>
+    <tr><td style="padding-left:18px">Processing + SG&A</td><td class="neg">-$1,506</td><td class="neg">-$18,067</td><td>2.6%</td></tr>
+
+    <tr class="sub"><td>EBITDA</td><td style="color:#16a34a">$18,869</td><td style="color:#16a34a">$226,433</td><td style="color:#16a34a">32.0%</td></tr>
+
+    <tr><td colspan="4" style="color:#c43333;font-weight:700;font-size:9px;letter-spacing:2px;padding-top:12px">IMPUESTOS</td></tr>
+    <tr><td style="padding-left:18px">IVA neto</td><td class="neg">-$2,100</td><td class="neg">-$25,200</td><td></td></tr>
+    <tr><td style="padding-left:18px">IIBB + D&eacute;b/Cr&eacute;d</td><td class="neg">-$2,211</td><td class="neg">-$26,531</td><td></td></tr>
+    <tr><td style="padding-left:18px">Imp. Ganancias</td><td class="neg">-$2,050</td><td class="neg">-$24,600</td><td></td></tr>
+    <tr><td style="padding-left:18px;color:#888">Costo fact. extra</td><td class="neg">-$434</td><td class="neg">-$5,207</td><td></td></tr>
+
+    <tr class="total"><td>Resultado Neto Real</td><td>$12,074</td><td>$144,888</td><td>20.3%</td></tr>
+  </table>
+
+  <div style="display:flex;gap:12px">
+    <div class="highlight-box" style="flex:1;margin-bottom:0"><div class="title">Break-even</div><p><strong style="font-size:18px">633</strong> covers/mes<br><span style="color:#888">vs 1,386 actuales (margen 54%)</span></p></div>
+    <div class="highlight-box" style="flex:1;margin-bottom:0"><div class="title">Prime Cost</div><p><strong style="font-size:18px">51.7%</strong><br><span style="color:#16a34a">Benchmark: &lt;60%</span></p></div>
+    <div class="highlight-box" style="flex:1;margin-bottom:0"><div class="title">Labor</div><p><strong style="font-size:18px">24.2%</strong><br><span style="color:#16a34a">Benchmark: 25-33%</span></p></div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 14: RETORNO INVERSOR ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">Retorno del Inversor</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="value">$235K</div><div class="label">Capital</div></div>
+    <div class="kpi-card"><div class="value green">M24</div><div class="label">Recupera</div></div>
+    <div class="kpi-card"><div class="value green">$118K</div><div class="label">Cobra A&ntilde;o 1</div></div>
+    <div class="kpi-card"><div class="value green">50%</div><div class="label">ROI A&ntilde;o 1</div></div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="title">Mec&aacute;nica del split</div>
+    <p>Hasta que el inversor recupere los $235K, se lleva el <strong>80%</strong> de las ganancias. Despu&eacute;s del payback (mes 24), el split pasa a <strong>25%</strong> a perpetuidad.</p>
+  </div>
+
+  <table class="fin-table">
+    <tr><th></th><th>Inversor cobra</th><th>vs Inversi&oacute;n</th><th>Operador cobra</th></tr>
+    <tr><td>A&ntilde;o 1</td><td style="color:#16a34a">$118,400</td><td class="neg">-$116,600</td><td>$29,600</td></tr>
+    <tr><td>A&ntilde;o 2</td><td style="color:#16a34a">$236,800</td><td style="color:#16a34a">+$1,800</td><td>$59,200</td></tr>
+    <tr><td>A&ntilde;o 3</td><td style="color:#16a34a">$273,000</td><td style="color:#16a34a">+$38,000</td><td>$167,400</td></tr>
+    <tr><td>A&ntilde;o 4</td><td style="color:#16a34a">$309,200</td><td style="color:#16a34a">+$74,200</td><td>$275,600</td></tr>
+    <tr class="sub"><td>A&ntilde;o 5</td><td style="color:#16a34a">$345,400</td><td style="color:#16a34a">+$110,400</td><td>$383,800</td></tr>
+  </table>
+
+  <div class="timeline">
+    <div class="phase"><div class="dot" style="background:#c43333"></div><div class="plabel">Apertura</div><div class="pvalue">M0</div></div>
+    <div class="phase"><div class="dot" style="background:#eab308"></div><div class="plabel">Break-even</div><div class="pvalue" style="color:#eab308">M3-4</div></div>
+    <div class="phase"><div class="dot" style="background:#16a34a"></div><div class="plabel">Payback</div><div class="pvalue" style="color:#16a34a">M24</div></div>
+    <div class="phase"><div class="dot" style="background:#2563eb"></div><div class="plabel">Split 25%</div><div class="pvalue" style="color:#2563eb">M25+</div></div>
+    <div class="phase"><div class="dot" style="background:#7c3aed"></div><div class="plabel">5 A&ntilde;os</div><div class="pvalue" style="color:#7c3aed">M60</div></div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div class="highlight-box" style="flex:1;margin-bottom:0;border-color:#c43333">
+      <div class="title" style="color:#c43333">Inversor &mdash; 5 a&ntilde;os</div>
+      <p>Invierte <strong>$235K</strong>. Cobra <strong style="color:#16a34a">$345K</strong>. Ganancia: <strong style="color:#16a34a">$110K</strong>. M&uacute;ltiplo: <strong>1.47x</strong>. Post-payback cobra ~$3K/mes.</p>
+    </div>
+    <div class="highlight-box" style="flex:1;margin-bottom:0;border-color:#16a34a">
+      <div class="title" style="color:#16a34a">Operador &mdash; 5 a&ntilde;os</div>
+      <p>Sin capital propio. Cobra <strong style="color:#16a34a">$384K</strong> en 5 a&ntilde;os. Pre-payback: ~$2.5K/mes. Post-payback: ~<strong>$9K/mes</strong>.</p>
+    </div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 15: ESCENARIOS ============ -->
+<div class="page">
+  <div class="red-line"></div>
+  <div class="section-title">An&aacute;lisis de Escenarios</div>
+
+  <div class="scenario" style="border-left-color:#dc2626">
+    <div class="name" style="color:#dc2626">Pesimista &mdash; La zona no responde</div>
+    <div class="desc">Rotaciones -40%, ticket -12%, food cost +4pp.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#dc2626">$1.8K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#dc2626">3.7%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#dc2626">N/A</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">780</div><div class="ml">Covers</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-left-color:#eab308">
+    <div class="name" style="color:#a16207">Conservador &mdash; Arranque normal</div>
+    <div class="desc">Rotaciones -20%, ticket -5%, food cost +2pp.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#a16207">$7.2K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#a16207">14.8%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#a16207">M38</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">1,080</div><div class="ml">Covers</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-left-color:#2563eb;background:#f0f4ff">
+    <div class="name" style="color:#2563eb">Base &mdash; Tu plan actual</div>
+    <div class="desc">Las rotaciones, tickets y costos definidos. Escenario realista.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#16a34a">$12.1K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#16a34a">20.3%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#16a34a">M24</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">1,386</div><div class="ml">Covers</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-left-color:#16a34a">
+    <div class="name" style="color:#16a34a">Optimista &mdash; Buen arranque</div>
+    <div class="desc">Rotaciones +15%, ticket +5%, food cost -1.5pp.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#16a34a">$17.5K</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#16a34a">24.1%</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#16a34a">M18</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">1,620</div><div class="ml">Covers</div></div>
+    </div>
+  </div>
+
+  <div class="scenario" style="border-left-color:#0891b2">
+    <div class="name" style="color:#0891b2">Muy optimista &mdash; La marca pega</div>
+    <div class="desc">Rotaciones +30%, se activa after, ticket +10%.</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" style="color:#0891b2">$24K+</div><div class="ml">Neto/mes</div></div>
+      <div class="metric"><div class="mv" style="color:#0891b2">27%+</div><div class="ml">Net Margin</div></div>
+      <div class="metric"><div class="mv" style="color:#0891b2">M14</div><div class="ml">Payback</div></div>
+      <div class="metric"><div class="mv">2,100+</div><div class="ml">Covers</div></div>
+    </div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+<!-- ============ PAGE 16: SIMULADOR + CIERRE ============ -->
+<div class="page" style="display:flex;flex-direction:column">
+  <div>
+    <div class="red-line"></div>
+    <div class="section-title">Modelo Financiero Interactivo</div>
+
+    <div style="font-size: 15px; font-weight: 800; color: #1a1a1a; line-height: 1.4; margin-bottom: 12px">
+      Todos los n&uacute;meros de este documento fueron generados con nuestro simulador financiero interactivo. Modific&aacute; cualquier variable y ve&aacute; el impacto en tiempo real.
+    </div>
+
+    <div class="link-box">
+      <div style="font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px">Acceder al simulador</div>
+      <div class="url">huergomarcos-cloud.github.io/gastro-simulator/snackz-v2.html</div>
+      <div class="hint">Se abre en cualquier navegador &mdash; no requiere instalaci&oacute;n</div>
+    </div>
+
+    <div style="margin-top: 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">P&L Real + Contable</div><p>Lo que pasa de verdad y lo que ve AFIP.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Cash Flow 60m</div><p>Proyecci&oacute;n con payback y split.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Visi&oacute;n Inversor</div><p>Retorno, m&uacute;ltiplo, ROI.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">Visi&oacute;n Operador</div><p>Unit economics, break-even.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">5 Escenarios</div><p>Pesimista a muy optimista.</p></div>
+      <div class="highlight-box" style="margin-bottom:0"><div class="title">8 Estrategias</div><p>Iniciativas con impacto simulado.</p></div>
+    </div>
+  </div>
+
+  <div style="flex:1"></div>
+  <div style="text-align:center;margin-bottom:40px">
+    <div style="font-size: 42px; font-weight: 900; color: #1a1a1a; letter-spacing: 3px">
+      SNACK<span class="accent">Z</span> IZAKAYA
+    </div>
+    <div style="font-size: 11px; color: #888; letter-spacing: 4px; margin-top: 4px">EL PROYECTO EMPIEZA AC&Aacute;</div>
+  </div>
+
+  <div class="page-footer">SNACKZ IZAKAYA &mdash; CONFIDENCIAL</div>
+</div>
+
+</body>
+</html>

@@ -319,7 +319,7 @@ footer a:hover { color: #fff; }
 /* ── FOTO GRID 3 COL ── */
 .refs-header { padding: 40px 32px 12px; max-width: 960px; margin: 0 auto; }
 .refs-note { font-size: 12px; color: var(--light); margin-top: 4px; line-height: 1.6; }
-.foto-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.foto-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 720px; margin: 0 auto; }
 .fg-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; transition: transform 0.6s cubic-bezier(0.22,1,0.36,1); }
 .fg-img:hover { transform: scale(1.03); }
 #esc-panel-wrap { margin-top: 28px; }
@@ -362,28 +362,6 @@ footer a:hover { color: #fff; }
         Alta cocina callejera japonesa. Barra abierta, DJ de vinilos, 35 cubiertos.
         Prime cost ≤51%. Inversión: $250–300K. Split 80/25 hasta payback, luego 25% perpetuo.
       </p>
-      <div class="hero-ctas">
-        <a href="#escenarios-preview" class="btn-primary">Ver escenarios financieros</a>
-        <a href="#concepto" class="btn-secondary">El concepto</a>
-      </div>
-    </div>
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="sv">35 pax</div>
-        <div class="sl">Barra corrida · ~200 m²</div>
-      </div>
-      <div class="hero-stat">
-        <div class="sv">$42 USD</div>
-        <div class="sl">Ticket promedio cena</div>
-      </div>
-      <div class="hero-stat">
-        <div class="sv">≤50.8%</div>
-        <div class="sl">Prime cost (food + labor)</div>
-      </div>
-      <div class="hero-stat">
-        <div class="sv">21 – 34 m</div>
-        <div class="sl">Payback inversor (ventana)</div>
-      </div>
     </div>
   </div>
 </section>
@@ -928,7 +906,8 @@ footer a:hover { color: #fff; }
     <div class="two-col" style="margin-bottom:32px">
       <div>
         <p class="body-text">Snackz propone lo opuesto al restaurante minimalista y solemne. La atmósfera es oscura y controlada: neones rojos y anaranjados, materiales honestos (hormigón, madera, acero, azulejos), iluminación dramática y puntual.</p>
-        <p class="body-text">DJ de vinilos a la vista durante todo el servicio, curando música en vivo. La cocina abierta y el DJ son los dos focos visuales del local: sin actuación, sin solemnidad, dos cosas pasando al mismo tiempo frente al comensal.</p>
+        <p class="body-text" id="exp-dj-block" style="display:none">DJ de vinilos a la vista durante todo el servicio, curando música en vivo. La cocina abierta y el DJ son los dos focos visuales del local: dos cosas pasando al mismo tiempo frente al comensal.</p>
+        <p class="body-text" id="exp-base-block">La cocina abierta es el foco visual del local: el chef que prepara el plato es el mismo que lo sirve. Sin intermediarios, sin actuación, sin solemnidad.</p>
       </div>
       <div>
         <div class="col-title">Los 3 segmentos</div>
@@ -1145,6 +1124,8 @@ function updateFormato(n) {
   document.getElementById('fmt-nomina-note').textContent = hasAfter
     ? 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina total (cena+after): $20.000/mes.'
     : 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.';
+  document.getElementById('exp-dj-block').style.display = hasAfter ? '' : 'none';
+  document.getElementById('exp-base-block').style.display = hasAfter ? 'none' : '';
 }
 
 function goToEsc(n) {

@@ -1880,9 +1880,589 @@ function update() {
   $('k_payback').textContent = data.invPayback?`M${data.invPayback}`:'N/A'; $('k_payback').className=`kv ${data.invPayback?'pos':'neg'}`;
 }
 
-// ===== EXCEL EXPORT (placeholder — will add formulas) =====
+// ===== EXCEL EXPORT — 3 sheets: Supuestos (values) + P&L Mensual 60M (formulas) + Resumen Anual =====
 async function exportExcel() {
-  alert('Export Excel — próximamente con fórmulas');
+  const p = inp();
+
+  // Fixed row numbers in Supuestos sheet for formula references
+  const S = 'Supuestos';
+  const R = {
+    CAP:4, TALM:5, TCENA:6, TAFTER:7, MONO:8,
+    SEAS:11,                         // rows 11-22 = Ene-Dic
+    TKA:25, TKC:26, TKF:27, PNEG:28, DNEG:29,
+    FC:32, PC:33, CMPB:34,
+    SA:37, SC:38, SF:39, SUE:40,
+    ALQ:43, SRV:44, OPX:45, MKT:46, PRC:47, CNT:48, SFT:49,
+    FEX:52, FEXC:53,
+    IVA:56, IIBB:57, DBC:58, GAN:59,
+    INVC:62, INVM:63, INVO:64, INVB:65, INVH:66,
+    INV_TOT:67, AMORT:68,
+    SPPRE:71, SPPOST:72, MAP:73,
+    RA:76,   // rows 76-82 = Lun-Dom Almuerzo
+    RC:85,   // rows 85-91 = Lun-Dom Cena
+    RF:94,   // rows 94-100 = Lun-Dom After
+  };
+
+  // Helper: reference a Supuestos value cell
+  const sup = row => `${S}!$B$${row}`;
+  // Helper: wrap as formula object
+  const f = formula => ({ formula });
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Snackz V2'; wb.created = new Date();
+
+  // ── SHEET 1: SUPUESTOS ──────────────────────────────────────────────────────
+  const ws = wb.addWorksheet('Supuestos', { tabColor:{ argb:'FF065F46' } });
+  ws.columns = [{ width:32 },{ width:18 },{ width:26 }];
+
+  const DARK  = 'FF0F172A', MID = 'FF1E293B', GOLD = 'FFFBBF24';
+  const WHITE = 'FFF1F5F9', MUTED = 'FF94A3B8', LABEL = 'FFCBD5E1';
+
+  const styleSection = row => {
+    row.getCell(1).font  = { bold:true, color:{ argb:GOLD }, size:10 };
+    row.getCell(1).fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
+    row.height = 18;
+  };
+  const styleParam = (row, isFormula=false) => {
+    row.getCell(1).font  = { color:{ argb:LABEL }, size:9 };
+    row.getCell(2).font  = { bold:true, color:{ argb: isFormula ? GOLD : WHITE }, size:9 };
+    row.getCell(3).font  = { color:{ argb:MUTED }, italic:true, size:8 };
+    [1,2,3].forEach(c => row.getCell(c).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK } });
+    row.getCell(2).border = { bottom:{ style:'thin', color:{ argb:'FF334155' } } };
+    row.height = 15;
+  };
+
+  // Build Supuestos rows in exact order matching R constants above
+  // Row 1
+  const titleRow = ws.addRow(['SNACKZ V2 — SUPUESTOS', '', 'Modificá col B para recalcular el modelo']);
+  titleRow.getCell(1).font = { bold:true, size:13, color:{ argb:GOLD } };
+  titleRow.getCell(3).font = { size:9, color:{ argb:MUTED }, italic:true };
+  [1,2,3].forEach(c => titleRow.getCell(c).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } });
+  titleRow.height = 22;
+  // Row 2 empty
+  ws.addRow([]);
+  // Row 3 section
+  styleSection(ws.addRow(['OPERACIÓN']));
+  // Rows 4-8
+  [
+    ['Capacidad (pax)', p.cap, ''],
+    ['Almuerzo activo (1=sí, 0=no)', p.tAlm?1:0, ''],
+    ['Cena activo (1=sí, 0=no)', p.tCena?1:0, ''],
+    ['After activo (1=sí, 0=no)', p.tAfter?1:0, ''],
+    ['Dependencia (0=50/50, 1=Monotributo)', p.mono?1:0, ''],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 9 empty
+  ws.addRow([]);
+  // Row 10 section
+  styleSection(ws.addRow(['ESTACIONALIDAD (decimal — 1.00 = 100%)']));
+  // Rows 11-22
+  const MN_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const seasDef = [55,65,85,90,95,100,105,100,95,90,95,80];
+  MN_NAMES.forEach((mn, i) => {
+    const el = document.getElementById(`s${i}`);
+    const val = el ? +(+el.value/100).toFixed(4) : seasDef[i]/100;
+    const row = ws.addRow([mn, val, `${Math.round(val*100)}% de ocupación`]);
+    styleParam(row);
+    row.getCell(2).numFmt = '0%';
+  });
+  // Row 23 empty
+  ws.addRow([]);
+  // Row 24 section
+  styleSection(ws.addRow(['PRICING (IVA incluido en ticket)']));
+  // Rows 25-29
+  [
+    ['Ticket Almuerzo ($)', p.tkA, 'precio con IVA'],
+    ['Ticket Cena ($)', p.tkC, 'precio con IVA'],
+    ['Ticket After ($)', p.tkF, 'precio con IVA'],
+    ['% en Negro (decimal)', p.pNeg, 'ej: 0.20 = 20%'],
+    ['Descuento pago Negro (decimal)', p.dNeg, 'ej: 0.10 = 10%'],
+  ].forEach(([lbl,val,note]) => { const row = ws.addRow([lbl,val,note]); styleParam(row); });
+  // Row 30 empty
+  ws.addRow([]);
+  // Row 31 section
+  styleSection(ws.addRow(['COSTOS VARIABLES (% sobre Rev Bruto)']));
+  // Rows 32-34
+  [
+    ['Food Cost (decimal)', p.fc, 'ej: 0.25 = 25%'],
+    ['Paper Cost (decimal)', p.pc, 'ej: 0.025 = 2.5%'],
+    ['% MP c/ factura (decimal)', p.cmpB, 'para crédito IVA en CMV'],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 35 empty
+  ws.addRow([]);
+  // Row 36 section
+  styleSection(ws.addRow(['STAFF']));
+  // Rows 37-40
+  [
+    ['Staff Almuerzo (personas)', p.sA, ''],
+    ['Staff Cena (personas)', p.sC, ''],
+    ['Staff After (personas)', p.sF, ''],
+    ['Costo / empleado ($/mes)', p.sue, 'costo total empleador'],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 41 empty
+  ws.addRow([]);
+  // Row 42 section
+  styleSection(ws.addRow(['COSTOS FIJOS MENSUALES']));
+  // Rows 43-49
+  [
+    ['Alquiler ($/mes, IVA incluido)', p.alq, ''],
+    ['Servicios ($/mes, IVA incluido)', p.srv, ''],
+    ['OPEX / Mant. (decimal sobre Rev)', p.opx, ''],
+    ['Marketing (decimal sobre Rev)', p.mkt, ''],
+    ['Processing (decimal sobre Rev Blanco)', p.prc, ''],
+    ['Est. Contable ($/mes, IVA incluido)', p.cnt, ''],
+    ['Software / Misc ($/mes, IVA incluido)', p.sft, ''],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 50 empty
+  ws.addRow([]);
+  // Row 51 section
+  styleSection(ws.addRow(['FACTURAS EXTRA (optimización fiscal)']));
+  // Rows 52-53
+  [
+    ['$ Facturas extra / mes (IVA incluido)', p.fex, 'monto bruto a facturar'],
+    ['Costo (% del IVA recuperado)', p.fexC, 'ej: 0.50 = 50% del IVA como costo'],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 54 empty
+  ws.addRow([]);
+  // Row 55 section
+  styleSection(ws.addRow(['IMPUESTOS']));
+  // Rows 56-59
+  [
+    ['IVA (decimal)', 0.21, 'fijo Argentina'],
+    ['IIBB (decimal)', p.iibb, 'sobre Rev Blanco'],
+    ['Déb/Créd Bancarios (decimal)', p.dbc, 'sobre Rev Blanco'],
+    ['Ganancias SAS (decimal)', p.gan, 'sobre base imponible neta'],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 60 empty
+  ws.addRow([]);
+  // Row 61 section
+  styleSection(ws.addRow(['INVERSIÓN (vida útil entre paréntesis)']));
+  // Rows 62-66
+  [
+    ['Equip. cocina (5 años)', p.invCocina, ''],
+    ['Mobiliario / barra (10 años)', p.invMob, ''],
+    ['Obra civil (10 años)', p.invObra, ''],
+    ['Branding / diseño (3 años)', p.invBrand, ''],
+    ['Habilitaciones (5 años)', p.invHab, ''],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 67: TOTAL (formula)
+  { const row = ws.addRow(['TOTAL inversión (calculado)', { formula:`=B${R.INVC}+B${R.INVM}+B${R.INVO}+B${R.INVB}+B${R.INVH}` }, 'suma de las 5 líneas']); styleParam(row, true); }
+  // Row 68: Amort/mes (formula)
+  { const row = ws.addRow(['Amortización / mes prom. (calculado)', { formula:`=B${R.INVC}/60+B${R.INVM}/120+B${R.INVO}/120+B${R.INVB}/36+B${R.INVH}/60` }, 'Cocina+Hab /60m, Mob+Obra /120m, Brand /36m']); styleParam(row, true); }
+  // Row 69 empty
+  ws.addRow([]);
+  // Row 70 section
+  styleSection(ws.addRow(['SPLIT INVERSOR / OPERADOR']));
+  // Rows 71-73
+  [
+    ['Split Pre-Payback (decimal)', p.spPre, 'ej: 0.80 = 80% del cash va al inversor'],
+    ['Split Post-Payback (decimal)', p.spPost, 'ej: 0.25 = 25% post-recupero'],
+    ['Mes Apertura (1=Ene … 12=Dic)', p.mAp, ''],
+  ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
+  // Row 74 empty
+  ws.addRow([]);
+  // Row 75 section
+  styleSection(ws.addRow(['ROTACIONES — ALMUERZO (vueltas/día)']));
+  // Rows 76-82
+  const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const rADef=[0,0.5,0.6,0.8,0.7,0.5,0.6], rCDef=[0,0.8,1.0,1.8,2.8,2.5,1.5], rFDef=[0,0,0,0.5,1.5,1.5,0.5];
+  DAYS.forEach((d,i) => { const el=document.getElementById(`rA${i}`); styleParam(ws.addRow([`Almuerzo ${d}`, el?+el.value:rADef[i], ''])); });
+  // Row 83 empty
+  ws.addRow([]);
+  // Row 84 section
+  styleSection(ws.addRow(['ROTACIONES — CENA (vueltas/día)']));
+  // Rows 85-91
+  DAYS.forEach((d,i) => { const el=document.getElementById(`rC${i}`); styleParam(ws.addRow([`Cena ${d}`, el?+el.value:rCDef[i], ''])); });
+  // Row 92 empty
+  ws.addRow([]);
+  // Row 93 section
+  styleSection(ws.addRow(['ROTACIONES — AFTER (vueltas/día)']));
+  // Rows 94-100
+  DAYS.forEach((d,i) => { const el=document.getElementById(`rF${i}`); styleParam(ws.addRow([`After ${d}`, el?+el.value:rFDef[i], ''])); });
+
+  // ── SHEET 2: P&L REAL (60 MESES) ──────────────────────────────────────────
+  const PR = 'P&L Real';
+  const wm = wb.addWorksheet(PR, { tabColor:{ argb:'FF1D4ED8' } });
+  wm.columns = [
+    { width:6  },{ width:7  },{ width:8  },{ width:9  },{ width:11 },{ width:11 },{ width:12 },
+    { width:11 },{ width:12 },{ width:12 },{ width:12 },{ width:11 },{ width:11 },{ width:11 },
+    { width:12 },{ width:12 },{ width:11 },{ width:12 },{ width:12 },{ width:11 },{ width:11 },
+    { width:11 },{ width:11 },{ width:10 },{ width:12 },{ width:9  },{ width:11 },{ width:11 },
+    { width:11 },{ width:10 },{ width:10 },{ width:10 },{ width:13 },{ width:12 },{ width:14 },
+    { width:12 },{ width:12 },{ width:12 },{ width:11 },{ width:11 },{ width:12 },{ width:11 },
+    { width:12 },{ width:13 },{ width:12 },{ width:9  },{ width:11 },{ width:11 },
+  ];
+  wm.addRow([
+    'Mes#','Mes','Cal.Idx','Estac.%','Covers Alm','Covers Cena','Covers After','Covers Tot',
+    'Rev Bruto','Rev Blanco','Rev Negro','Food Cost','Paper Cost','CMV','Gross Profit','Gross Mrgn%',
+    'Labor','Labor Blanco','Labor Negro','Occupancy','OPEX','Marketing','Processing','SG&A',
+    'EBITDA','EBITDA%','IVA Débito','IVA Crédito','IVA a Pagar','IIBB','Déb/Créd','Fex Costo',
+    'Amortización','Rev Bl Neto','Gtos Deduc.','Base Gan.','Quebranto','Base c/Qbr.','Imp.Gan.','Tot.Imp.',
+    'Neto Real','Net Mrgn%','Cash Mes','Cash Acum','Inv.Acum.','Split%','Inv.Share','Op.Share',
+  ]);
+  wm.getRow(1).eachCell(c => {
+    c.font = { bold:true, color:{ argb:GOLD }, size:8 };
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
+    c.alignment = { horizontal:'center', wrapText:true };
+    c.border = { bottom:{ style:'medium', color:{ argb:'FF334155' } } };
+  });
+  wm.getRow(1).height = 28;
+
+  const pctCols  = new Set([4,16,26,42,46]);
+  const boldCols = new Set([25,41,43,44]);
+
+  for (let i = 0; i < 60; i++) {
+    const r    = i + 2;
+    const prev = r - 1;
+    const rowData = [
+      i + 1,
+      f(`=INDEX({"Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"},MOD(${sup(R.MAP)}-1+${i},12)+1)`),
+      f(`=MOD(${sup(R.MAP)}-1+${i},12)`),
+      f(`=INDEX(${S}!$B$${R.SEAS}:$B$${R.SEAS+11},C${r}+1)`),
+      f(`=IF(${sup(R.TALM)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RA}:$B$${R.RA+6})*4.33*D${r},0)`),
+      f(`=IF(${sup(R.TCENA)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RC}:$B$${R.RC+6})*4.33*D${r},0)`),
+      f(`=IF(${sup(R.TAFTER)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RF}:$B$${R.RF+6})*4.33*D${r},0)`),
+      f(`=E${r}+F${r}+G${r}`),
+      f(`=J${r}+K${r}`),
+      f(`=E${r}*(1-${sup(R.PNEG)})*${sup(R.TKA)}+F${r}*(1-${sup(R.PNEG)})*${sup(R.TKC)}+G${r}*(1-${sup(R.PNEG)})*${sup(R.TKF)}`),
+      f(`=(E${r}*${sup(R.TKA)}+F${r}*${sup(R.TKC)}+G${r}*${sup(R.TKF)})*${sup(R.PNEG)}*(1-${sup(R.DNEG)})`),
+      f(`=I${r}*${sup(R.FC)}`),
+      f(`=I${r}*${sup(R.PC)}`),
+      f(`=L${r}+M${r}`),
+      f(`=I${r}-N${r}`),
+      f(`=IF(I${r}>0,O${r}/I${r},0)`),
+      f(`=(${sup(R.TALM)}*${sup(R.SA)}+${sup(R.TCENA)}*${sup(R.SC)}+${sup(R.TAFTER)}*${sup(R.SF)})*${sup(R.SUE)}`),
+      f(`=IF(${sup(R.MONO)}=1,Q${r},Q${r}*0.5)`),
+      f(`=IF(${sup(R.MONO)}=1,0,Q${r}*0.5)`),
+      f(`=${sup(R.ALQ)}+${sup(R.SRV)}`),
+      f(`=I${r}*${sup(R.OPX)}`),
+      f(`=I${r}*${sup(R.MKT)}`),
+      f(`=J${r}*${sup(R.PRC)}`),
+      f(`=${sup(R.CNT)}+${sup(R.SFT)}`),
+      f(`=O${r}-Q${r}-T${r}-U${r}-V${r}-W${r}-X${r}`),
+      f(`=IF(I${r}>0,Y${r}/I${r},0)`),
+      f(`=J${r}/(1+${sup(R.IVA)})*${sup(R.IVA)}`),
+      f(`=(N${r}*${sup(R.CMPB)}+${sup(R.ALQ)}+${sup(R.SRV)}+V${r}+U${r}+${sup(R.SFT)}+${sup(R.CNT)}+${sup(R.FEX)})*${sup(R.IVA)}/(1+${sup(R.IVA)})`),
+      f(`=MAX(0,AA${r}-AB${r})`),
+      f(`=J${r}*${sup(R.IIBB)}`),
+      f(`=J${r}*${sup(R.DBC)}`),
+      f(`=${sup(R.FEX)}*${sup(R.IVA)}/(1+${sup(R.IVA)})*${sup(R.FEXC)}`),
+      f(`=IF(${i}<36,${sup(R.INVB)}/36,0)+IF(${i}<60,(${sup(R.INVC)}+${sup(R.INVH)})/60,0)+IF(${i}<120,(${sup(R.INVM)}+${sup(R.INVO)})/120,0)`),
+      f(`=J${r}/(1+${sup(R.IVA)})`),
+      f(`=N${r}*${sup(R.CMPB)}/(1+${sup(R.IVA)})+R${r}+${sup(R.ALQ)}/(1+${sup(R.IVA)})+${sup(R.SRV)}/(1+${sup(R.IVA)})+U${r}/(1+${sup(R.IVA)})+V${r}/(1+${sup(R.IVA)})+${sup(R.CNT)}/(1+${sup(R.IVA)})+${sup(R.SFT)}/(1+${sup(R.IVA)})+W${r}+${sup(R.FEX)}/(1+${sup(R.IVA)})+AD${r}+AE${r}+AG${r}`),
+      f(`=AH${r}-AI${r}`),
+      i === 0 ? 0 : f(`=AK${prev}+IF(AJ${prev}<0,ABS(AJ${prev}),-MIN(AK${prev},MAX(0,AJ${prev})))`),
+      f(`=IF(AJ${r}<0,0,MAX(0,AJ${r}-AK${r}))`),
+      f(`=MAX(0,AL${r})*${sup(R.GAN)}`),
+      f(`=AC${r}+AD${r}+AE${r}+AM${r}+AF${r}`),
+      f(`=Y${r}-AN${r}`),
+      f(`=IF(I${r}>0,AO${r}/I${r},0)`),
+      f(`=Y${r}-AC${r}-AD${r}-AE${r}-AM${r}-AF${r}`),
+      i === 0 ? f(`=AQ${r}-${sup(R.INV_TOT)}`) : f(`=AR${prev}+AQ${r}`),
+      i === 0 ? f(`=IF(AQ${r}>0,AQ${r}*AT${r},0)`) : f(`=AS${prev}+IF(AQ${r}>0,AQ${r}*AT${r},0)`),
+      i === 0 ? f(`=IF(0>=${sup(R.INV_TOT)},${sup(R.SPPOST)},${sup(R.SPPRE)})`) : f(`=IF(AS${prev}>=${sup(R.INV_TOT)},${sup(R.SPPOST)},${sup(R.SPPRE)})`),
+      f(`=IF(AQ${r}>0,AQ${r}*AT${r},0)`),
+      f(`=AQ${r}-AU${r}`),
+    ];
+    wm.addRow(rowData);
+    const row = wm.getRow(r);
+    row.height = 15;
+    row.eachCell({ includeEmpty:false }, (cell, colIdx) => {
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: i%2===0 ? DARK : MID } };
+      cell.font = boldCols.has(colIdx)
+        ? { bold:true, size:9, color:{ argb: colIdx===43||colIdx===44 ? GOLD : 'FF4ADE80' } }
+        : { size:9, color:{ argb:WHITE } };
+      cell.alignment = { horizontal:'right' };
+      if (pctCols.has(colIdx)) cell.numFmt = '0.0%';
+      else if (colIdx >= 5 && colIdx !== 2 && colIdx !== 3) cell.numFmt = '#,##0';
+    });
+    row.getCell(1).alignment = { horizontal:'center' };
+    row.getCell(2).alignment = { horizontal:'center' };
+    row.getCell(2).numFmt = '@';
+  }
+  wm.views = [{ state:'frozen', xSplit:2, ySplit:1, topLeftCell:'C2', activeCell:'I2' }];
+
+  // ── SHEET 3: P&L CONTABLE (60M) ─────────────────────────────────────────────
+  const wc = wb.addWorksheet('P&L Contable', { tabColor:{ argb:'FF7C3AED' } });
+  wc.columns = [
+    { width:6 },{ width:7 },{ width:16 },{ width:15 },{ width:13 },
+    { width:13 },{ width:13 },{ width:13 },{ width:13 },{ width:13 },
+    { width:13 },{ width:13 },{ width:15 },{ width:13 },{ width:15 },
+    { width:14 },{ width:13 },{ width:13 },{ width:13 },{ width:16 },
+  ];
+  wc.addRow([
+    'Mes#','Mes','Rev Bl Neto IVA','CMV Fact Neto','Labor Bl',
+    'Alq Neto','Srv Neto','OPEX Neto','Mkt Neto','SGA Neto',
+    'Processing','Fex Neto','IIBB+Déb/Créd','Amortiz.','Tot. Deduc.',
+    'Base Impon.','Quebranto','Base c/Qbr.','Imp. Gan.','Res. Contable',
+  ]);
+  wc.getRow(1).eachCell(c => {
+    c.font = { bold:true, color:{ argb:GOLD }, size:8 };
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
+    c.alignment = { horizontal:'center', wrapText:true };
+    c.border = { bottom:{ style:'medium', color:{ argb:'FF334155' } } };
+  });
+  wc.getRow(1).height = 28;
+
+  for (let i = 0; i < 60; i++) {
+    const r = i + 2;
+    wc.addRow([
+      i + 1,
+      { formula:`='${PR}'!B${r}` },
+      { formula:`='${PR}'!AH${r}` },
+      { formula:`='${PR}'!N${r}*${sup(R.CMPB)}/(1+${sup(R.IVA)})` },
+      { formula:`='${PR}'!R${r}` },
+      { formula:`=${sup(R.ALQ)}/(1+${sup(R.IVA)})` },
+      { formula:`=${sup(R.SRV)}/(1+${sup(R.IVA)})` },
+      { formula:`='${PR}'!U${r}/(1+${sup(R.IVA)})` },
+      { formula:`='${PR}'!V${r}/(1+${sup(R.IVA)})` },
+      { formula:`='${PR}'!X${r}/(1+${sup(R.IVA)})` },
+      { formula:`='${PR}'!W${r}` },
+      { formula:`=${sup(R.FEX)}/(1+${sup(R.IVA)})` },
+      { formula:`='${PR}'!AD${r}+'${PR}'!AE${r}` },
+      { formula:`='${PR}'!AG${r}` },
+      { formula:`='${PR}'!AI${r}` },
+      { formula:`='${PR}'!AJ${r}` },
+      { formula:`='${PR}'!AK${r}` },
+      { formula:`='${PR}'!AL${r}` },
+      { formula:`='${PR}'!AM${r}` },
+      { formula:`='${PR}'!AH${r}-'${PR}'!AI${r}-'${PR}'!AM${r}` },
+    ]);
+    const row = wc.getRow(r);
+    row.height = 15;
+    row.eachCell({ includeEmpty:false }, (cell, colIdx) => {
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: i%2===0 ? DARK : MID } };
+      cell.font = colIdx===20 ? { bold:true, size:9, color:{ argb:'FF4ADE80' } } : { size:9, color:{ argb:WHITE } };
+      cell.alignment = { horizontal:'right' };
+      if (colIdx >= 3) cell.numFmt = '#,##0';
+    });
+    row.getCell(1).alignment = { horizontal:'center' };
+    row.getCell(2).alignment = { horizontal:'center' };
+    row.getCell(2).numFmt = '@';
+  }
+  wc.views = [{ state:'frozen', xSplit:2, ySplit:1, topLeftCell:'C2', activeCell:'C2' }];
+
+  // ── SHEET 4: CASH FLOW (60M) ─────────────────────────────────────────────────
+  const wcf = wb.addWorksheet('Cash Flow', { tabColor:{ argb:'FF0891B2' } });
+  wcf.columns = [
+    { width:6 },{ width:7 },{ width:13 },{ width:13 },{ width:14 },
+    { width:13 },{ width:13 },{ width:13 },{ width:14 },{ width:12 },{ width:13 },
+  ];
+  wcf.addRow([
+    'Mes#','Mes','Rev Bruto','EBITDA','Tot Impuestos',
+    'Neto Real','CF Negro Neto','CF Blanco Neto','Cash Mes','Cash Acum','Inv/Op Split',
+  ]);
+  wcf.getRow(1).eachCell(c => {
+    c.font = { bold:true, color:{ argb:GOLD }, size:8 };
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
+    c.alignment = { horizontal:'center', wrapText:true };
+    c.border = { bottom:{ style:'medium', color:{ argb:'FF334155' } } };
+  });
+  wcf.getRow(1).height = 28;
+
+  for (let i = 0; i < 60; i++) {
+    const r = i + 2;
+    wcf.addRow([
+      i + 1,
+      { formula:`='${PR}'!B${r}` },
+      { formula:`='${PR}'!I${r}` },
+      { formula:`='${PR}'!Y${r}` },
+      { formula:`='${PR}'!AN${r}` },
+      { formula:`='${PR}'!AO${r}` },
+      { formula:`='${PR}'!K${r}-'${PR}'!N${r}*${sup(R.PNEG)}` },
+      { formula:`='${PR}'!J${r}-'${PR}'!N${r}*(1-${sup(R.PNEG)})-'${PR}'!Q${r}-'${PR}'!T${r}-'${PR}'!U${r}-'${PR}'!V${r}-'${PR}'!W${r}-'${PR}'!X${r}-'${PR}'!AC${r}-'${PR}'!AD${r}-'${PR}'!AE${r}-'${PR}'!AM${r}` },
+      { formula:`='${PR}'!AQ${r}` },
+      { formula:`='${PR}'!AR${r}` },
+      { formula:`="Inv:"&TEXT('${PR}'!AU${r},"#,##0")&" | Op:"&TEXT('${PR}'!AV${r},"#,##0")` },
+    ]);
+    const row = wcf.getRow(r);
+    row.height = 15;
+    row.eachCell({ includeEmpty:false }, (cell, colIdx) => {
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: i%2===0 ? DARK : MID } };
+      cell.font = colIdx===9||colIdx===10 ? { bold:true, size:9, color:{ argb: colIdx===10 ? GOLD : 'FF4ADE80' } } : { size:9, color:{ argb:WHITE } };
+      cell.alignment = { horizontal:'right' };
+      if (colIdx >= 3 && colIdx <= 9) cell.numFmt = '#,##0';
+    });
+    row.getCell(1).alignment = { horizontal:'center' };
+    row.getCell(2).alignment = { horizontal:'center' };
+    row.getCell(2).numFmt = '@';
+  }
+  wcf.views = [{ state:'frozen', xSplit:2, ySplit:1, topLeftCell:'C2', activeCell:'C2' }];
+
+  // ── SHEET 5: INVERSOR ────────────────────────────────────────────────────────
+  const wi = wb.addWorksheet('Inversor', { tabColor:{ argb:'FFFBBF24' } });
+  wi.columns = [{ width:32 },{ width:15 },{ width:15 },{ width:15 },{ width:15 },{ width:15 }];
+  const wiT = wi.addRow(['ANÁLISIS INVERSOR — 5 AÑOS']);
+  wiT.getCell(1).font = { bold:true, size:13, color:{ argb:GOLD } };
+  wiT.getCell(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
+  wiT.height = 22;
+  wi.addRow([]);
+  styleSection(wi.addRow(['INVERSIÓN']));
+  styleParam(wi.addRow(['Capital total invertido', { formula:`=${sup(R.INV_TOT)}` }, '']));
+  styleParam(wi.addRow(['Split pre-payback (% para inversor)', { formula:`=${sup(R.SPPRE)}` }, '']));
+  styleParam(wi.addRow(['Split post-payback (% para inversor)', { formula:`=${sup(R.SPPOST)}` }, '']));
+  wi.addRow([]);
+  styleSection(wi.addRow(['RETORNO POR AÑO']));
+  wi.addRow(['','Año 1','Año 2','Año 3','Año 4','Año 5']).eachCell((c,ci) => {
+    if(ci===1) { c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; return; }
+    c.font={bold:true,color:{argb:GOLD},size:9}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
+  });
+  const wiYrM = [
+    { label:'Inversor cobró (año)', fn: yr => `=SUM('${PR}'!AU${2+yr*12}:AU${13+yr*12})` },
+    { label:'Inversor acum. (al fin del año)', fn: yr => `=SUM('${PR}'!AU$2:AU${13+yr*12})` },
+    { label:'Operador cobró (año)', fn: yr => `=SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
+    { label:'Operador acum. (al fin del año)', fn: yr => `=SUM('${PR}'!AV$2:AV${13+yr*12})` },
+    { label:'Cash Acum. (fin de año)', fn: yr => `='${PR}'!AR${13+yr*12}` },
+    { label:'Revenue Bruto (año)', fn: yr => `=SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
+    { label:'EBITDA (año)', fn: yr => `=SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
+    { label:'Neto Real (año)', fn: yr => `=SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
+  ];
+  wiYrM.forEach((m, mi) => {
+    const row = wi.addRow([m.label]);
+    row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+    for(let yr=0;yr<5;yr++){
+      const cell=row.getCell(yr+2);
+      cell.value={formula:m.fn(yr)}; cell.font={bold:true,color:{argb:WHITE},size:9};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:mi%2===0?DARK:MID}};
+      cell.numFmt='#,##0'; cell.alignment={horizontal:'right'};
+    }
+  });
+  wi.addRow([]);
+  styleSection(wi.addRow(['RESUMEN 5 AÑOS']));
+  [
+    ['Inversor cobró total', `=SUM('${PR}'!AU2:AU61)`],
+    ['Inversión original', `=${sup(R.INV_TOT)}`],
+    ['Ganancia neta inversor', `=SUM('${PR}'!AU2:AU61)-${sup(R.INV_TOT)}`],
+    ['Múltiplo (x veces)', `=IF(${sup(R.INV_TOT)}>0,SUM('${PR}'!AU2:AU61)/${sup(R.INV_TOT)},0)`, '0.00"x"'],
+    ['Operador cobró total', `=SUM('${PR}'!AV2:AV61)`],
+    ['Cash total generado (60M)', `=SUM('${PR}'!AQ2:AQ61)`],
+  ].forEach(([lbl, formula, fmt], mi) => {
+    const row=wi.addRow([lbl,{formula}]);
+    row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+    row.getCell(2).font={bold:true,color:{argb:mi===3?GOLD:WHITE},size:10};
+    row.getCell(2).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+    row.getCell(2).numFmt=fmt||'#,##0'; row.getCell(2).alignment={horizontal:'right'};
+  });
+
+  // ── SHEET 6: OPERADOR ────────────────────────────────────────────────────────
+  const wo = wb.addWorksheet('Operador', { tabColor:{ argb:'FF4ADE80' } });
+  wo.columns = [{ width:32 },{ width:15 },{ width:15 },{ width:15 },{ width:15 },{ width:15 }];
+  const woT = wo.addRow(['ANÁLISIS OPERADOR — 5 AÑOS']);
+  woT.getCell(1).font={bold:true,size:13,color:{argb:'FF4ADE80'}}; woT.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; woT.height=22;
+  wo.addRow([]);
+  styleSection(wo.addRow(['RETORNO OPERADOR POR AÑO']));
+  wo.addRow(['','Año 1','Año 2','Año 3','Año 4','Año 5']).eachCell((c,ci) => {
+    if(ci===1){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}};return;}
+    c.font={bold:true,color:{argb:'FF4ADE80'},size:9}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
+  });
+  const woYrM = [
+    { label:'Op Share (año)', fn: yr=>`=SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
+    { label:'Op Share acum.', fn: yr=>`=SUM('${PR}'!AV$2:AV${13+yr*12})` },
+    { label:'Revenue Bruto (año)', fn: yr=>`=SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
+    { label:'EBITDA (año)', fn: yr=>`=SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
+    { label:'Neto Real (año)', fn: yr=>`=SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
+    { label:'EBITDA Margin % prom.', fn: yr=>`=AVERAGE('${PR}'!Z${2+yr*12}:Z${13+yr*12})`, pct:true },
+    { label:'Net Margin % prom.', fn: yr=>`=AVERAGE('${PR}'!AP${2+yr*12}:AP${13+yr*12})`, pct:true },
+  ];
+  woYrM.forEach((m, mi) => {
+    const row=wo.addRow([m.label]);
+    row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+    for(let yr=0;yr<5;yr++){
+      const cell=row.getCell(yr+2);
+      cell.value={formula:m.fn(yr)}; cell.font={bold:true,color:{argb:WHITE},size:9};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:mi%2===0?DARK:MID}};
+      cell.numFmt=m.pct?'0.0%':'#,##0'; cell.alignment={horizontal:'right'};
+    }
+  });
+  wo.addRow([]);
+  styleSection(wo.addRow(['PROMEDIOS MENSUALES (60 MESES)']));
+  [
+    ['Revenue Bruto prom/mes', `=AVERAGE('${PR}'!I2:I61)`],
+    ['Covers totales prom/mes', `=AVERAGE('${PR}'!H2:H61)`],
+    ['EBITDA prom/mes', `=AVERAGE('${PR}'!Y2:Y61)`],
+    ['Neto Real prom/mes', `=AVERAGE('${PR}'!AO2:AO61)`],
+    ['EBITDA Margin % prom.', `=AVERAGE('${PR}'!Z2:Z61)`, true],
+    ['Net Margin % prom.', `=AVERAGE('${PR}'!AP2:AP61)`, true],
+    ['Op Share prom/mes', `=AVERAGE('${PR}'!AV2:AV61)`],
+    ['Op Share total 5 años', `=SUM('${PR}'!AV2:AV61)`],
+  ].forEach(([lbl, formula, pct], mi) => {
+    const row=wo.addRow([lbl,{formula}]);
+    row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+    row.getCell(2).font={bold:true,color:{argb:WHITE},size:9};
+    row.getCell(2).fill={type:'pattern',pattern:'solid',fgColor:{argb:mi%2===0?DARK:MID}};
+    row.getCell(2).numFmt=pct?'0.0%':'#,##0'; row.getCell(2).alignment={horizontal:'right'};
+  });
+
+  // ── SHEET 7: ESCENARIOS (valores calculados en JS) ──────────────────────────
+  const we = wb.addWorksheet('Escenarios', { tabColor:{ argb:'FFF87171' } });
+  we.columns = [{ width:28 },{ width:14 },{ width:14 },{ width:14 },{ width:14 },{ width:14 }];
+  const scaleR = (rots, fac) => rots.map((r,i) => i===0 ? 0 : Math.max(0, +(r*fac).toFixed(1)));
+  const scenarioDefs = [
+    { name:'⬇⬇ Pesimista',    argb:'FFF87171', changes:{ rC:scaleR(p.rC,0.6), rA:scaleR(p.rA,0.5), tkC:Math.round(p.tkC*0.88), tkA:Math.round(p.tkA*0.88), fc:Math.min(0.45,p.fc+0.04) } },
+    { name:'⬇ Conservador',        argb:'FFFBBF24', changes:{ rC:scaleR(p.rC,0.8), rA:scaleR(p.rA,0.75), tkC:Math.round(p.tkC*0.95), tkA:Math.round(p.tkA*0.95), fc:Math.min(0.45,p.fc+0.02) } },
+    { name:'→ Base (tu plan)',      argb:'FF38BDF8', changes:{} },
+    { name:'⬆ Optimista',          argb:'FF4ADE80', changes:{ rC:scaleR(p.rC,1.15), rA:scaleR(p.rA,1.2), tkC:Math.round(p.tkC*1.05), fc:Math.max(0.18,p.fc-0.015) } },
+    { name:'⬆⬆ Muy Optimista',argb:'FF22D3EE', changes:{ rC:scaleR(p.rC,1.3), rA:scaleR(p.rA,1.4), rF:[0,0,0,0.5,1.5,1.5,0.5], tAfter:true, sF:2, tkC:Math.round(p.tkC*1.1), tkA:Math.round(p.tkA*1.05), fc:Math.max(0.18,p.fc-0.02) } },
+  ];
+  const fullSim = (changes) => {
+    const p2={...p}; p2.rA=[...p.rA]; p2.rC=[...p.rC]; p2.rF=[...p.rF]; p2.seas=[...p.seas];
+    Object.keys(changes).forEach(k=>{ p2[k]=Array.isArray(changes[k])?[...changes[k]]:changes[k]; });
+    const avg2={};
+    const ms2=Array.from({length:12},(_,i)=>calcMonth(p2,i));
+    const nk=Object.keys(ms2[0]).filter(k=>typeof ms2[0][k]==='number');
+    for(const k of nk) avg2[k]=ms2.reduce((s,m)=>s+m[k],0)/12;
+    return {avg:avg2, data:calc60(p2), p:p2};
+  };
+  const scResults = scenarioDefs.map(sc => ({...sc, ...fullSim(sc.changes)}));
+  const weH = we.addRow(['',...scenarioDefs.map(s=>s.name)]);
+  weH.height=20;
+  weH.eachCell((c,ci) => {
+    if(ci===1){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}};return;}
+    c.font={bold:true,color:{argb:scenarioDefs[ci-2].argb},size:10};
+    c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
+  });
+  const eMetrics = [
+    { label:'Covers / mes prom.',     fn: r=>Math.round(r.avg.cvTot),              fmt:'int' },
+    { label:'Revenue Bruto / mes',    fn: r=>Math.round(r.avg.revBruto),           fmt:'money' },
+    { label:'Gross Profit / mes',     fn: r=>Math.round(r.avg.grossProfit),        fmt:'money' },
+    { label:'Gross Margin %',         fn: r=>r.avg.grossMargin,                    fmt:'pct' },
+    { label:'EBITDA / mes',           fn: r=>Math.round(r.avg.ebitda),             fmt:'money' },
+    { label:'EBITDA Margin %',        fn: r=>r.avg.ebitdaM,                        fmt:'pct' },
+    { label:'Total Impuestos / mes',  fn: r=>Math.round(r.avg.totImp),             fmt:'money' },
+    { label:'RESULTADO NETO / mes',   fn: r=>Math.round(r.avg.netoReal),           fmt:'money', bold:true },
+    { label:'Net Margin %',           fn: r=>r.avg.netMargin,                      fmt:'pct' },
+    { label:'Payback Inversor',       fn: r=>r.data.invPayback?`M${r.data.invPayback}`:'N/A', fmt:'text' },
+    { label:'Múltiplo 5 Años', fn: r=>p.inv>0?r.data.ms.reduce((s,m)=>s+m.invSh,0)/p.inv:0, fmt:'x' },
+    { label:'Operador Año 1',    fn: r=>Math.round(r.data.ms.slice(0,12).reduce((s,m)=>s+m.opSh,0)), fmt:'money' },
+    { label:'Operador Año 2',    fn: r=>Math.round(r.data.ms.slice(12,24).reduce((s,m)=>s+m.opSh,0)), fmt:'money' },
+    { label:'Operador Año 3',    fn: r=>Math.round(r.data.ms.slice(24,36).reduce((s,m)=>s+m.opSh,0)), fmt:'money' },
+    { label:'Operador 5 Años',   fn: r=>Math.round(r.data.ms.reduce((s,m)=>s+m.opSh,0)),  fmt:'money' },
+    { label:'Inversor 5 Años',   fn: r=>Math.round(r.data.ms.reduce((s,m)=>s+m.invSh,0)), fmt:'money' },
+  ];
+  eMetrics.forEach((m, mi) => {
+    const row=we.addRow([m.label,...scResults.map(r=>m.fn(r))]);
+    row.getCell(1).font={bold:!!m.bold,color:{argb:LABEL},size:9};
+    row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+    for(let si=0;si<5;si++){
+      const cell=row.getCell(si+2);
+      const v=m.fn(scResults[si]);
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:mi%2===0?DARK:MID}};
+      cell.alignment={horizontal:'right'};
+      if(m.fmt==='pct'){ cell.value=typeof v==='number'?v:0; cell.numFmt='0.0%'; cell.font={bold:!!m.bold,size:9,color:{argb:(typeof v==='number'&&v<0)?'FFF87171':'FFF1F5F9'}}; }
+      else if(m.fmt==='money'||m.fmt==='int'){ cell.value=typeof v==='number'?v:0; cell.numFmt='#,##0'; cell.font={bold:!!m.bold,size:9,color:{argb:(typeof v==='number'&&v<0)?'FFF87171':m.bold?'FF4ADE80':'FFF1F5F9'}}; }
+      else if(m.fmt==='x'){ cell.value=typeof v==='number'?+v.toFixed(2):0; cell.numFmt='0.00"x"'; cell.font={bold:!!m.bold,size:9,color:{argb:(typeof v==='number'&&v>=1)?'FF4ADE80':'FFF87171'}}; }
+      else{ cell.value=v; cell.numFmt='@'; cell.font={size:9,color:{argb:v==='N/A'?'FFF87171':'FF4ADE80'}}; }
+    }
+  });
+
+  // ── DESCARGA ────────────────────────────────────────────────────────────────
+  const buf  = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'Snackz-Modelo-Financiero.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ===== EVENTS =====

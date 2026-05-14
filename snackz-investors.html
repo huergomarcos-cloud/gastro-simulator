@@ -316,6 +316,14 @@ footer a:hover { color: #fff; }
 .esc-panel.visible { display: block; animation: fadeSlide 0.4s cubic-bezier(0.22,1,0.36,1); }
 @keyframes fadeSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
+/* ── FOTO GRID 3 COL ── */
+.refs-header { padding: 40px 32px 12px; max-width: 960px; margin: 0 auto; }
+.refs-note { font-size: 12px; color: var(--light); margin-top: 4px; line-height: 1.6; }
+.foto-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.fg-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; transition: transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+.fg-img:hover { transform: scale(1.03); }
+#esc-panel-wrap { margin-top: 28px; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 720px) {
   #hero .container, .two-col, .team-grid, .kpi-row, .panel-top, .inv-grid, .estado-grid { grid-template-columns: 1fr; }
@@ -337,11 +345,11 @@ footer a:hover { color: #fff; }
     <a href="#concepto">Concepto</a>
     <a href="#equipo">Equipo</a>
     <a href="#formato">Operación</a>
-    <a href="#escenarios">Escenarios</a>
+    <a href="#escenarios-preview">Escenarios</a>
     <a href="#inversion">Inversión</a>
     <a href="#simulador">Simulador</a>
   </div>
-  <a href="#escenarios" class="nav-cta">Ver escenarios ↓</a>
+  <a href="#escenarios-preview" class="nav-cta">Ver escenarios ↓</a>
 </nav>
 
 <!-- ── HERO ── -->
@@ -355,7 +363,7 @@ footer a:hover { color: #fff; }
         Prime cost ≤51%. Inversión: $250–300K. Split 80/25 hasta payback, luego 25% perpetuo.
       </p>
       <div class="hero-ctas">
-        <a href="#escenarios" class="btn-primary">Ver escenarios financieros</a>
+        <a href="#escenarios-preview" class="btn-primary">Ver escenarios financieros</a>
         <a href="#concepto" class="btn-secondary">El concepto</a>
       </div>
     </div>
@@ -438,80 +446,6 @@ footer a:hover { color: #fff; }
   </div>
 </section>
 
-<!-- ── ESCENARIOS PREVIEW ── -->
-<section id="escenarios-preview">
-  <div class="container">
-    <div class="section-label">Cuatro escenarios</div>
-    <div class="grad-line"></div>
-    <h2 class="section-title">Elegí tu escenario</h2>
-    <p class="section-sub">Mismo local, misma operación. La diferencia: apertura del After y optimización fiscal.</p>
-    <div class="esc-preview-grid">
-      <div class="esc-preview-card reveal reveal-d1" onclick="goToEsc(1)">
-        <div class="epc-num">Escenario 1</div>
-        <div class="epc-name">Solo Cena<br>Sin optimización</div>
-        <div class="epc-main">$14,310<span>/mes neto</span></div>
-        <div class="epc-row"><span>Payback</span><strong>M28</strong></div>
-        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.41x</strong></div>
-        <div class="epc-row"><span>Inversión</span><strong>$273,800</strong></div>
-        <div class="epc-cta">Ver escenario completo →</div>
-      </div>
-      <div class="esc-preview-card reveal reveal-d2" onclick="goToEsc(2)">
-        <div class="epc-num">Escenario 2 ★</div>
-        <div class="epc-name">Solo Cena<br>Con optimización fiscal</div>
-        <div class="epc-main">$18,754<span>/mes neto</span></div>
-        <div class="epc-row"><span>Payback</span><strong>M21</strong></div>
-        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.60x</strong></div>
-        <div class="epc-row"><span>Inversión</span><strong>$273,800</strong></div>
-        <div class="epc-cta">Ver escenario completo →</div>
-      </div>
-      <div class="esc-preview-card reveal reveal-d3" onclick="goToEsc(3)">
-        <div class="epc-num">Escenario 3</div>
-        <div class="epc-name">Cena + After<br>Sin optimización</div>
-        <div class="epc-main">$19,222<span>/mes neto</span></div>
-        <div class="epc-row"><span>Payback</span><strong>M24</strong></div>
-        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.47x</strong></div>
-        <div class="epc-row"><span>Inversión</span><strong>$330,400</strong></div>
-        <div class="epc-cta">Ver escenario completo →</div>
-      </div>
-      <div class="esc-preview-card reveal reveal-d4" onclick="goToEsc(4)">
-        <div class="epc-num">Escenario 4 ★</div>
-        <div class="epc-name">Cena + After<br>Con optimización fiscal</div>
-        <div class="epc-main">$25,651<span>/mes neto</span></div>
-        <div class="epc-row"><span>Payback</span><strong>M19</strong></div>
-        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.75x</strong></div>
-        <div class="epc-row"><span>Inversión</span><strong>$330,400</strong></div>
-        <div class="epc-cta">Ver escenario completo →</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── ARQUITECTURA ── -->
-<div class="photo-section">
-  <div class="insta-grid">
-    <img src="refs-visuales/ref01.png" alt="Arquitectura 1" class="ig-img">
-    <img src="refs-visuales/ref02.png" alt="Arquitectura 2" class="ig-img">
-    <img src="refs-visuales/ref03.png" alt="Arquitectura 3" class="ig-img">
-    <img src="refs-visuales/ref04.png" alt="Arquitectura 4" class="ig-img">
-    <img src="refs-visuales/ref05.jpg" alt="Arquitectura 5" class="ig-img">
-  </div>
-</div>
-
-<!-- ── FOOD REFERENCES ── -->
-<div class="photo-section" style="margin-top:6px">
-  <div class="photo-grid">
-    <img src="food-photos/food01.png" alt="Food ref 1">
-    <img src="food-photos/food02.png" alt="Food ref 2">
-    <img src="food-photos/food03.png" alt="Food ref 3">
-    <img src="food-photos/food04.png" alt="Food ref 4">
-    <img src="food-photos/food05.jpg" alt="Food ref 5">
-    <img src="food-photos/food06.jpg" alt="Food ref 6">
-    <img src="food-photos/food07.jpg" alt="Food ref 7">
-    <img src="food-photos/food08.jpg" alt="Food ref 8">
-    <img src="food-photos/food09.jpg" alt="Food ref 9">
-  </div>
-</div>
-
 <!-- ── EQUIPO ── -->
 <section id="equipo">
   <div class="container">
@@ -571,149 +505,72 @@ footer a:hover { color: #fff; }
   </div>
 </section>
 
-<!-- ── FORMATO & OPERACIÓN ── -->
-<section id="formato">
+<!-- ── REFERENCIAS VISUALES ── -->
+<div class="refs-header reveal">
+  <div class="section-label">Referencias visuales</div>
+  <p class="refs-note">Inputs de mood, arquitectura y plato — orientación visual preliminar, no la dirección final. Curaduría definitiva en proceso junto al equipo creativo.</p>
+</div>
+<div class="foto-grid-3">
+  <img src="refs-visuales/ref03.png" alt="" class="fg-img">
+  <img src="refs-visuales/ref04.png" alt="" class="fg-img">
+  <img src="refs-visuales/ref05.jpg" alt="" class="fg-img">
+  <img src="food-photos/food01.png" alt="" class="fg-img">
+  <img src="food-photos/food02.png" alt="" class="fg-img">
+  <img src="food-photos/food03.png" alt="" class="fg-img">
+  <img src="food-photos/food04.png" alt="" class="fg-img">
+  <img src="food-photos/food05.jpg" alt="" class="fg-img">
+  <img src="food-photos/food06.jpg" alt="" class="fg-img">
+  <img src="food-photos/food07.jpg" alt="" class="fg-img">
+  <img src="food-photos/food08.jpg" alt="" class="fg-img">
+  <img src="food-photos/food09.jpg" alt="" class="fg-img">
+</div>
+
+<!-- ── ESCENARIOS PREVIEW ── -->
+<section id="escenarios-preview">
   <div class="container">
-    <div class="section-label">Formato &amp; Operación</div>
+    <div class="section-label">Cuatro escenarios</div>
     <div class="grad-line"></div>
-    <h2 class="section-title reveal">Cómo funciona</h2>
-
-    <div class="kpi-row">
-      <div class="kpi-box"><div class="kv">35</div><div class="kl">Pax en barra</div></div>
-      <div class="kpi-box"><div class="kv">~200m²</div><div class="kl">Local objetivo</div></div>
-      <div class="kpi-box"><div class="kv red">$42</div><div class="kl">Ticket cena (USD)</div></div>
-      <div class="kpi-box"><div class="kv" id="fmt-staff">12</div><div class="kl">Staff activo total</div></div>
-    </div>
-
-    <div class="two-col">
-      <div>
-        <div class="col-title">El formato barra</div>
-        <p class="body-text">Los comensales se sientan frente a la cocina abierta en herradura. El chef que prepara el plato es el mismo que lo sirve. No hay intermediarios: el servicio <em>es</em> parte de la experiencia.</p>
-        <p class="body-text">Bocados pequeños que salen continuamente. Los comensales piden de corrido y el ritmo lo marca la barra.</p>
-
-        <div class="col-title" style="margin-top:24px">Turnos activos</div>
-        <table class="data-table">
-          <tr><th>Turno</th><th>Días</th><th>Ticket</th></tr>
-          <tr><td>Cena</td><td>Mar–Dom</td><td class="num">$42 USD</td></tr>
-          <tr id="fmt-after-row" style="opacity:.6"><td>After <span style="font-size:9px;color:var(--orange)" id="fmt-after-badge">(upside)</span></td><td>Mié–Sáb · post cena</td><td class="num" id="fmt-after-ticket">a confirmar</td></tr>
-        </table>
-        <div class="small-note">Lunes cerrado. Speakeasy sujeto a disponibilidad del local y definición de variables operativas.</div>
-
-        <div class="light-box" style="margin-top:20px">
-          <div class="lb-title">Prime Cost objetivo</div>
-          <p>Food 25% + Labor ~25.8% = <strong>Prime Cost ~50.8%</strong>. Benchmark industria: &lt;60%. Snackz opera con margen de eficiencia amplio.</p>
-        </div>
+    <h2 class="section-title">Elegí tu escenario</h2>
+    <p class="section-sub">Mismo local, misma operación. La diferencia: apertura del After y optimización fiscal.</p>
+    <div class="esc-preview-grid">
+      <div class="esc-preview-card reveal reveal-d1" onclick="goToEsc(1)">
+        <div class="epc-num">Escenario 1</div>
+        <div class="epc-name">Solo Cena<br>Sin optimización</div>
+        <div class="epc-main">$14,310<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M28</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.41x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$273,800</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
       </div>
-
-      <div>
-        <div class="col-title">Dotación por turno — Cena</div>
-        <table class="data-table">
-          <tr><th>Rol</th><th style="text-align:right">Cantidad</th></tr>
-          <tr><td>Encargado</td><td class="num">1</td></tr>
-          <tr><td>Cocineros (barra)</td><td class="num">5</td></tr>
-          <tr><td>Bartender</td><td class="num">1</td></tr>
-          <tr><td>Runner</td><td class="num">2</td></tr>
-          <tr><td>Limpieza / bachero</td><td class="num">1</td></tr>
-          <tr><td>Recepción / caja</td><td class="num">2</td></tr>
-          <tr class="subtotal"><td>Total</td><td class="num">12</td></tr>
-        </table>
-        <div class="small-note" id="fmt-nomina-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.</div>
-
-        <div class="after-block" id="fmt-after-block" style="display:none; margin-top:20px;">
-          <div class="col-title" style="color:var(--orange); margin-top:0">After — Bar íntimo post-cena</div>
-          <p class="body-text">Espacio físicamente separado dentro del mismo local. Abre post-cierre de cena (Mi–Sáb). Bar íntimo con música en vivo, cocktails curados y bocados fríos en tapeo. Experiencia distinta: más íntima, más oscura, audiencia diferente.</p>
-          <table class="data-table" style="margin-top:12px">
-            <tr><th>Turno</th><th>Días</th><th>Covers/mes</th><th>Ticket</th></tr>
-            <tr><td>After</td><td>Mié–Sáb</td><td class="num">879</td><td class="num">~$24 USD</td></tr>
-          </table>
-          <div class="small-note" style="margin-top:8px">4 staff adicionales. Nómina total: 16 personas. Revenue incremental: $21,535/mes.</div>
-        </div>
+      <div class="esc-preview-card reveal reveal-d2" onclick="goToEsc(2)">
+        <div class="epc-num">Escenario 2 ★</div>
+        <div class="epc-name">Solo Cena<br>Con optimización fiscal</div>
+        <div class="epc-main">$18,754<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M21</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.60x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$273,800</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
+      </div>
+      <div class="esc-preview-card reveal reveal-d3" onclick="goToEsc(3)">
+        <div class="epc-num">Escenario 3</div>
+        <div class="epc-name">Cena + After<br>Sin optimización</div>
+        <div class="epc-main">$19,222<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M24</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.47x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$330,400</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
+      </div>
+      <div class="esc-preview-card reveal reveal-d4" onclick="goToEsc(4)">
+        <div class="epc-num">Escenario 4 ★</div>
+        <div class="epc-name">Cena + After<br>Con optimización fiscal</div>
+        <div class="epc-main">$25,651<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M19</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.75x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$330,400</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ── EXPERIENCIA & PÚBLICO ── -->
-<section id="experiencia">
-  <div class="container">
-    <div class="section-label">Experiencia &amp; Público</div>
-    <div class="grad-line"></div>
-    <h2 class="section-title">La experiencia</h2>
-
-    <div class="two-col" style="margin-bottom:32px">
-      <div>
-        <p class="body-text">Snackz propone lo opuesto al restaurante minimalista y solemne. La atmósfera es oscura y controlada: neones rojos y anaranjados, materiales honestos (hormigón, madera, acero, azulejos), iluminación dramática y puntual.</p>
-        <p class="body-text">DJ de vinilos a la vista durante todo el servicio, curando música en vivo. La cocina abierta y el DJ son los dos focos visuales del local: sin actuación, sin solemnidad, dos cosas pasando al mismo tiempo frente al comensal.</p>
-      </div>
-      <div>
-        <div class="col-title">Los 3 segmentos</div>
-        <table class="seg-table">
-          <tr><th>Segmento</th><th>Edad</th><th>Driver</th></tr>
-          <tr>
-            <td><strong>Foodie early adopter</strong></td>
-            <td>25–45</td>
-            <td>Descubrimiento, novedad, formato único. Repite y recomienda.</td>
-          </tr>
-          <tr>
-            <td><strong>Profesional premium</strong></td>
-            <td>30–50</td>
-            <td>Cena de negocios, cumpleaños, salidas de grupo. Ticket alto, reserva anticipada.</td>
-          </tr>
-          <tr>
-            <td><strong>Visitante premium</strong></td>
-            <td>Varios</td>
-            <td>Turistas y expats buscando la mejor experiencia gastronómica de BA.</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    <div class="dark-box">
-      <div class="db-label">Marca</div>
-      <p>Premium · Disruptiva · Directa. La marca se construye antes de abrir: cuenta activa generando expectativa + soft launch friends &amp; influencers + evento inauguración con prensa. Track record: Lima + Norimoto + Swell, cada una con <strong>+70K seguidores</strong>. <em>No es promesa — es track record.</em></p>
-    </div>
-  </div>
-</section>
-
-<!-- ── ESCENARIOS ── -->
-<section id="escenarios">
-  <div class="container">
-    <div class="section-label">P&amp;L por escenario</div>
-    <div class="grad-line"></div>
-    <h2 class="section-title reveal">4 escenarios de negocio</h2>
-    <p class="section-sub">
-      Todos los escenarios sobre la misma base: 35 pax, rotación media anual con estacionalidad aplicada mes a mes.
-      Esc 2 y 4 incluyen optimización fiscal vía compra de facturas.
-    </p>
-
-    <div class="esc-tabs">
-      <div class="esc-tab active" onclick="showEsc(1, this)">
-        <div class="et-num">Escenario 1</div>
-        <div class="et-name">Solo Cena<br>Sin optimización</div>
-        <div class="et-kpi">$14,310</div>
-        <div class="et-label">Neto real / mes</div>
-      </div>
-      <div class="esc-tab" onclick="showEsc(2, this)">
-        <div class="et-num">Escenario 2</div>
-        <div class="et-name">Solo Cena<br>Con optimización fiscal</div>
-        <div class="esc-badge">★ Fiscal</div>
-        <div class="et-kpi">$18,754</div>
-        <div class="et-label">Neto real / mes</div>
-      </div>
-      <div class="esc-tab" onclick="showEsc(3, this)">
-        <div class="et-num">Escenario 3</div>
-        <div class="et-name">Cena + After<br>Sin optimización</div>
-        <div class="et-kpi">$19,222</div>
-        <div class="et-label">Neto real / mes</div>
-      </div>
-      <div class="esc-tab" onclick="showEsc(4, this)">
-        <div class="et-num">Escenario 4</div>
-        <div class="et-name">Cena + After<br>Con optimización fiscal</div>
-        <div class="esc-badge">★ Fiscal</div>
-        <div class="et-kpi">$25,651</div>
-        <div class="et-label">Neto real / mes</div>
-      </div>
-    </div>
+    <div id="esc-panel-wrap">
 
     <!-- PANEL ESC 1 -->
     <div id="panel-1" class="esc-panel visible">
@@ -995,6 +852,111 @@ footer a:hover { color: #fff; }
       </div>
     </div>
 
+    </div><!-- /#esc-panel-wrap -->
+  </div><!-- /.container -->
+</section><!-- /#escenarios-preview -->
+
+<!-- ── FORMATO & OPERACIÓN ── -->
+<section id="formato">
+  <div class="container">
+    <div class="section-label">Formato &amp; Operación</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title reveal">Cómo funciona</h2>
+
+    <div class="kpi-row">
+      <div class="kpi-box"><div class="kv">35</div><div class="kl">Pax en barra</div></div>
+      <div class="kpi-box"><div class="kv">~200m²</div><div class="kl">Local objetivo</div></div>
+      <div class="kpi-box"><div class="kv red">$42</div><div class="kl">Ticket cena (USD)</div></div>
+      <div class="kpi-box"><div class="kv" id="fmt-staff">12</div><div class="kl">Staff activo total</div></div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="col-title">El formato barra</div>
+        <p class="body-text">Los comensales se sientan frente a la cocina abierta en herradura. El chef que prepara el plato es el mismo que lo sirve. No hay intermediarios: el servicio <em>es</em> parte de la experiencia.</p>
+        <p class="body-text">Bocados pequeños que salen continuamente. Los comensales piden de corrido y el ritmo lo marca la barra.</p>
+
+        <div class="col-title" style="margin-top:24px">Turnos activos</div>
+        <table class="data-table">
+          <tr><th>Turno</th><th>Días</th><th>Ticket</th></tr>
+          <tr><td>Cena</td><td>Mar–Dom</td><td class="num">$42 USD</td></tr>
+          <tr id="fmt-after-row" style="opacity:.6"><td>After <span style="font-size:9px;color:var(--orange)" id="fmt-after-badge">(upside)</span></td><td>Mié–Sáb · post cena</td><td class="num" id="fmt-after-ticket">a confirmar</td></tr>
+        </table>
+        <div class="small-note">Lunes cerrado. Speakeasy sujeto a disponibilidad del local y definición de variables operativas.</div>
+
+        <div class="light-box" style="margin-top:20px">
+          <div class="lb-title">Prime Cost objetivo</div>
+          <p>Food 25% + Labor ~25.8% = <strong>Prime Cost ~50.8%</strong>. Benchmark industria: &lt;60%. Snackz opera con margen de eficiencia amplio.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-title">Dotación por turno — Cena</div>
+        <table class="data-table">
+          <tr><th>Rol</th><th style="text-align:right">Cantidad</th></tr>
+          <tr><td>Encargado</td><td class="num">1</td></tr>
+          <tr><td>Cocineros (barra)</td><td class="num">5</td></tr>
+          <tr><td>Bartender</td><td class="num">1</td></tr>
+          <tr><td>Runner</td><td class="num">2</td></tr>
+          <tr><td>Limpieza / bachero</td><td class="num">1</td></tr>
+          <tr><td>Recepción / caja</td><td class="num">2</td></tr>
+          <tr class="subtotal"><td>Total</td><td class="num">12</td></tr>
+        </table>
+        <div class="small-note" id="fmt-nomina-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.</div>
+
+        <div class="after-block" id="fmt-after-block" style="display:none; margin-top:20px;">
+          <div class="col-title" style="color:var(--orange); margin-top:0">After — Bar íntimo post-cena</div>
+          <p class="body-text">Espacio físicamente separado dentro del mismo local. Abre post-cierre de cena (Mi–Sáb). Bar íntimo con música en vivo, cocktails curados y bocados fríos en tapeo. Experiencia distinta: más íntima, más oscura, audiencia diferente.</p>
+          <table class="data-table" style="margin-top:12px">
+            <tr><th>Turno</th><th>Días</th><th>Covers/mes</th><th>Ticket</th></tr>
+            <tr><td>After</td><td>Mié–Sáb</td><td class="num">879</td><td class="num">~$24 USD</td></tr>
+          </table>
+          <div class="small-note" style="margin-top:8px">4 staff adicionales. Nómina total: 16 personas. Revenue incremental: $21,535/mes.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── EXPERIENCIA & PÚBLICO ── -->
+<section id="experiencia">
+  <div class="container">
+    <div class="section-label">Experiencia &amp; Público</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">La experiencia</h2>
+
+    <div class="two-col" style="margin-bottom:32px">
+      <div>
+        <p class="body-text">Snackz propone lo opuesto al restaurante minimalista y solemne. La atmósfera es oscura y controlada: neones rojos y anaranjados, materiales honestos (hormigón, madera, acero, azulejos), iluminación dramática y puntual.</p>
+        <p class="body-text">DJ de vinilos a la vista durante todo el servicio, curando música en vivo. La cocina abierta y el DJ son los dos focos visuales del local: sin actuación, sin solemnidad, dos cosas pasando al mismo tiempo frente al comensal.</p>
+      </div>
+      <div>
+        <div class="col-title">Los 3 segmentos</div>
+        <table class="seg-table">
+          <tr><th>Segmento</th><th>Edad</th><th>Driver</th></tr>
+          <tr>
+            <td><strong>Foodie early adopter</strong></td>
+            <td>25–45</td>
+            <td>Descubrimiento, novedad, formato único. Repite y recomienda.</td>
+          </tr>
+          <tr>
+            <td><strong>Profesional premium</strong></td>
+            <td>30–50</td>
+            <td>Cena de negocios, cumpleaños, salidas de grupo. Ticket alto, reserva anticipada.</td>
+          </tr>
+          <tr>
+            <td><strong>Visitante premium</strong></td>
+            <td>Varios</td>
+            <td>Turistas y expats buscando la mejor experiencia gastronómica de BA.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="dark-box">
+      <div class="db-label">Marca</div>
+      <p>Premium · Disruptiva · Directa. La marca se construye antes de abrir: cuenta activa generando expectativa + soft launch friends &amp; influencers + evento inauguración con prensa. Track record: Lima + Norimoto + Swell, cada una con <strong>+70K seguidores</strong>. <em>No es promesa — es track record.</em></p>
+    </div>
   </div>
 </section>
 
@@ -1186,16 +1148,13 @@ function updateFormato(n) {
 }
 
 function goToEsc(n) {
-  const tabs = document.querySelectorAll('#escenarios .esc-tab');
-  showEsc(n, tabs[n-1]);
-  document.getElementById('escenarios').scrollIntoView({ behavior: 'smooth' });
+  showEsc(n, null);
+  document.getElementById('esc-panel-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function showEsc(n, el) {
   document.querySelectorAll('.esc-panel').forEach(p => p.classList.remove('visible'));
-  document.querySelectorAll('.esc-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + n).classList.add('visible');
-  if(el) el.classList.add('active');
   document.querySelectorAll('.esc-preview-card').forEach((c,i) => c.classList.toggle('selected', i+1===n));
   updateInversion(n);
   updateFormato(n);

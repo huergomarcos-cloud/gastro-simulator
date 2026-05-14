@@ -233,6 +233,7 @@
         <div class="sr"><label>Obra civil (10a)</label><input type="range" id="invObra" min="0" max="200000" step="5000" value="150000"><span class="v" id="invObra_v"></span></div>
         <div class="sr"><label>Branding/dise&ntilde;o (3a)</label><input type="range" id="invBrand" min="0" max="50000" step="1000" value="10000"><span class="v" id="invBrand_v"></span></div>
         <div class="sr"><label>Habilitaciones (5a)</label><input type="range" id="invHab" min="0" max="50000" step="1000" value="5000"><span class="v" id="invHab_v"></span></div>
+        <div class="sr"><label>Capital de trabajo</label><input type="range" id="capTrabMeses" min="1" max="3" step="1" value="2"><span class="v" id="capTrabMeses_v"></span></div>
         <div class="text-[10px] text-slate-400 mt-1">Total: <span id="invTotal_v" style="font-weight:700;color:#f1f5f9">$200K</span> · Amort/mes: <span id="amortMes_v" style="font-weight:700;color:#fbbf24">—</span></div>
 
         <div class="st" style="margin-top:10px">Split</div>
@@ -614,10 +615,13 @@ function inp() {
     iibb: +$('iibb').value/100, dbc: +$('dbc').value/100, gan: +$('gan').value/100,
     invCocina: +$('invCocina').value, invMob: +$('invMob').value, invObra: +$('invObra').value,
     invBrand: +$('invBrand').value, invHab: +$('invHab').value,
+    capTrabMeses: +$('capTrabMeses').value,
     spPre: +$('spPre').value/100, spPost: +$('spPost').value/100,
     mAp: +$('mAp').value,
   };
-  o.inv = o.invCocina + o.invMob + o.invObra + o.invBrand + o.invHab;
+  const staffActivos = (o.tAlm?o.sA:0)+(o.tCena?o.sC:0)+(o.tAfter?o.sF:0);
+  o.capTrab = o.capTrabMeses * (staffActivos * o.sue + o.alq + o.srv + o.cnt + o.sft);
+  o.inv = o.invCocina + o.invMob + o.invObra + o.invBrand + o.invHab + o.capTrab;
   o.amortMes = o.invCocina/(5*12) + o.invMob/(10*12) + o.invObra/(10*12) + o.invBrand/(3*12) + o.invHab/(5*12);
   return o;
 }
@@ -1849,6 +1853,7 @@ function update() {
   $('invObra_v').textContent = fK(p.invObra);
   $('invBrand_v').textContent = fK(p.invBrand);
   $('invHab_v').textContent = fK(p.invHab);
+  $('capTrabMeses_v').textContent = `${p.capTrabMeses} mes${p.capTrabMeses > 1 ? 'es' : ''} · ${fK(p.capTrab)}`;
   $('invTotal_v').textContent = fK(p.inv);
   $('amortMes_v').textContent = `${fK(p.amortMes)}/mes`;
   $('spPre_v').textContent = `${Math.round(p.spPre*100)}%`;

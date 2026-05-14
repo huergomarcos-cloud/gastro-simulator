@@ -291,6 +291,20 @@ footer a:hover { color: #fff; }
 .sens-opt td { color: #16a34a; background: #f0fdf4; }
 .sens-best td { color: #15803d; background: #dcfce7; font-weight: 700 !important; }
 
+/* ── MOB SUMMARY (P&L compacto mobile-only) ── */
+.mob-summary { display: none; margin-top: 16px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.ms-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+.ms-row span { color: var(--mid); }
+.ms-row strong { color: var(--dark); font-weight: 700; }
+.ms-row.neg strong { color: var(--red); }
+.ms-row.ebitda { background: #fffbeb; }
+.ms-row.ebitda span, .ms-row.ebitda strong { font-weight: 800; color: var(--dark); }
+.ms-row.neto { background: var(--green); border-bottom: none; }
+.ms-row.neto span, .ms-row.neto strong { color: #fff; font-weight: 800; font-size: 15px; }
+.ms-sep { padding: 7px 14px; background: #f5f5f5; border-bottom: 1px solid #eee; }
+.ms-sep span { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--light); }
+.ms-row.retorno strong { color: var(--green); }
+
 /* ── INSTAGRAM EQUIPO ── */
 .tc-ig-row { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .tc-ig { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #aaa; text-decoration: none; transition: color 0.2s; }
@@ -375,6 +389,7 @@ footer a:hover { color: #fff; }
   .panel-detail { display: none !important; }
   .sensibilidad-block { display: none !important; }
   .retorno-block { display: none !important; }
+  .mob-summary { display: block; }
 
   /* INVERSION */
   .inv-breakdown { grid-template-columns: 1fr; }
@@ -614,6 +629,15 @@ footer a:hover { color: #fff; }
           <div class="pkpi"><div class="pv">$273,800</div><div class="pl">Inversión total</div></div>
           <div class="pkpi"><div class="pv">1.41x</div><div class="pl">Múltiplo 5 años</div></div>
         </div>
+        <div class="mob-summary">
+          <div class="ms-row"><span>Revenue bruto / mes</span><strong>$64,873</strong></div>
+          <div class="ms-row neg"><span>Food cost + costos op.</span><strong>–$39,655</strong></div>
+          <div class="ms-row ebitda"><span>EBITDA</span><strong>$25,217 · 38.9%</strong></div>
+          <div class="ms-row neg"><span>Impuestos</span><strong>–$10,907</strong></div>
+          <div class="ms-row neto"><span>Neto real / mes</span><strong>$14,310</strong></div>
+          <div class="ms-sep"><span>Retorno inversor</span></div>
+          <div class="ms-row retorno"><span>Inversor cobra 5 años</span><strong>$386,669</strong></div>
+        </div>
         <div class="panel-detail">
           <table class="pnl-table">
             <thead><tr><th>Concepto</th><th></th><th>% Rev</th></tr></thead>
@@ -686,6 +710,15 @@ footer a:hover { color: #fff; }
           <div class="pkpi"><div class="pv">$273,800</div><div class="pl">Inversión total</div></div>
           <div class="pkpi"><div class="pv">1.60x</div><div class="pl">Múltiplo 5 años</div></div>
         </div>
+        <div class="mob-summary">
+          <div class="ms-row"><span>Revenue bruto / mes</span><strong>$64,873</strong></div>
+          <div class="ms-row neg"><span>Food cost + costos op.</span><strong>–$39,655</strong></div>
+          <div class="ms-row ebitda"><span>EBITDA</span><strong>$25,217 · 38.9%</strong></div>
+          <div class="ms-row neg"><span>Impuestos ★ optimizados</span><strong>–$6,279</strong></div>
+          <div class="ms-row neto"><span>Neto real / mes</span><strong>$18,754</strong></div>
+          <div class="ms-sep"><span>Retorno inversor</span></div>
+          <div class="ms-row retorno"><span>Inversor cobra 5 años</span><strong>$437,523</strong></div>
+        </div>
         <div class="panel-detail">
           <table class="pnl-table">
             <thead><tr><th>Concepto</th><th></th><th>% Rev</th></tr></thead>
@@ -752,6 +785,15 @@ footer a:hover { color: #fff; }
           <div class="pkpi"><div class="pv">24 meses</div><div class="pl">Payback inversor</div></div>
           <div class="pkpi"><div class="pv">$330,400</div><div class="pl">Inversión total</div></div>
           <div class="pkpi"><div class="pv">1.47x</div><div class="pl">Múltiplo 5 años</div></div>
+        </div>
+        <div class="mob-summary">
+          <div class="ms-row"><span>Revenue bruto / mes</span><strong>$86,408</strong></div>
+          <div class="ms-row neg"><span>Food cost + costos op.</span><strong>–$52,180</strong></div>
+          <div class="ms-row ebitda"><span>EBITDA</span><strong>$34,228 · 39.6%</strong></div>
+          <div class="ms-row neg"><span>Impuestos</span><strong>–$15,006</strong></div>
+          <div class="ms-row neto"><span>Neto real / mes</span><strong>$19,222</strong></div>
+          <div class="ms-sep"><span>Retorno inversor</span></div>
+          <div class="ms-row retorno"><span>Inversor cobra 5 años</span><strong>$484,961</strong></div>
         </div>
         <div class="panel-detail">
           <table class="pnl-table">
@@ -825,6 +867,15 @@ footer a:hover { color: #fff; }
           <div class="pkpi"><div class="pv">19 meses</div><div class="pl">Payback inversor</div></div>
           <div class="pkpi"><div class="pv">$330,400</div><div class="pl">Inversión total</div></div>
           <div class="pkpi"><div class="pv">1.75x</div><div class="pl">Múltiplo 5 años</div></div>
+        </div>
+        <div class="mob-summary">
+          <div class="ms-row"><span>Revenue bruto / mes</span><strong>$86,408</strong></div>
+          <div class="ms-row neg"><span>Food cost + costos op.</span><strong>–$52,180</strong></div>
+          <div class="ms-row ebitda"><span>EBITDA</span><strong>$34,228 · 39.6%</strong></div>
+          <div class="ms-row neg"><span>Impuestos ★ optimizados</span><strong>–$8,064</strong></div>
+          <div class="ms-row neto"><span>Neto real / mes</span><strong>$25,651</strong></div>
+          <div class="ms-sep"><span>Retorno inversor</span></div>
+          <div class="ms-row retorno"><span>Inversor cobra 5 años</span><strong>$577,284</strong></div>
         </div>
         <div class="panel-detail">
           <table class="pnl-table">

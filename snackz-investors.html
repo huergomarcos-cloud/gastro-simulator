@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snackz Izakaya — Inversores</title>
+<title>Snackz Izakaya — Inversores 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -35,8 +35,8 @@ nav {
 }
 .nav-logo { font-size: 15px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--dark); }
 .nav-logo span { color: var(--red); }
-.nav-links { display: flex; gap: 28px; }
-.nav-links a { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--light); text-decoration: none; transition: color .2s; }
+.nav-links { display: flex; gap: 22px; }
+.nav-links a { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--light); text-decoration: none; transition: color .2s; }
 .nav-links a:hover, .nav-links a.active { color: var(--dark); }
 .nav-cta { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--dark); color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; transition: background .2s; }
 .nav-cta:hover { background: var(--red); }
@@ -44,16 +44,14 @@ nav {
 /* ── SECTIONS ── */
 section { padding: 96px 0 72px; }
 .container { max-width: 960px; margin: 0 auto; padding: 0 32px; }
-
 .section-label { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--light); margin-bottom: 12px; }
 .section-title { font-size: 32px; font-weight: 800; color: var(--dark); line-height: 1.15; margin-bottom: 12px; letter-spacing: -0.5px; }
-.section-sub { font-size: 15px; color: var(--mid); line-height: 1.7; max-width: 600px; margin-bottom: 48px; }
+.section-sub { font-size: 15px; color: var(--mid); line-height: 1.7; max-width: 620px; margin-bottom: 48px; }
 .red-line { width: 40px; height: 3px; background: var(--red); margin-bottom: 20px; }
+.grad-line { width: 40px; height: 3px; background: linear-gradient(90deg,var(--red),var(--orange)); margin-bottom: 20px; }
 
 /* ── HERO ── */
-#hero {
-  background: var(--dark); color: #fff; padding: 140px 0 80px;
-}
+#hero { background: var(--dark); color: #fff; padding: 140px 0 80px; }
 #hero .container { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
 .hero-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; color: var(--red); margin-bottom: 20px; }
 .hero-title { font-size: 48px; font-weight: 900; line-height: 1.05; margin-bottom: 24px; letter-spacing: -1px; }
@@ -69,35 +67,74 @@ section { padding: 96px 0 72px; }
 .hero-stat .sv { font-size: 36px; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 4px; }
 .hero-stat .sl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
 
-/* ── PITCH SECTION ── */
-#pitch { background: var(--white); }
-.pitch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 48px; }
-.pitch-card { background: #fafafa; border: 1px solid var(--border); padding: 28px; }
-.pitch-card .pc-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--red); margin-bottom: 12px; }
-.pitch-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
-.pitch-card p { font-size: 13px; color: var(--mid); line-height: 1.7; }
-.pitch-card ul { font-size: 13px; color: var(--mid); line-height: 1.8; padding-left: 0; list-style: none; }
-.pitch-card ul li::before { content: "—"; margin-right: 8px; color: var(--red); }
+/* ── CONCEPTO ── */
+#concepto { background: var(--white); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.pull-quote { font-size: 20px; font-weight: 700; line-height: 1.45; padding-left: 20px; border-left: 4px solid var(--red); color: var(--dark); margin: 28px 0; }
+.bullet-list { list-style: none; padding: 0; margin: 0 0 16px; }
+.bullet-list li { position: relative; padding-left: 16px; font-size: 13px; color: var(--mid); line-height: 1.7; margin-bottom: 8px; }
+.bullet-list li::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; background: var(--red); border-radius: 50%; }
+.body-text { font-size: 14px; color: var(--mid); line-height: 1.75; margin-bottom: 14px; }
+.col-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--dark); margin-bottom: 14px; margin-top: 20px; }
+.col-title:first-child { margin-top: 0; }
+.dark-box { background: var(--dark); color: #fff; padding: 22px 24px; margin: 16px 0; border-left: 4px solid var(--red); }
+.dark-box .db-label { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--orange); font-weight: 700; margin-bottom: 8px; }
+.dark-box p { font-size: 13px; line-height: 1.65; color: #ccc; }
+.dark-box p strong { color: #fff; }
+.light-box { background: #fafafa; border: 1px solid var(--border); padding: 18px 22px; margin: 12px 0; }
+.light-box .lb-title { font-size: 12px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+.light-box p { font-size: 12px; color: var(--mid); line-height: 1.6; }
 
+/* ── FOTOS ── */
+.photo-section { padding: 0; }
+.photo-full { width: 100%; height: 520px; object-fit: cover; display: block; }
+.photo-overlay { background: rgba(0,0,0,0.7); padding: 20px 32px; }
+.photo-overlay .ol { font-size: 9px; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; margin-bottom: 6px; }
+.photo-overlay .ov { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.5; font-weight: 500; }
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+.photo-grid img { width: 100%; height: 320px; object-fit: cover; display: block; }
+.ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.ref-grid img { width: 100%; height: 260px; object-fit: cover; display: block; }
+
+/* ── EQUIPO ── */
+#equipo { background: var(--bg); }
 .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
 .team-card { background: var(--dark); color: #fff; padding: 28px; }
-.team-card .tc-name { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
-.team-card .tc-role { font-size: 10px; color: var(--red); font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
-.team-card p { font-size: 12px; color: #bbb; line-height: 1.7; }
+.tc-name { font-size: 20px; font-weight: 900; text-transform: uppercase; color: #fff; letter-spacing: 1px; margin-bottom: 4px; }
+.tc-role { font-size: 10px; color: var(--orange); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-bottom: 16px; }
+.tc-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+.tc-dot { width: 3px; height: 3px; background: var(--red); border-radius: 50%; margin-top: 8px; flex-shrink: 0; }
+.tc-row span { font-size: 12px; color: #bbb; line-height: 1.5; }
+.tc-row span strong { color: #fff; }
+.tc-divider { height: 1px; background: #2a2a2a; margin: 16px 0; }
+.tc-stat { display: flex; gap: 8px; margin-bottom: 4px; align-items: baseline; }
+.tc-stat .sv { font-size: 18px; font-weight: 800; color: #fff; }
+.tc-stat .sl { font-size: 10px; color: #666; }
 
+/* ── FORMATO & OP ── */
+#formato { background: var(--white); }
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 40px 0; }
 .kpi-box { background: #fafafa; border: 1px solid var(--border); padding: 20px; text-align: center; }
 .kpi-box .kv { font-size: 22px; font-weight: 800; color: var(--dark); margin-bottom: 4px; }
+.kpi-box .kv.red { color: var(--red); }
 .kpi-box .kl { font-size: 10px; color: var(--light); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; line-height: 1.4; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+.data-table th { text-align: left; color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; padding: 9px 10px; border-bottom: 2px solid var(--dark); font-weight: 700; }
+.data-table td { padding: 8px 10px; border-bottom: 1px solid #efefef; color: #555; vertical-align: top; }
+.data-table td:first-child { color: var(--dark); font-weight: 600; }
+.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--dark); }
+.data-table tr.subtotal td { border-top: 1px solid #ccc; font-weight: 700; color: var(--dark); }
+.small-note { font-size: 11px; color: var(--light); line-height: 1.6; margin-top: 8px; }
 
-.highlight-box { background: var(--dark); padding: 32px; display: flex; gap: 40px; align-items: center; margin-top: 40px; }
-.hb-text { flex: 1; }
-.hb-text .hl { font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
-.hb-text p { font-size: 14px; color: #ccc; line-height: 1.7; }
-.hb-text p strong { color: #fff; }
+/* ── EXPERIENCIA ── */
+#experiencia { background: var(--bg); }
+.seg-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+.seg-table th { text-align: left; color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; padding: 9px 10px; border-bottom: 2px solid var(--dark); font-weight: 700; }
+.seg-table td { padding: 9px 10px; border-bottom: 1px solid #efefef; color: #555; font-size: 12px; }
+.seg-table td:first-child { color: var(--dark); font-weight: 600; }
 
 /* ── ESCENARIOS ── */
-#escenarios { background: var(--bg); }
+#escenarios { background: var(--white); }
 .esc-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 32px; }
 .esc-tab {
   background: var(--white); border: 2px solid var(--border);
@@ -118,11 +155,11 @@ section { padding: 96px 0 72px; }
 .esc-tab.active .esc-badge { background: var(--orange); }
 
 /* ── PANEL ── */
-.esc-panel { display: none; background: var(--white); border: 1px solid var(--border); padding: 40px; }
+.esc-panel { display: none; background: var(--bg); border: 1px solid var(--border); padding: 40px; }
 .esc-panel.visible { display: block; }
 .panel-top { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
 .panel-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.pkpi { padding: 20px; background: var(--bg); border: 1px solid var(--border); }
+.pkpi { padding: 20px; background: var(--white); border: 1px solid var(--border); }
 .pkpi .pv { font-size: 26px; font-weight: 800; color: var(--dark); margin-bottom: 4px; line-height: 1; }
 .pkpi .pv.green { color: var(--green); }
 .pkpi .pv.red { color: var(--red); }
@@ -142,18 +179,17 @@ section { padding: 96px 0 72px; }
 .pnl-table .neg { color: var(--red); }
 .pnl-table .pos { color: var(--green); }
 
-.panel-actions { display: flex; gap: 12px; margin-top: 32px; }
+.panel-actions { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
 .btn-sheet { display: inline-flex; align-items: center; gap: 8px; background: var(--dark); color: #fff; padding: 12px 20px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; transition: background .2s; }
 .btn-sheet:hover { background: var(--red); }
 .btn-sheet svg { width: 14px; height: 14px; flex-shrink: 0; }
 .btn-dl { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); color: var(--mid); padding: 12px 20px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; transition: all .2s; }
 .btn-dl:hover { border-color: var(--dark); color: var(--dark); }
-
 .fiscal-note { background: #fffbeb; border: 1px solid #fbbf24; padding: 16px 20px; display: flex; gap: 12px; align-items: flex-start; font-size: 12px; color: var(--mid); line-height: 1.6; }
 .fiscal-note strong { color: var(--dark); }
 
 /* ── INVERSION ── */
-#inversion { background: var(--white); }
+#inversion { background: var(--bg); }
 .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
 .inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .inv-table th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--light); padding: 8px 0; border-bottom: 2px solid var(--border); }
@@ -162,17 +198,41 @@ section { padding: 96px 0 72px; }
 .inv-table tr.inv-total td { font-weight: 800; color: var(--dark); border-top: 2px solid var(--dark); }
 .inv-table tr.inv-note td { font-size: 11px; color: var(--light); border-bottom: none; padding-top: 6px; }
 .inv-table tr.inv-note td:last-child { color: var(--light); font-weight: 400; }
-
 .inv-terms { display: flex; flex-direction: column; gap: 20px; }
-.inv-term { padding: 20px; background: var(--bg); border: 1px solid var(--border); }
+.inv-term { padding: 20px; background: var(--white); border: 1px solid var(--border); }
 .inv-term .it-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--red); margin-bottom: 8px; }
 .inv-term .it-val { font-size: 18px; font-weight: 800; color: var(--dark); margin-bottom: 6px; }
 .inv-term p { font-size: 12px; color: var(--mid); line-height: 1.6; }
-
 .rofr-block { background: var(--dark); color: #fff; padding: 28px; margin-top: 32px; }
 .rofr-block .rb-label { font-size: 10px; font-weight: 700; color: var(--orange); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
 .rofr-block p { font-size: 13px; color: #ccc; line-height: 1.7; }
 .rofr-block p strong { color: #fff; }
+
+/* ── TIMELINE ── */
+.timeline { display: flex; gap: 0; margin: 24px 0; }
+.tl-phase { flex: 1; text-align: center; padding: 10px 4px; position: relative; }
+.tl-phase .dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto 6px; }
+.tl-phase .pl { font-size: 9px; color: #999; letter-spacing: 1px; text-transform: uppercase; }
+.tl-phase .pv { font-size: 13px; font-weight: 700; margin-top: 3px; }
+.tl-phase::after { content:''; position:absolute; top:15px; right:0; width:50%; height:2px; background:#e5e5e5; }
+.tl-phase::before { content:''; position:absolute; top:15px; left:0; width:50%; height:2px; background:#e5e5e5; }
+.tl-phase:first-child::before { display:none; }
+.tl-phase:last-child::after { display:none; }
+
+/* ── ESTADO ── */
+#estado { background: var(--white); }
+.estado-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.badge-ok { display: inline-block; background: #dcfce7; color: #16a34a; font-size: 8px; padding: 2px 8px; border-radius: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.badge-pen { display: inline-block; background: #fef9c3; color: #a16207; font-size: 8px; padding: 2px 8px; border-radius: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.badge-par { display: inline-block; background: #fce7f3; color: #9d174d; font-size: 8px; padding: 2px 8px; border-radius: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.status-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.status-table th { text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--light); padding: 8px 10px; border-bottom: 2px solid var(--border); }
+.status-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; color: var(--mid); vertical-align: top; }
+.status-table td:first-child { color: var(--dark); font-weight: 600; width: 120px; }
+.status-table td:nth-child(2) { width: 80px; }
+.numbered-list { padding-left: 0; list-style: none; counter-reset: item; }
+.numbered-list li { position: relative; padding-left: 38px; counter-increment: item; font-size: 13px; color: var(--mid); line-height: 1.6; margin-bottom: 14px; }
+.numbered-list li::before { content: counter(item); position: absolute; left: 0; top: 0; width: 26px; height: 26px; background: var(--red); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
 
 /* ── SIMULADOR ── */
 #simulador { background: var(--dark); padding: 96px 0; }
@@ -195,10 +255,13 @@ footer a:hover { color: #fff; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 720px) {
-  #hero .container, .pitch-grid, .team-grid, .kpi-row, .panel-top, .inv-grid { grid-template-columns: 1fr; }
+  #hero .container, .two-col, .team-grid, .kpi-row, .panel-top, .inv-grid, .estado-grid { grid-template-columns: 1fr; }
   .esc-tabs { grid-template-columns: 1fr 1fr; }
   .hero-title { font-size: 32px; }
   .panel-kpis { grid-template-columns: 1fr 1fr; }
+  .photo-grid { grid-template-columns: 1fr; }
+  .ref-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
 }
 </style>
 </head>
@@ -208,27 +271,29 @@ footer a:hover { color: #fff; }
 <nav>
   <div class="nav-logo">SNACKZ <span>·</span> ボニート</div>
   <div class="nav-links">
-    <a href="#pitch">Concepto</a>
+    <a href="#concepto">Concepto</a>
+    <a href="#equipo">Equipo</a>
+    <a href="#formato">Operación</a>
     <a href="#escenarios">Escenarios</a>
     <a href="#inversion">Inversión</a>
     <a href="#simulador">Simulador</a>
   </div>
-  <a href="pitch-snackz-v3.html" target="_blank" class="nav-cta">Ver deck completo ↗</a>
+  <a href="pitch-snackz-v3.html" target="_blank" class="nav-cta">Ver deck ↗</a>
 </nav>
 
 <!-- ── HERO ── -->
 <section id="hero">
   <div class="container">
     <div>
-      <div class="hero-eyebrow">Snackz Izakaya — Ronda inversor 2026</div>
+      <div class="hero-eyebrow">ボニート · Snackz Izakaya · Ronda inversor 2026</div>
       <h1 class="hero-title">Una barra de<br>cocina japonesa<br>en Buenos <em>Aires.</em></h1>
       <p class="hero-lead">
-        Cocina de barra, DJ de vinilos, 35 cubiertos. Modelo de alta rotación con prime cost ≤50% y fiscalidad optimizable.
-        Inversión: $250–300K. Split 80/25.
+        Alta cocina callejera japonesa. Barra abierta, DJ de vinilos, 35 cubiertos.
+        Prime cost ≤51%. Inversión: $250–300K. Split 80/25 hasta payback, luego 25% perpetuo.
       </p>
       <div class="hero-ctas">
         <a href="#escenarios" class="btn-primary">Ver escenarios financieros</a>
-        <a href="pitch-snackz-v3.html" target="_blank" class="btn-secondary">Deck completo</a>
+        <a href="#concepto" class="btn-secondary">El concepto</a>
       </div>
     </div>
     <div class="hero-stats">
@@ -245,76 +310,232 @@ footer a:hover { color: #fff; }
         <div class="sl">Prime cost (food + labor)</div>
       </div>
       <div class="hero-stat">
-        <div class="sv">21–29 m</div>
+        <div class="sv">21 – 34 m</div>
         <div class="sl">Payback inversor (ventana)</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── PITCH / CONCEPTO ── -->
-<section id="pitch">
+<!-- ── CONCEPTO ── -->
+<section id="concepto">
   <div class="container">
-    <div class="section-label">El negocio</div>
-    <div class="red-line"></div>
-    <h2 class="section-title">Formato & Operación</h2>
+    <div class="section-label">El concepto</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">Alta cocina japonesa<br>con espíritu callejero.</h2>
     <p class="section-sub">
-      Izakaya de cocina abierta. Sin reservas, sin menú fijo. La barra es el formato — los comensales piden de corrido y el ritmo lo marca la cocina.
+      Snackz Izakaya toma los platillos callejeros y tradicionales de Japón y los ejecuta con técnica de autor.
+      La carta se construye en torno a bocados pequeños que salen rápido y se comparten alrededor de la barra — donde la cocina está abierta y visible al comensal.
     </p>
 
-    <div class="kpi-row">
-      <div class="kpi-box"><div class="kv">35 pax</div><div class="kl">En barra</div></div>
-      <div class="kpi-box"><div class="kv">~200m²</div><div class="kl">Local</div></div>
-      <div class="kpi-box"><div class="kv">$42</div><div class="kl">Ticket cena (USD)</div></div>
-      <div class="kpi-box"><div class="kv">12 staff</div><div class="kl">Por turno cena</div></div>
+    <div class="pull-quote">
+      "Alta cocina sin la solemnidad del fine dining.<br>Street food sin la precariedad del puesto callejero."
     </div>
 
-    <div class="pitch-grid">
-      <div class="pitch-card">
-        <div class="pc-label">Concepto</div>
-        <h3>Cocina japonesa de barra</h3>
-        <ul>
-          <li>Tipo de cocina: japonesa de barra — yakitori, kushiage, crudo, snacks</li>
-          <li>Sin menú fijo — carta corta que rota con la estación</li>
-          <li>Ambiente: DJ de vinilos a la vista durante todo el servicio</li>
-          <li>Sin reservas — alta rotación deliberada</li>
-          <li>Mar–Dom, turno único de cena</li>
+    <div class="two-col" style="margin-top: 36px;">
+      <div>
+        <div class="col-title">Lo que lo hace distinto</div>
+        <ul class="bullet-list">
+          <li><strong>Tipo de cocina</strong> — alta cocina japonesa con ADN estricto.</li>
+          <li><strong>Formato barra abierta</strong> — bocados pequeños preparados, cocinados y servidos frente al cliente. Todo el proceso ocurre a la vista: del mise en place al plato terminado. El mismo cocinero que arma el bocado es quien lo entrega al comensal.</li>
+          <li><strong>Experiencia total</strong> — espacio, marca, música y comida son inseparables.</li>
+          <li><strong>Personalidad de marca</strong> — fuerte, directa, disruptiva.</li>
+        </ul>
+
+        <div class="col-title">El local</div>
+        <ul class="bullet-list">
+          <li><strong>~200m²</strong> en zona premium de Buenos Aires.</li>
+          <li><strong>35 pax</strong> en formato barra envolviendo la cocina abierta.</li>
+          <li>Estética: oscuro, neones rojos, hormigón + madera + acero + espejos.</li>
+          <li>Música y cocina, los dos shows. DJ de vinilos a la vista, curando el set en vivo durante el servicio.</li>
         </ul>
       </div>
-      <div class="pitch-card">
-        <div class="pc-label">Escenario de negocio</div>
-        <h3>Dos etapas de expansión</h3>
-        <ul>
-          <li><strong>Base (Esc 1–2):</strong> Solo cena, turno único Mar–Dom</li>
-          <li><strong>Upside (Esc 3–4):</strong> Cena + speakeasy oculto Mié–Sáb post-cena, segundo ambiente, staff propio</li>
-          <li>Almuerzo: evaluado — no rentable en apertura, se revisa en operación real</li>
-          <li>Prime cost base: Food 25% + Labor 24.6% = ~50% total</li>
-        </ul>
+
+      <div>
+        <div class="dark-box">
+          <div class="db-label">Dos escenarios de negocio</div>
+          <p>
+            <strong>Escenario A — Solo cena</strong> (turno único, mar–dom). El negocio base: la barra principal funcionando como concepto único en Buenos Aires. No es un formato pensado para replicarse en cadena — la expansión a futuro es selectiva, un Snackz por capital estratégica del mundo.
+          </p>
+          <p style="margin-top:10px">
+            <strong>Escenario B (upside) — Cena + speakeasy oculto.</strong> Si el local lo permite, se activa un speakeasy físicamente separado dentro del mismo local (segundo ambiente, sótano o fondo), abierto post cierre de cena. Cocktails curados + bocados fríos. CAPEX y staff adicionales, pero genera una segunda experiencia con ticket propio y diferenciación que ningún after office tradicional alcanza.
+          </p>
+        </div>
+
+        <div class="dark-box" style="border-left-color: var(--orange); margin-top: 0;">
+          <div class="db-label">Por qué funciona en Buenos Aires</div>
+          <p>
+            La cocina japonesa sigue siendo percibida como premium en Argentina, con escasa competencia en el segmento izakaya.
+            El formato barra <strong>no requiere gran salón, no depende de reservas y permite alta rotación con dotación chica</strong>.
+            Sin actuación, sin solemnidad — dos cosas pasando al mismo tiempo frente al comensal.
+          </p>
+        </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="team-grid" style="margin-bottom:0;">
-      <div class="team-card">
-        <div class="tc-name">Ramón Espinoza</div>
-        <div class="tc-role">Socio operativo / Gastronómico</div>
-        <p>Lima: 4 locales, 2 en obra. Key Biscayne, Miami: Norimoto — 10 años de operación, 2 aperturas en curso. Historial en gestión de cocinas de alta rotación con control de food cost estricto.</p>
-      </div>
+<!-- ── ARQUITECTURA (full-bleed photo) ── -->
+<div class="photo-section">
+  <img src="pitch-assets/arch-03.png" alt="Referencias de estilo y arquitectura" class="photo-full">
+  <div class="photo-overlay">
+    <div class="ol">Snackz Izakaya · Estilo &amp; Arquitectura</div>
+    <div class="ov">REFERENCIAS PRELIMINARES — Inputs de mood, no la dirección visual final. Curaduría definitiva en proceso.</div>
+  </div>
+</div>
+
+<div class="photo-section" style="margin-top:4px">
+  <img src="pitch-assets/arch2-04.png" alt="Referencias de arquitectura 2" class="photo-full" style="height:380px">
+</div>
+
+<!-- ── FOOD REFERENCES ── -->
+<div class="photo-section" style="margin-top:4px">
+  <div class="photo-grid">
+    <img src="pitch-assets/food1-06.png" alt="Food reference 1">
+    <img src="pitch-assets/food2-07.png" alt="Food reference 2">
+    <img src="pitch-assets/food3-08.png" alt="Food reference 3">
+  </div>
+  <div class="photo-overlay">
+    <div class="ol">Snackz Izakaya · Food References</div>
+    <div class="ov">REFERENCIAS PRELIMINARES — Inputs de plato para alinear con chef ejecutivo. La carta definitiva se desarrolla en pre-apertura.</div>
+  </div>
+</div>
+
+<!-- ── VISUAL REFERENCES ── -->
+<div class="photo-section" style="margin-top:4px">
+  <div class="ref-grid">
+    <img src="pitch-assets/ref01.png" alt="Visual ref 1" style="height:320px">
+    <img src="pitch-assets/ref02.png" alt="Visual ref 2" style="height:320px">
+  </div>
+</div>
+
+<!-- ── EQUIPO ── -->
+<section id="equipo">
+  <div class="container">
+    <div class="section-label">Quiénes están detrás</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">Socios fundadores</h2>
+    <p class="section-sub">Un socio con visión financiera, brand-building y capacidad de levantar capital. Otro con la operación gastronómica, la red de proveedores y el track record de escalar restaurantes exitosos.</p>
+
+    <div class="team-grid">
       <div class="team-card">
         <div class="tc-name">Marcos Huergo</div>
-        <div class="tc-role">Socio financiero / Desarrollo</div>
-        <p>Founder Swell (turismo de aventura). Estructura financiera, captación de inversión, modelo de negocio y operaciones. Responsable del P&L, proyecciones y relación con inversores.</p>
+        <div class="tc-role">CEO — Swell &amp; RAME</div>
+        <div class="tc-row"><div class="tc-dot"></div><span>Founder de <strong>Swell</strong> (turismo aventura premium: surf, ski, snow, gastronomía) y <strong>RAME</strong> (productora BTL para marcas top).</span></div>
+        <div class="tc-row"><div class="tc-dot"></div><span>F&amp;B directo en hosterías Swell (chefs reconocidos, comida incluida en viajes).</span></div>
+        <div class="tc-row"><div class="tc-dot"></div><span>Roles activos: CEO + CFO + CMO de ambas compañías.</span></div>
+        <div class="tc-row"><div class="tc-dot"></div><span>Clientes RAME: <strong>L'Oréal · Budweiser · Fernet · Johnny Walker · Corona · Red Bull · Ford · Mandarin Park</strong></span></div>
+        <div class="tc-divider"></div>
+        <div class="tc-stat"><div class="sv">$2M+</div><div class="sl">USD/año facturación combinada</div></div>
+        <div class="tc-stat"><div class="sv">2</div><div class="sl">locaciones propias operativas</div></div>
+        <div class="tc-stat"><div class="sv">18</div><div class="sl">empleados</div></div>
+      </div>
+
+      <div class="team-card">
+        <div class="tc-name">Ramón</div>
+        <div class="tc-role">Founder — Lima Nikkei &amp; Norimoto</div>
+        <div class="tc-row"><div class="tc-dot"></div><span>Founder de <strong>Lima Estilo Nikkei</strong> — 4 locales en Buenos Aires + 1 en Key Biscayne.</span></div>
+        <div class="tc-row"><div class="tc-dot"></div><span>Founder de <strong>Norimoto</strong> — 10 locales operativos (7 en Buenos Aires, 2 en Uruguay, 1 en Aventura Mall Miami) + 2 en obra en Buenos Aires.</span></div>
+        <div class="tc-row"><div class="tc-dot"></div><span>Liberó sus tareas operativas en ambas cadenas para encarar nuevos proyectos.</span></div>
+        <div class="tc-divider"></div>
+        <div class="tc-stat"><div class="sv">$1.2M+</div><div class="sl">USD/mes facturación combinada Lima + Norimoto</div></div>
+        <div class="tc-stat"><div class="sv">12</div><div class="sl">locales operativos + 2 en obra</div></div>
+        <div class="tc-stat"><div class="sv">250+</div><div class="sl">empleados</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FORMATO & OPERACIÓN ── -->
+<section id="formato">
+  <div class="container">
+    <div class="section-label">Formato &amp; Operación</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">Cómo funciona</h2>
+
+    <div class="kpi-row">
+      <div class="kpi-box"><div class="kv">35</div><div class="kl">Pax en barra</div></div>
+      <div class="kpi-box"><div class="kv">~200m²</div><div class="kl">Local objetivo</div></div>
+      <div class="kpi-box"><div class="kv red">$42</div><div class="kl">Ticket cena (USD)</div></div>
+      <div class="kpi-box"><div class="kv">12</div><div class="kl">Staff por turno cena</div></div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="col-title">El formato barra</div>
+        <p class="body-text">Los comensales se sientan frente a la cocina abierta en herradura. El chef que prepara el plato es el mismo que lo sirve. No hay intermediarios: el servicio <em>es</em> parte de la experiencia.</p>
+        <p class="body-text">Bocados pequeños que salen continuamente. Los comensales piden de corrido y el ritmo lo marca la barra.</p>
+
+        <div class="col-title" style="margin-top:24px">Turnos activos</div>
+        <table class="data-table">
+          <tr><th>Turno</th><th>Días</th><th>Ticket</th></tr>
+          <tr><td>Cena</td><td>Mar–Dom</td><td class="num">$42 USD</td></tr>
+          <tr style="opacity:.6"><td>Speakeasy <span style="font-size:9px;color:var(--orange)">(upside)</span></td><td>Mié–Sáb · post cena</td><td class="num">a confirmar</td></tr>
+        </table>
+        <div class="small-note">Lunes cerrado. Speakeasy sujeto a disponibilidad del local y definición de variables operativas.</div>
+
+        <div class="light-box" style="margin-top:20px">
+          <div class="lb-title">Prime Cost objetivo</div>
+          <p>Food 25% + Labor ~25.8% = <strong>Prime Cost ~50.8%</strong>. Benchmark industria: &lt;60%. Snackz opera con margen de eficiencia amplio.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-title">Dotación por turno — Cena</div>
+        <table class="data-table">
+          <tr><th>Rol</th><th style="text-align:right">Cantidad</th></tr>
+          <tr><td>Encargado</td><td class="num">1</td></tr>
+          <tr><td>Cocineros (barra)</td><td class="num">5</td></tr>
+          <tr><td>Bartender</td><td class="num">1</td></tr>
+          <tr><td>Runner</td><td class="num">2</td></tr>
+          <tr><td>Limpieza / bachero</td><td class="num">1</td></tr>
+          <tr><td>Recepción / caja</td><td class="num">2</td></tr>
+          <tr class="subtotal"><td>Total</td><td class="num">12</td></tr>
+        </table>
+        <div class="small-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.<br>El speakeasy del Escenario B tiene dotación propia adicional.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── EXPERIENCIA & PÚBLICO ── -->
+<section id="experiencia">
+  <div class="container">
+    <div class="section-label">Experiencia &amp; Público</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">La experiencia</h2>
+
+    <div class="two-col" style="margin-bottom:32px">
+      <div>
+        <p class="body-text">Snackz propone lo opuesto al restaurante minimalista y solemne. La atmósfera es oscura y controlada: neones rojos y anaranjados, materiales honestos (hormigón, madera, acero, azulejos), iluminación dramática y puntual.</p>
+        <p class="body-text">DJ de vinilos a la vista durante todo el servicio, curando música en vivo. La cocina abierta y el DJ son los dos focos visuales del local: sin actuación, sin solemnidad, dos cosas pasando al mismo tiempo frente al comensal.</p>
+      </div>
+      <div>
+        <div class="col-title">Los 3 segmentos</div>
+        <table class="seg-table">
+          <tr><th>Segmento</th><th>Edad</th><th>Driver</th></tr>
+          <tr>
+            <td><strong>Foodie early adopter</strong></td>
+            <td>25–45</td>
+            <td>Descubrimiento, novedad, formato único. Repite y recomienda.</td>
+          </tr>
+          <tr>
+            <td><strong>Profesional premium</strong></td>
+            <td>30–50</td>
+            <td>Cena de negocios, cumpleaños, salidas de grupo. Ticket alto, reserva anticipada.</td>
+          </tr>
+          <tr>
+            <td><strong>Visitante premium</strong></td>
+            <td>Varios</td>
+            <td>Turistas y expats buscando la mejor experiencia gastronómica de BA.</td>
+          </tr>
+        </table>
       </div>
     </div>
 
-    <div class="highlight-box">
-      <div class="hb-text">
-        <div class="hl">Por qué funciona en Buenos Aires</div>
-        <p>
-          La cocina japonesa sigue siendo percibida como premium en Argentina, con escasa competencia en el segmento izakaya.
-          El formato barra <strong>no requiere gran salón, no depende de reservas y permite alta rotación con dotación chica</strong>.
-          DJ de vinilos y cocina abierta son los dos focos visuales: sin actuación, sin solemnidad.
-        </p>
-      </div>
+    <div class="dark-box">
+      <div class="db-label">Marca</div>
+      <p>Premium · Disruptiva · Directa. La marca se construye antes de abrir: cuenta activa generando expectativa + soft launch friends &amp; influencers + evento inauguración con prensa. Track record: Lima + Norimoto + Swell, cada una con <strong>+70K seguidores</strong>. <em>No es promesa — es track record.</em></p>
     </div>
   </div>
 </section>
@@ -322,24 +543,21 @@ footer a:hover { color: #fff; }
 <!-- ── ESCENARIOS ── -->
 <section id="escenarios">
   <div class="container">
-    <div class="section-label">P&L por escenario</div>
-    <div class="red-line"></div>
+    <div class="section-label">P&amp;L por escenario</div>
+    <div class="grad-line"></div>
     <h2 class="section-title">4 escenarios de negocio</h2>
     <p class="section-sub">
-      Todos los escenarios sobre la misma base operativa: 35 pax, 1.05× rotación promedio anual, seasonality aplicada mes a mes.
+      Todos los escenarios sobre la misma base: 35 pax, rotación media anual con estacionalidad aplicada mes a mes.
       Esc 2 y 4 incluyen optimización fiscal vía compra de facturas.
     </p>
 
-    <!-- TABS -->
     <div class="esc-tabs">
-
       <div class="esc-tab active" onclick="showEsc(1, this)">
         <div class="et-num">Escenario 1</div>
         <div class="et-name">Solo Cena<br>Sin optimización</div>
         <div class="et-kpi">$10,229</div>
         <div class="et-label">Neto real / mes</div>
       </div>
-
       <div class="esc-tab" onclick="showEsc(2, this)">
         <div class="et-num">Escenario 2</div>
         <div class="et-name">Solo Cena<br>Con optimización fiscal</div>
@@ -347,14 +565,12 @@ footer a:hover { color: #fff; }
         <div class="et-kpi">$13,802</div>
         <div class="et-label">Neto real / mes</div>
       </div>
-
       <div class="esc-tab" onclick="showEsc(3, this)">
         <div class="et-num">Escenario 3</div>
         <div class="et-name">Cena + Speakeasy<br>Sin optimización</div>
         <div class="et-kpi">$14,160</div>
         <div class="et-label">Neto real / mes</div>
       </div>
-
       <div class="esc-tab" onclick="showEsc(4, this)">
         <div class="et-num">Escenario 4</div>
         <div class="et-name">Cena + Speakeasy<br>Con optimización fiscal</div>
@@ -362,37 +578,18 @@ footer a:hover { color: #fff; }
         <div class="et-kpi">$19,424</div>
         <div class="et-label">Neto real / mes</div>
       </div>
-
     </div>
 
     <!-- PANEL ESC 1 -->
     <div id="panel-1" class="esc-panel visible">
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi">
-            <div class="pv">$61,037</div>
-            <div class="pl">Revenue bruto / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">35.0%</div>
-            <div class="pl">EBITDA margin</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv green">$10,229</div>
-            <div class="pl">Neto real / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">34 meses</div>
-            <div class="pl">Payback inversor</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">$275,000</div>
-            <div class="pl">Inversión total</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">35.7%</div>
-            <div class="pl">ROI año 1</div>
-          </div>
+          <div class="pkpi"><div class="pv">$61,037</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">35.0%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$10,229</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">34 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$275,000</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">35.7%</div><div class="pl">ROI año 1</div></div>
         </div>
         <div>
           <table class="pnl-table">
@@ -402,24 +599,19 @@ footer a:hover { color: #fff; }
               <tr><td class="concept">Covers cena / mes</td><td>1,483</td><td></td></tr>
               <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$61,037</td><td>100%</td></tr>
               <tr><td class="concept">→ Blanco (80%)</td><td>$49,826</td><td>81.6%</td></tr>
-
               <tr class="section-header"><td colspan="3">CMV</td></tr>
               <tr><td class="concept">Food cost (25%)</td><td class="neg">–$15,259</td><td class="neg">–25.0%</td></tr>
               <tr class="subtotal"><td class="concept">Margen bruto</td><td>$45,778</td><td>75.0%</td></tr>
-
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
               <tr><td class="concept">Labor (12 staff)</td><td class="neg">–$15,000</td><td class="neg">–24.6%</td></tr>
-              <tr><td class="concept">Alquiler</td><td class="neg">–$4,000</td><td class="neg">–6.6%</td></tr>
-              <tr><td class="concept">Servicios</td><td class="neg">–$800</td><td class="neg">–1.3%</td></tr>
+              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$4,800</td><td class="neg">–7.9%</td></tr>
               <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$3,799</td><td class="neg">–6.2%</td></tr>
               <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.3%</td></tr>
               <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$21,378</td><td>35.0%</td></tr>
-
               <tr class="section-header"><td colspan="3">IMPUESTOS</td></tr>
               <tr><td class="concept">IVA neto</td><td class="neg">–$5,027</td><td class="neg">–8.2%</td></tr>
               <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$2,342</td><td class="neg">–3.8%</td></tr>
               <tr><td class="concept">Ganancias SAS (35%)</td><td class="neg">–$3,780</td><td class="neg">–6.2%</td></tr>
-
               <tr class="neto-row"><td class="concept">NETO REAL</td><td>$10,229</td><td>16.8%</td></tr>
             </tbody>
           </table>
@@ -428,7 +620,11 @@ footer a:hover { color: #fff; }
       <div class="panel-actions">
         <a href="https://docs.google.com/spreadsheets/d/1VWvDNlz1QgtfpJv2ACPER8Z9bb9zrvdAR-37jdbsinI/edit" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Ver P&L completo con estacionalidad 12 meses
+          Ver P&amp;L Esc 1 — 12 meses con estacionalidad
+        </a>
+        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-dl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Modelo completo 36M con fórmulas
         </a>
       </div>
     </div>
@@ -443,30 +639,12 @@ footer a:hover { color: #fff; }
       </div>
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi">
-            <div class="pv">$61,037</div>
-            <div class="pl">Revenue bruto / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">35.0%</div>
-            <div class="pl">EBITDA margin</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv green">$13,802</div>
-            <div class="pl">Neto real / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">25 meses</div>
-            <div class="pl">Payback inversor</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">$275,000</div>
-            <div class="pl">Inversión total</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">48.2%</div>
-            <div class="pl">ROI año 1</div>
-          </div>
+          <div class="pkpi"><div class="pv">$61,037</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">35.0%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$13,802</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">25 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$275,000</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">48.2%</div><div class="pl">ROI año 1</div></div>
         </div>
         <div>
           <table class="pnl-table">
@@ -475,24 +653,20 @@ footer a:hover { color: #fff; }
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
               <tr><td class="concept">Covers cena / mes</td><td>1,483</td><td></td></tr>
               <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$61,037</td><td>100%</td></tr>
-
               <tr class="section-header"><td colspan="3">CMV</td></tr>
               <tr><td class="concept">Food cost (25%)</td><td class="neg">–$15,259</td><td class="neg">–25.0%</td></tr>
               <tr class="subtotal"><td class="concept">Margen bruto</td><td>$45,778</td><td>75.0%</td></tr>
-
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
               <tr><td class="concept">Labor (12 staff)</td><td class="neg">–$15,000</td><td class="neg">–24.6%</td></tr>
               <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$4,800</td><td class="neg">–7.9%</td></tr>
               <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$3,799</td><td class="neg">–6.2%</td></tr>
               <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.3%</td></tr>
               <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$21,378</td><td>35.0%</td></tr>
-
               <tr class="section-header"><td colspan="3">IMPUESTOS (con opt. fiscal)</td></tr>
               <tr><td class="concept">IVA neto ★ reducido</td><td class="neg">–$3,379</td><td class="neg">–5.5%</td></tr>
               <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$2,342</td><td class="neg">–3.8%</td></tr>
               <tr><td class="concept">Ganancias SAS ★ reducido</td><td class="neg">–$1,032</td><td class="neg">–1.7%</td></tr>
               <tr><td class="concept">Costo facturas ($9,500/mes)</td><td class="neg">–$824</td><td class="neg">–1.4%</td></tr>
-
               <tr class="neto-row"><td class="concept">NETO REAL</td><td>$13,802</td><td>22.6%</td></tr>
             </tbody>
           </table>
@@ -501,7 +675,11 @@ footer a:hover { color: #fff; }
       <div class="panel-actions">
         <a href="https://docs.google.com/spreadsheets/d/1sRctsUzW0lOA983wZXJRDM92hNBF0epiUdFwudaide8/edit" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Ver P&L completo con estacionalidad 12 meses
+          Ver P&amp;L Esc 2 — 12 meses con estacionalidad
+        </a>
+        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-dl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Modelo completo 36M con fórmulas
         </a>
       </div>
     </div>
@@ -510,30 +688,12 @@ footer a:hover { color: #fff; }
     <div id="panel-3" class="esc-panel">
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi">
-            <div class="pv">$82,906</div>
-            <div class="pl">Revenue bruto / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">35.8%</div>
-            <div class="pl">EBITDA margin</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv green">$14,160</div>
-            <div class="pl">Neto real / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">29 meses</div>
-            <div class="pl">Payback inversor</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">$328,000</div>
-            <div class="pl">Inversión total</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">41.4%</div>
-            <div class="pl">ROI año 1</div>
-          </div>
+          <div class="pkpi"><div class="pv">$82,906</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">35.8%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$14,160</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">29 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$328,000</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">41.4%</div><div class="pl">ROI año 1</div></div>
         </div>
         <div>
           <table class="pnl-table">
@@ -541,27 +701,23 @@ footer a:hover { color: #fff; }
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
               <tr><td class="concept">Covers cena / mes</td><td>1,483</td><td></td></tr>
-              <tr><td class="concept">Covers after / mes</td><td>893</td><td></td></tr>
+              <tr><td class="concept">Covers after (speakeasy) / mes</td><td>893</td><td></td></tr>
               <tr><td class="concept">Revenue cena</td><td>$62,286</td><td>75.1%</td></tr>
               <tr><td class="concept">Revenue speakeasy</td><td>$20,620</td><td>24.9%</td></tr>
               <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$82,906</td><td>100%</td></tr>
-
               <tr class="section-header"><td colspan="3">CMV</td></tr>
               <tr><td class="concept">Food + Bev cost (~25%)</td><td class="neg">–$20,727</td><td class="neg">–25.0%</td></tr>
               <tr class="subtotal"><td class="concept">Margen bruto</td><td>$62,180</td><td>75.0%</td></tr>
-
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
               <tr><td class="concept">Labor (16 staff)</td><td class="neg">–$20,000</td><td class="neg">–24.1%</td></tr>
               <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$6,500</td><td class="neg">–7.8%</td></tr>
               <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$5,160</td><td class="neg">–6.2%</td></tr>
               <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.0%</td></tr>
               <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$29,719</td><td>35.8%</td></tr>
-
               <tr class="section-header"><td colspan="3">IMPUESTOS</td></tr>
               <tr><td class="concept">IVA neto</td><td class="neg">–$6,882</td><td class="neg">–8.3%</td></tr>
               <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$3,181</td><td class="neg">–3.8%</td></tr>
               <tr><td class="concept">Ganancias SAS (35%)</td><td class="neg">–$5,497</td><td class="neg">–6.6%</td></tr>
-
               <tr class="neto-row"><td class="concept">NETO REAL</td><td>$14,160</td><td>17.1%</td></tr>
             </tbody>
           </table>
@@ -570,7 +726,11 @@ footer a:hover { color: #fff; }
       <div class="panel-actions">
         <a href="https://docs.google.com/spreadsheets/d/1bHvORcP_GehPj_ZraV_moVVmoW8hATUoCBsMKNP4F-0/edit" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Ver P&L completo con estacionalidad 12 meses
+          Ver P&amp;L Esc 3 — 12 meses con estacionalidad
+        </a>
+        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-dl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Modelo completo 36M con fórmulas
         </a>
       </div>
     </div>
@@ -585,30 +745,12 @@ footer a:hover { color: #fff; }
       </div>
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi">
-            <div class="pv">$82,906</div>
-            <div class="pl">Revenue bruto / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">35.8%</div>
-            <div class="pl">EBITDA margin</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv green">$19,424</div>
-            <div class="pl">Neto real / mes</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">21 meses</div>
-            <div class="pl">Payback inversor</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">$328,000</div>
-            <div class="pl">Inversión total</div>
-          </div>
-          <div class="pkpi">
-            <div class="pv">56.9%</div>
-            <div class="pl">ROI año 1</div>
-          </div>
+          <div class="pkpi"><div class="pv">$82,906</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">35.8%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$19,424</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">21 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$328,000</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">56.9%</div><div class="pl">ROI año 1</div></div>
         </div>
         <div>
           <table class="pnl-table">
@@ -617,24 +759,20 @@ footer a:hover { color: #fff; }
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
               <tr><td class="concept">Covers cena + after</td><td>2,376</td><td></td></tr>
               <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$82,906</td><td>100%</td></tr>
-
               <tr class="section-header"><td colspan="3">CMV</td></tr>
               <tr><td class="concept">Food + Bev cost (~25%)</td><td class="neg">–$20,727</td><td class="neg">–25.0%</td></tr>
               <tr class="subtotal"><td class="concept">Margen bruto</td><td>$62,180</td><td>75.0%</td></tr>
-
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
               <tr><td class="concept">Labor (16 staff)</td><td class="neg">–$20,000</td><td class="neg">–24.1%</td></tr>
               <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$6,500</td><td class="neg">–7.8%</td></tr>
               <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$5,160</td><td class="neg">–6.2%</td></tr>
               <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.0%</td></tr>
               <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$29,719</td><td>35.8%</td></tr>
-
               <tr class="section-header"><td colspan="3">IMPUESTOS (con opt. fiscal)</td></tr>
               <tr><td class="concept">IVA neto ★ reducido</td><td class="neg">–$4,452</td><td class="neg">–5.4%</td></tr>
               <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$3,181</td><td class="neg">–3.8%</td></tr>
               <tr><td class="concept">Ganancias SAS ★ reducido</td><td class="neg">–$1,447</td><td class="neg">–1.7%</td></tr>
               <tr><td class="concept">Costo facturas ($14,000/mes)</td><td class="neg">–$1,215</td><td class="neg">–1.5%</td></tr>
-
               <tr class="neto-row"><td class="concept">NETO REAL</td><td>$19,424</td><td>23.4%</td></tr>
             </tbody>
           </table>
@@ -643,7 +781,11 @@ footer a:hover { color: #fff; }
       <div class="panel-actions">
         <a href="https://docs.google.com/spreadsheets/d/1Dl7v1UP3pgz0F6DciMrEXycvpKhWhVNaRZimOMoQusY/edit" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Ver P&L completo con estacionalidad 12 meses
+          Ver P&amp;L Esc 4 — 12 meses con estacionalidad
+        </a>
+        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-dl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Modelo completo 36M con fórmulas
         </a>
       </div>
     </div>
@@ -655,7 +797,7 @@ footer a:hover { color: #fff; }
 <section id="inversion">
   <div class="container">
     <div class="section-label">Estructura de inversión</div>
-    <div class="red-line"></div>
+    <div class="grad-line"></div>
     <h2 class="section-title">Inversión: $250–300K · Split 80/25</h2>
     <p class="section-sub">Inversión única, sin deuda. El inversor ancla recibe el 80% del neto hasta recuperar su capital, luego pasa al 25% perpetuo.</p>
 
@@ -665,31 +807,39 @@ footer a:hover { color: #fff; }
           <thead><tr><th>Ítem CAPEX</th><th>Rango (USD)</th></tr></thead>
           <tbody>
             <tr><td>Obra civil y remodelación</td><td>$150,000 – $180,000</td></tr>
-            <tr><td>Equipamiento de cocina</td><td>$40,000 – $50,000</td></tr>
-            <tr><td>Mobiliario y diseño</td><td>$15,000 – $20,000</td></tr>
-            <tr><td>Branding e identidad</td><td>$8,000 – $10,000</td></tr>
-            <tr><td>Habilitaciones y legales</td><td>$5,000 – $8,000</td></tr>
-            <tr><td colspan="2"></td></tr>
+            <tr><td>Equipamiento de cocina</td><td>$55,000 – $65,000</td></tr>
+            <tr><td>Mobiliario / barra</td><td>$15,000 – $20,000</td></tr>
+            <tr><td>Speakeasy (Esc 3–4)</td><td>$20,000 – $30,000</td></tr>
+            <tr><td>Branding / diseño</td><td>$10,000 – $15,000</td></tr>
+            <tr><td>Habilitaciones</td><td>$5,000 – $10,000</td></tr>
             <tr class="inv-total"><td>CAPEX Esc 1–2</td><td>$228,000</td></tr>
             <tr class="inv-total"><td>CAPEX Esc 3–4 (+ speakeasy)</td><td>$266,000</td></tr>
-            <tr class="inv-note"><td>+ Working capital (2 meses + stock)</td><td>$47K – $62K</td></tr>
+            <tr class="inv-note"><td colspan="2">+ Working capital (2 meses + stock): $47K – $62K</td></tr>
             <tr class="inv-total"><td>INVERSIÓN TOTAL Esc 1–2</td><td>$275,000</td></tr>
             <tr class="inv-total"><td>INVERSIÓN TOTAL Esc 3–4</td><td>$328,000</td></tr>
             <tr class="inv-note"><td>Amortización mensual</td><td>$2,500 – $2,800/mes</td></tr>
           </tbody>
         </table>
+
+        <div class="timeline" style="margin-top: 28px;">
+          <div class="tl-phase"><div class="dot" style="background:var(--red)"></div><div class="pl">Apertura</div><div class="pv">M0</div></div>
+          <div class="tl-phase"><div class="dot" style="background:#eab308"></div><div class="pl">Break-even</div><div class="pv" style="color:#eab308">M3–4</div></div>
+          <div class="tl-phase"><div class="dot" style="background:var(--green)"></div><div class="pl">Payback A</div><div class="pv" style="color:var(--green)">~M34</div></div>
+          <div class="tl-phase"><div class="dot" style="background:var(--orange)"></div><div class="pl">Payback B</div><div class="pv" style="color:var(--orange)">~M21</div></div>
+          <div class="tl-phase"><div class="dot" style="background:#7c3aed"></div><div class="pl">5 Años</div><div class="pv" style="color:#7c3aed">M60</div></div>
+        </div>
       </div>
 
       <div class="inv-terms">
         <div class="inv-term">
           <div class="it-label">Estructura del split</div>
           <div class="it-val">80% pre-payback · 25% post</div>
-          <p>El inversor recibe el 80% del neto mensual hasta recuperar su capital íntegro. Luego pasa a cobrar el 25% indefinidamente. Sin deuda, sin interés.</p>
+          <p>El inversor recibe el 80% del neto mensual hasta recuperar su capital íntegro. Luego pasa a cobrar el 25% indefinidamente. Sin deuda, sin interés. El operador no cobra salario — su compensación es el 20% pre-payback y el 75% post-payback.</p>
         </div>
         <div class="inv-term">
           <div class="it-label">Ventana de payback</div>
           <div class="it-val">21 – 34 meses</div>
-          <p>Según escenario elegido y aplicación o no de optimización fiscal. El escenario 4 (Cena + Speakeasy + Fiscal) alcanza payback en 21 meses.</p>
+          <p>Según escenario elegido y aplicación o no de optimización fiscal. El escenario 4 (Cena + Speakeasy + Fiscal) alcanza payback en 21 meses con neto $19,424/mes.</p>
         </div>
         <div class="inv-term">
           <div class="it-label">ROI año 1</div>
@@ -700,12 +850,58 @@ footer a:hover { color: #fff; }
     </div>
 
     <div class="rofr-block">
-      <div class="rb-label">Derecho de primera oferta — Expansión</div>
+      <div class="rb-label">Derecho de primera oferta — Expansión (ROFR)</div>
       <p>
-        El inversor ancla tiene <strong>derecho de primera oferta (ROFR)</strong> sobre futuras aperturas de Snackz bajo las mismas condiciones o mejores.
-        Plazo de respuesta: 30 días desde notificación formal. <strong>No es obligación de participar</strong> — solo derecho preferente.
-        Aplica por local nuevo en Argentina o regional.
+        El inversor que entra en este primer Snackz tiene <strong>derecho de preferencia</strong> para participar en cada futura apertura de la marca, en cualquier ciudad del mundo, bajo el mismo esquema económico (80/25 hasta payback, 25% a perpetuidad post-payback) o el esquema vigente al momento de cada nueva ronda.
+        <strong>Plazo de ejercicio: 30 días</strong> desde notificación de cada nuevo local.
+        <strong>No es obligación</strong> — el inversor entra solo si quiere. Pero el lugar como capital ancla está reservado mientras el derecho esté vigente.
       </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ESTADO DEL PROYECTO ── -->
+<section id="estado">
+  <div class="container">
+    <div class="section-label">Estado del proyecto</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">Qué está definido</h2>
+
+    <div class="estado-grid">
+      <div>
+        <table class="status-table">
+          <thead><tr><th>Ítem</th><th>Estado</th><th>Detalle</th></tr></thead>
+          <tbody>
+            <tr><td>Concepto</td><td><span class="badge-ok">Cerrado</span></td><td>Alta cocina japonesa, barra abierta, 35 pax</td></tr>
+            <tr><td>Socios</td><td><span class="badge-ok">Cerrado</span></td><td>Marcos + Ramón — perfiles complementarios</td></tr>
+            <tr><td>Formato</td><td><span class="badge-ok">Cerrado</span></td><td>Barra izakaya, 35 pax, cena como turno base</td></tr>
+            <tr><td>Pricing</td><td><span class="badge-ok">Cerrado</span></td><td>Cena $42 · Speakeasy a definir (USD)</td></tr>
+            <tr><td>Modelo inversor</td><td><span class="badge-ok">Cerrado</span></td><td>Split 80/25 · $250–300K inversión · ROFR expansión</td></tr>
+            <tr><td>Plan financiero</td><td><span class="badge-par">Parcial</span></td><td>P&L Esc. A cerrado · Esc. B en reformulación · Retorno a recalcular con CAPEX definitivo</td></tr>
+            <tr><td>Refs visuales</td><td><span class="badge-pen">Pendiente</span></td><td>Inputs preliminares — curaduría definitiva en proceso</td></tr>
+            <tr><td>Local</td><td><span class="badge-pen">Pendiente</span></td><td>~200m² en zona premium BA — búsqueda activa</td></tr>
+            <tr><td>Carta definitiva</td><td><span class="badge-pen">Pendiente</span></td><td>Dirección clara, desarrollo con chef ejecutivo</td></tr>
+            <tr><td>Identidad visual</td><td><span class="badge-pen">Pendiente</span></td><td>Referencias definidas — brand book en desarrollo</td></tr>
+            <tr><td>Presupuesto obra</td><td><span class="badge-pen">Pendiente</span></td><td>Sujeto a local elegido + arquitecto</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <p style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:16px">Prioridades para avanzar</p>
+        <ol class="numbered-list">
+          <li><strong>Encontrar el local.</strong> El local define obra, capacidad, habilitación y posibilidad del speakeasy. Es el desbloqueador de todo lo demás.</li>
+          <li><strong>Presupuesto de obra + equipamiento.</strong> Con el local, el CAPEX se cierra con precisión y la inversión queda definida dentro del rango $250–300K.</li>
+          <li><strong>Formalizar el equipo de cocina.</strong> Definir chef ejecutivo, carta preliminar y costeo real del food cost.</li>
+          <li><strong>Cerrar identidad visual.</strong> Logo, tipografía, sistema de color, menú físico. La marca se activa en redes antes de la apertura.</li>
+          <li><strong>Pre-apertura en redes.</strong> Cuenta activa desde el día 1 de obra. La apertura ya tiene audiencia antes de abrir.</li>
+        </ol>
+
+        <div class="dark-box" style="margin-top:20px">
+          <div class="db-label">Timing</div>
+          <p>El proyecto está en condiciones de avanzar a la fase de ejecución en el momento en que se cierra el local. Todos los supuestos estratégicos y financieros de base están definidos.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -749,21 +945,18 @@ footer a:hover { color: #fff; }
 <footer>
   SNACKZ IZAKAYA · ボニート · Buenos Aires, 2026 ·
   <a href="pitch-snackz-v3.html" target="_blank">Deck completo</a> ·
-  <a href="https://huergomarcos-cloud.github.io/gastro-simulator/snackz-v2.html" target="_blank">Simulador</a>
+  <a href="https://huergomarcos-cloud.github.io/gastro-simulator/snackz-v2.html" target="_blank">Simulador</a> ·
+  <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank">Modelo 36M</a>
 </footer>
 
 <script>
 function showEsc(n, el) {
-  // hide all panels
   document.querySelectorAll('.esc-panel').forEach(p => p.classList.remove('visible'));
-  // deactivate all tabs
   document.querySelectorAll('.esc-tab').forEach(t => t.classList.remove('active'));
-  // show selected
   document.getElementById('panel-' + n).classList.add('visible');
   el.classList.add('active');
 }
 
-// Nav active state on scroll
 const sections = document.querySelectorAll('section[id]');
 const navLinks = document.querySelectorAll('.nav-links a');
 window.addEventListener('scroll', () => {

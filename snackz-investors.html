@@ -187,6 +187,12 @@ section { padding: 96px 0 72px; }
 .btn-dl:hover { border-color: var(--dark); color: var(--dark); }
 .fiscal-note { background: #fffbeb; border: 1px solid #fbbf24; padding: 16px 20px; display: flex; gap: 12px; align-items: flex-start; font-size: 12px; color: var(--mid); line-height: 1.6; }
 .fiscal-note strong { color: var(--dark); }
+.retorno-block { margin-top: 32px; border-top: 2px solid var(--border); padding-top: 24px; }
+.retorno-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--light); margin-bottom: 12px; }
+.retorno-block .pnl-table th { text-align: right; }
+.retorno-block .pnl-table th:first-child, .retorno-block .pnl-table td:first-child { text-align: left; }
+.retorno-block .pnl-table td { text-align: right; }
+.retorno-total td { font-weight: 800 !important; color: var(--dark) !important; background: #f0fdf4 !important; border-top: 2px solid #4ade80 !important; border-bottom: 2px solid #4ade80 !important; }
 
 /* ── INVERSION ── */
 #inversion { background: var(--bg); }
@@ -278,7 +284,7 @@ footer a:hover { color: #fff; }
     <a href="#inversion">Inversión</a>
     <a href="#simulador">Simulador</a>
   </div>
-  <a href="pitch-snackz-v3.html" target="_blank" class="nav-cta">Ver deck ↗</a>
+  <a href="#escenarios" class="nav-cta">Ver escenarios ↓</a>
 </nav>
 
 <!-- ── HERO ── -->
@@ -567,27 +573,27 @@ footer a:hover { color: #fff; }
       <div class="esc-tab active" onclick="showEsc(1, this)">
         <div class="et-num">Escenario 1</div>
         <div class="et-name">Solo Cena<br>Sin optimización</div>
-        <div class="et-kpi">$10,229</div>
+        <div class="et-kpi">$14,310</div>
         <div class="et-label">Neto real / mes</div>
       </div>
       <div class="esc-tab" onclick="showEsc(2, this)">
         <div class="et-num">Escenario 2</div>
         <div class="et-name">Solo Cena<br>Con optimización fiscal</div>
         <div class="esc-badge">★ Fiscal</div>
-        <div class="et-kpi">$13,802</div>
+        <div class="et-kpi">$18,754</div>
         <div class="et-label">Neto real / mes</div>
       </div>
       <div class="esc-tab" onclick="showEsc(3, this)">
         <div class="et-num">Escenario 3</div>
-        <div class="et-name">Cena + Speakeasy<br>Sin optimización</div>
-        <div class="et-kpi">$14,160</div>
+        <div class="et-name">Cena + After<br>Sin optimización</div>
+        <div class="et-kpi">$19,222</div>
         <div class="et-label">Neto real / mes</div>
       </div>
       <div class="esc-tab" onclick="showEsc(4, this)">
         <div class="et-num">Escenario 4</div>
-        <div class="et-name">Cena + Speakeasy<br>Con optimización fiscal</div>
+        <div class="et-name">Cena + After<br>Con optimización fiscal</div>
         <div class="esc-badge">★ Fiscal</div>
-        <div class="et-kpi">$19,424</div>
+        <div class="et-kpi">$25,651</div>
         <div class="et-label">Neto real / mes</div>
       </div>
     </div>
@@ -596,43 +602,52 @@ footer a:hover { color: #fff; }
     <div id="panel-1" class="esc-panel visible">
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi"><div class="pv">$61,037</div><div class="pl">Revenue bruto / mes</div></div>
-          <div class="pkpi"><div class="pv">35.0%</div><div class="pl">EBITDA margin</div></div>
-          <div class="pkpi"><div class="pv green">$10,229</div><div class="pl">Neto real / mes</div></div>
-          <div class="pkpi"><div class="pv">34 meses</div><div class="pl">Payback inversor</div></div>
-          <div class="pkpi"><div class="pv">$275,000</div><div class="pl">Inversión total</div></div>
-          <div class="pkpi"><div class="pv">35.7%</div><div class="pl">ROI año 1</div></div>
+          <div class="pkpi"><div class="pv">$64,873</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">38.9%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$14,310</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">28 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$273,800</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">1.41x</div><div class="pl">Múltiplo 5 años</div></div>
         </div>
         <div>
           <table class="pnl-table">
             <thead><tr><th>Concepto</th><th></th><th>% Rev</th></tr></thead>
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
-              <tr><td class="concept">Covers cena / mes</td><td>1,483</td><td></td></tr>
-              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$61,037</td><td>100%</td></tr>
-              <tr><td class="concept">→ Blanco (80%)</td><td>$49,826</td><td>81.6%</td></tr>
+              <tr><td class="concept">Covers cena / mes</td><td>1,576</td><td></td></tr>
+              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$64,873</td><td>100%</td></tr>
               <tr class="section-header"><td colspan="3">CMV</td></tr>
-              <tr><td class="concept">Food cost (25%)</td><td class="neg">–$15,259</td><td class="neg">–25.0%</td></tr>
-              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$45,778</td><td>75.0%</td></tr>
+              <tr><td class="concept">Food cost (25%)</td><td class="neg">–$16,218</td><td class="neg">–25.0%</td></tr>
+              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$48,655</td><td>75.0%</td></tr>
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
-              <tr><td class="concept">Labor (12 staff)</td><td class="neg">–$15,000</td><td class="neg">–24.6%</td></tr>
-              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$4,800</td><td class="neg">–7.9%</td></tr>
-              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$3,799</td><td class="neg">–6.2%</td></tr>
-              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.3%</td></tr>
-              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$21,378</td><td>35.0%</td></tr>
+              <tr><td class="concept">Labor (12 staff)</td><td class="neg">–$13,800</td><td class="neg">–21.3%</td></tr>
+              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$4,800</td><td class="neg">–7.4%</td></tr>
+              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$4,037</td><td class="neg">–6.2%</td></tr>
+              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.2%</td></tr>
+              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$25,217</td><td>38.9%</td></tr>
               <tr class="section-header"><td colspan="3">IMPUESTOS</td></tr>
-              <tr><td class="concept">IVA neto</td><td class="neg">–$5,027</td><td class="neg">–8.2%</td></tr>
-              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$2,342</td><td class="neg">–3.8%</td></tr>
-              <tr><td class="concept">Ganancias SAS (35%)</td><td class="neg">–$3,780</td><td class="neg">–6.2%</td></tr>
-              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$10,229</td><td>16.8%</td></tr>
+              <tr><td class="concept">IVA neto</td><td class="neg">–$4,841</td><td class="neg">–7.5%</td></tr>
+              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$2,489</td><td class="neg">–3.8%</td></tr>
+              <tr><td class="concept">Ganancias SAS (35%)</td><td class="neg">–$3,576</td><td class="neg">–5.5%</td></tr>
+              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$14,310</td><td>22.1%</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+      <div class="retorno-block">
+        <div class="retorno-title">Retorno proyectado — 5 años (Split 80% pre-payback / 25% post)</div>
+        <table class="pnl-table">
+          <thead><tr><th></th><th>Año 1</th><th>Año 2</th><th>Año 3</th><th>Año 4</th><th>Año 5</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td class="concept">Inversor cobra</td><td>$122,933</td><td>$122,933</td><td>$64,552</td><td>$38,125</td><td>$38,125</td><td class="pos">$386,669</td></tr>
+            <tr class="retorno-total"><td class="concept">Operador cobra</td><td>$30,733</td><td>$30,733</td><td>$89,115</td><td>$114,375</td><td>$114,375</td><td class="pos">$379,332</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
-        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-sheet">
+        <a href="https://drive.google.com/file/d/13ibKBG9EPpoIL2Eo8m6UM4mu9JrdOTx0/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno (36 meses)
+          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno 60 meses
         </a>
       </div>
     </div>
@@ -641,49 +656,57 @@ footer a:hover { color: #fff; }
     <div id="panel-2" class="esc-panel">
       <div class="fiscal-note" style="margin-bottom:24px;">
         <span>★</span>
-        <span><strong>Optimización fiscal activa:</strong> Compra de $9,500/mes en facturas de proveedores.
-        Costo neto real: $824/mes. IVA recuperado: $1,648/mes. Ganancias deducibles adicionales: +$6,612/mes.
-        Delta neto vs Esc 1: <strong>+$3,573/mes</strong> por $824 de costo.</span>
+        <span><strong>Optimización fiscal activa:</strong> IVA reducido de $4,841 a $3,106 (ahorro $1,735/mes). Ganancias SAS reducido de $3,576 a $684 (ahorro $2,892/mes).
+        Delta neto vs Esc 1: <strong>+$4,444/mes</strong>. Mismo revenue, misma operación, más neto.</span>
       </div>
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi"><div class="pv">$61,037</div><div class="pl">Revenue bruto / mes</div></div>
-          <div class="pkpi"><div class="pv">35.0%</div><div class="pl">EBITDA margin</div></div>
-          <div class="pkpi"><div class="pv green">$13,802</div><div class="pl">Neto real / mes</div></div>
-          <div class="pkpi"><div class="pv">25 meses</div><div class="pl">Payback inversor</div></div>
-          <div class="pkpi"><div class="pv">$275,000</div><div class="pl">Inversión total</div></div>
-          <div class="pkpi"><div class="pv">48.2%</div><div class="pl">ROI año 1</div></div>
+          <div class="pkpi"><div class="pv">$64,873</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">38.9%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$18,754</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">21 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$273,800</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">1.60x</div><div class="pl">Múltiplo 5 años</div></div>
         </div>
         <div>
           <table class="pnl-table">
             <thead><tr><th>Concepto</th><th></th><th>% Rev</th></tr></thead>
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
-              <tr><td class="concept">Covers cena / mes</td><td>1,483</td><td></td></tr>
-              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$61,037</td><td>100%</td></tr>
+              <tr><td class="concept">Covers cena / mes</td><td>1,576</td><td></td></tr>
+              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$64,873</td><td>100%</td></tr>
               <tr class="section-header"><td colspan="3">CMV</td></tr>
-              <tr><td class="concept">Food cost (25%)</td><td class="neg">–$15,259</td><td class="neg">–25.0%</td></tr>
-              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$45,778</td><td>75.0%</td></tr>
+              <tr><td class="concept">Food cost (25%)</td><td class="neg">–$16,218</td><td class="neg">–25.0%</td></tr>
+              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$48,655</td><td>75.0%</td></tr>
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
-              <tr><td class="concept">Labor (12 staff)</td><td class="neg">–$15,000</td><td class="neg">–24.6%</td></tr>
-              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$4,800</td><td class="neg">–7.9%</td></tr>
-              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$3,799</td><td class="neg">–6.2%</td></tr>
-              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.3%</td></tr>
-              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$21,378</td><td>35.0%</td></tr>
+              <tr><td class="concept">Labor (12 staff)</td><td class="neg">–$13,800</td><td class="neg">–21.3%</td></tr>
+              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$4,800</td><td class="neg">–7.4%</td></tr>
+              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$4,037</td><td class="neg">–6.2%</td></tr>
+              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.2%</td></tr>
+              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$25,217</td><td>38.9%</td></tr>
               <tr class="section-header"><td colspan="3">IMPUESTOS (con opt. fiscal)</td></tr>
-              <tr><td class="concept">IVA neto ★ reducido</td><td class="neg">–$3,379</td><td class="neg">–5.5%</td></tr>
-              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$2,342</td><td class="neg">–3.8%</td></tr>
-              <tr><td class="concept">Ganancias SAS ★ reducido</td><td class="neg">–$1,032</td><td class="neg">–1.7%</td></tr>
-              <tr><td class="concept">Costo facturas ($9,500/mes)</td><td class="neg">–$824</td><td class="neg">–1.4%</td></tr>
-              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$13,802</td><td>22.6%</td></tr>
+              <tr><td class="concept">IVA neto ★ reducido</td><td class="neg">–$3,106</td><td class="neg">–4.8%</td></tr>
+              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$2,489</td><td class="neg">–3.8%</td></tr>
+              <tr><td class="concept">Ganancias SAS ★ reducido</td><td class="neg">–$684</td><td class="neg">–1.1%</td></tr>
+              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$18,754</td><td>28.9%</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+      <div class="retorno-block">
+        <div class="retorno-title">Retorno proyectado — 5 años (Split 80% pre-payback / 25% post)</div>
+        <table class="pnl-table">
+          <thead><tr><th></th><th>Año 1</th><th>Año 2</th><th>Año 3</th><th>Año 4</th><th>Año 5</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td class="concept">Inversor cobra</td><td>$159,033</td><td>$129,980</td><td>$49,698</td><td>$49,406</td><td>$49,406</td><td class="pos">$437,523</td></tr>
+            <tr class="retorno-total"><td class="concept">Operador cobra</td><td>$39,758</td><td>$68,810</td><td>$149,093</td><td>$148,218</td><td>$148,218</td><td class="pos">$554,098</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
-        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-sheet">
+        <a href="https://drive.google.com/file/d/1_w9WyaDRG10b4ny71cxza-tg85156k4A/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno (36 meses)
+          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno 60 meses
         </a>
       </div>
     </div>
@@ -692,45 +715,53 @@ footer a:hover { color: #fff; }
     <div id="panel-3" class="esc-panel">
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi"><div class="pv">$82,906</div><div class="pl">Revenue bruto / mes</div></div>
-          <div class="pkpi"><div class="pv">35.8%</div><div class="pl">EBITDA margin</div></div>
-          <div class="pkpi"><div class="pv green">$14,160</div><div class="pl">Neto real / mes</div></div>
-          <div class="pkpi"><div class="pv">29 meses</div><div class="pl">Payback inversor</div></div>
-          <div class="pkpi"><div class="pv">$328,000</div><div class="pl">Inversión total</div></div>
-          <div class="pkpi"><div class="pv">41.4%</div><div class="pl">ROI año 1</div></div>
+          <div class="pkpi"><div class="pv">$86,408</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">39.6%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$19,222</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">24 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$330,400</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">1.47x</div><div class="pl">Múltiplo 5 años</div></div>
         </div>
         <div>
           <table class="pnl-table">
             <thead><tr><th>Concepto</th><th></th><th>% Rev</th></tr></thead>
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
-              <tr><td class="concept">Covers cena / mes</td><td>1,483</td><td></td></tr>
-              <tr><td class="concept">Covers after (speakeasy) / mes</td><td>893</td><td></td></tr>
-              <tr><td class="concept">Revenue cena</td><td>$62,286</td><td>75.1%</td></tr>
-              <tr><td class="concept">Revenue speakeasy</td><td>$20,620</td><td>24.9%</td></tr>
-              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$82,906</td><td>100%</td></tr>
+              <tr><td class="concept">Covers cena / mes</td><td>1,576</td><td></td></tr>
+              <tr><td class="concept">Covers after / mes</td><td>879</td><td></td></tr>
+              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$86,408</td><td>100%</td></tr>
               <tr class="section-header"><td colspan="3">CMV</td></tr>
-              <tr><td class="concept">Food + Bev cost (~25%)</td><td class="neg">–$20,727</td><td class="neg">–25.0%</td></tr>
-              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$62,180</td><td>75.0%</td></tr>
+              <tr><td class="concept">Food + Bev cost (25%)</td><td class="neg">–$21,602</td><td class="neg">–25.0%</td></tr>
+              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$64,806</td><td>75.0%</td></tr>
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
-              <tr><td class="concept">Labor (16 staff)</td><td class="neg">–$20,000</td><td class="neg">–24.1%</td></tr>
-              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$6,500</td><td class="neg">–7.8%</td></tr>
-              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$5,160</td><td class="neg">–6.2%</td></tr>
-              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.0%</td></tr>
-              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$29,719</td><td>35.8%</td></tr>
+              <tr><td class="concept">Labor (16 staff)</td><td class="neg">–$18,400</td><td class="neg">–21.3%</td></tr>
+              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$6,000</td><td class="neg">–6.9%</td></tr>
+              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$5,378</td><td class="neg">–6.2%</td></tr>
+              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–0.9%</td></tr>
+              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$34,228</td><td>39.6%</td></tr>
               <tr class="section-header"><td colspan="3">IMPUESTOS</td></tr>
-              <tr><td class="concept">IVA neto</td><td class="neg">–$6,882</td><td class="neg">–8.3%</td></tr>
-              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$3,181</td><td class="neg">–3.8%</td></tr>
-              <tr><td class="concept">Ganancias SAS (35%)</td><td class="neg">–$5,497</td><td class="neg">–6.6%</td></tr>
-              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$14,160</td><td>17.1%</td></tr>
+              <tr><td class="concept">IVA neto</td><td class="neg">–$6,563</td><td class="neg">–7.6%</td></tr>
+              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$3,315</td><td class="neg">–3.8%</td></tr>
+              <tr><td class="concept">Ganancias SAS (35%)</td><td class="neg">–$5,128</td><td class="neg">–5.9%</td></tr>
+              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$19,222</td><td>22.3%</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+      <div class="retorno-block">
+        <div class="retorno-title">Retorno proyectado — 5 años (Split 80% pre-payback / 25% post)</div>
+        <table class="pnl-table">
+          <thead><tr><th></th><th>Año 1</th><th>Año 2</th><th>Año 3</th><th>Año 4</th><th>Año 5</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td class="concept">Inversor cobra</td><td>$165,292</td><td>$165,292</td><td>$51,654</td><td>$51,362</td><td>$51,362</td><td class="pos">$484,961</td></tr>
+            <tr class="retorno-total"><td class="concept">Operador cobra</td><td>$41,323</td><td>$41,323</td><td>$154,961</td><td>$154,086</td><td>$154,086</td><td class="pos">$545,779</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
-        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-sheet">
+        <a href="https://drive.google.com/file/d/1oCzCplUsFSpr0v9xUATLRJnP5gjKtXp7/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno (36 meses)
+          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno 60 meses
         </a>
       </div>
     </div>
@@ -739,49 +770,58 @@ footer a:hover { color: #fff; }
     <div id="panel-4" class="esc-panel">
       <div class="fiscal-note" style="margin-bottom:24px;">
         <span>★</span>
-        <span><strong>Optimización fiscal activa:</strong> Compra de $14,000/mes en facturas de proveedores.
-        Costo neto real: $1,215/mes. IVA recuperado: $2,431/mes. Ganancias deducibles adicionales: +$9,750/mes.
-        Delta neto vs Esc 3: <strong>+$5,264/mes</strong> por $1,215 de costo.</span>
+        <span><strong>Optimización fiscal activa:</strong> IVA reducido de $6,563 a $3,960 (ahorro $2,603/mes). Ganancias SAS reducido de $5,128 a $789 (ahorro $4,339/mes).
+        Delta neto vs Esc 3: <strong>+$6,429/mes</strong>. Mismo revenue, misma operación, más neto.</span>
       </div>
       <div class="panel-top">
         <div class="panel-kpis">
-          <div class="pkpi"><div class="pv">$82,906</div><div class="pl">Revenue bruto / mes</div></div>
-          <div class="pkpi"><div class="pv">35.8%</div><div class="pl">EBITDA margin</div></div>
-          <div class="pkpi"><div class="pv green">$19,424</div><div class="pl">Neto real / mes</div></div>
-          <div class="pkpi"><div class="pv">21 meses</div><div class="pl">Payback inversor</div></div>
-          <div class="pkpi"><div class="pv">$328,000</div><div class="pl">Inversión total</div></div>
-          <div class="pkpi"><div class="pv">56.9%</div><div class="pl">ROI año 1</div></div>
+          <div class="pkpi"><div class="pv">$86,408</div><div class="pl">Revenue bruto / mes</div></div>
+          <div class="pkpi"><div class="pv">39.6%</div><div class="pl">EBITDA margin</div></div>
+          <div class="pkpi"><div class="pv green">$25,651</div><div class="pl">Neto real / mes</div></div>
+          <div class="pkpi"><div class="pv">19 meses</div><div class="pl">Payback inversor</div></div>
+          <div class="pkpi"><div class="pv">$330,400</div><div class="pl">Inversión total</div></div>
+          <div class="pkpi"><div class="pv">1.75x</div><div class="pl">Múltiplo 5 años</div></div>
         </div>
         <div>
           <table class="pnl-table">
             <thead><tr><th>Concepto</th><th></th><th>% Rev</th></tr></thead>
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
-              <tr><td class="concept">Covers cena + after</td><td>2,376</td><td></td></tr>
-              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$82,906</td><td>100%</td></tr>
+              <tr><td class="concept">Covers cena / mes</td><td>1,576</td><td></td></tr>
+              <tr><td class="concept">Covers after / mes</td><td>879</td><td></td></tr>
+              <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$86,408</td><td>100%</td></tr>
               <tr class="section-header"><td colspan="3">CMV</td></tr>
-              <tr><td class="concept">Food + Bev cost (~25%)</td><td class="neg">–$20,727</td><td class="neg">–25.0%</td></tr>
-              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$62,180</td><td>75.0%</td></tr>
+              <tr><td class="concept">Food + Bev cost (25%)</td><td class="neg">–$21,602</td><td class="neg">–25.0%</td></tr>
+              <tr class="subtotal"><td class="concept">Margen bruto</td><td>$64,806</td><td>75.0%</td></tr>
               <tr class="section-header"><td colspan="3">COSTOS OPERATIVOS</td></tr>
-              <tr><td class="concept">Labor (16 staff)</td><td class="neg">–$20,000</td><td class="neg">–24.1%</td></tr>
-              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$6,500</td><td class="neg">–7.8%</td></tr>
-              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$5,160</td><td class="neg">–6.2%</td></tr>
-              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–1.0%</td></tr>
-              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$29,719</td><td>35.8%</td></tr>
+              <tr><td class="concept">Labor (16 staff)</td><td class="neg">–$18,400</td><td class="neg">–21.3%</td></tr>
+              <tr><td class="concept">Alquiler + Servicios</td><td class="neg">–$6,000</td><td class="neg">–6.9%</td></tr>
+              <tr><td class="concept">OPEX + Mkt + Proc</td><td class="neg">–$5,378</td><td class="neg">–6.2%</td></tr>
+              <tr><td class="concept">Contable + SW</td><td class="neg">–$800</td><td class="neg">–0.9%</td></tr>
+              <tr class="ebitda-row"><td class="concept">EBITDA</td><td>$34,228</td><td>39.6%</td></tr>
               <tr class="section-header"><td colspan="3">IMPUESTOS (con opt. fiscal)</td></tr>
-              <tr><td class="concept">IVA neto ★ reducido</td><td class="neg">–$4,452</td><td class="neg">–5.4%</td></tr>
-              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$3,181</td><td class="neg">–3.8%</td></tr>
-              <tr><td class="concept">Ganancias SAS ★ reducido</td><td class="neg">–$1,447</td><td class="neg">–1.7%</td></tr>
-              <tr><td class="concept">Costo facturas ($14,000/mes)</td><td class="neg">–$1,215</td><td class="neg">–1.5%</td></tr>
-              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$19,424</td><td>23.4%</td></tr>
+              <tr><td class="concept">IVA neto ★ reducido</td><td class="neg">–$3,960</td><td class="neg">–4.6%</td></tr>
+              <tr><td class="concept">IIBB + Déb/Créd</td><td class="neg">–$3,315</td><td class="neg">–3.8%</td></tr>
+              <tr><td class="concept">Ganancias SAS ★ reducido</td><td class="neg">–$789</td><td class="neg">–0.9%</td></tr>
+              <tr class="neto-row"><td class="concept">NETO REAL</td><td>$25,651</td><td>29.7%</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+      <div class="retorno-block">
+        <div class="retorno-title">Retorno proyectado — 5 años (Split 80% pre-payback / 25% post)</div>
+        <table class="pnl-table">
+          <thead><tr><th></th><th>Año 1</th><th>Año 2</th><th>Año 3</th><th>Año 4</th><th>Año 5</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td class="concept">Inversor cobra</td><td>$219,441</td><td>$152,701</td><td>$68,575</td><td>$68,284</td><td>$68,284</td><td class="pos">$577,284</td></tr>
+            <tr class="retorno-total"><td class="concept">Operador cobra</td><td>$54,860</td><td>$121,600</td><td>$205,726</td><td>$204,851</td><td>$204,851</td><td class="pos">$791,887</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
-        <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank" class="btn-sheet">
+        <a href="https://drive.google.com/file/d/1iiQF-ysZook70QJYOHkbUVMnCbnoUjqN/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno (36 meses)
+          Ver modelo financiero completo — P&amp;L + Cash Flow + Retorno 60 meses
         </a>
       </div>
     </div>
@@ -940,7 +980,6 @@ footer a:hover { color: #fff; }
 <!-- ── FOOTER ── -->
 <footer>
   SNACKZ IZAKAYA · ボニート · Buenos Aires, 2026 ·
-  <a href="pitch-snackz-v3.html" target="_blank">Deck completo</a> ·
   <a href="https://huergomarcos-cloud.github.io/gastro-simulator/snackz-v2.html" target="_blank">Simulador</a> ·
   <a href="https://drive.google.com/file/d/1Ketk4kSeF2YZNZ7a006xrXVajXjBfq_1/view" target="_blank">Modelo 36M</a>
 </footer>

@@ -1952,7 +1952,7 @@ async function exportExcel() {
   ws.addRow([]); sStyleSec(ws.addRow(['IMPUESTOS']));
   [['IVA',0.21,'fijo'],['IIBB',p.iibb,'decimal'],['Déb/Créd',p.dbc,'decimal'],['Ganancias SAS',p.gan,'decimal']].forEach(([l,v,n])=>sStyleP(ws.addRow([l,v,n])));
   ws.addRow([]); sStyleSec(ws.addRow(['INVERSIÓN']));
-  [['Cocina ($)',p.invCocina,''],['Mobiliario ($)',p.invMob,''],['Obra civil ($)',p.invObra,''],['Branding ($)',p.invBrand,''],['Habilitaciones ($)',p.invHab,''],['TOTAL ($)',p.inv,'']].forEach(([l,v,n])=>sStyleP(ws.addRow([l,v,n])));
+  [['Cocina ($)',p.invCocina,''],['Mobiliario ($)',p.invMob,''],['Obra civil ($)',p.invObra,''],['Branding ($)',p.invBrand,''],['Habilitaciones ($)',p.invHab,''],['Capital de trabajo (meses)',p.capTrabMeses,`${p.capTrabMeses} mes${p.capTrabMeses>1?'es':''}`],['Capital de trabajo ($)',p.capTrab,'no se amortiza'],['TOTAL ($)',p.inv,'activos fijos + cap. trabajo']].forEach(([l,v,n])=>sStyleP(ws.addRow([l,v,n])));
   ws.addRow([]); sStyleSec(ws.addRow(['SPLIT INVERSOR / OPERADOR']));
   [['Split Pre-Payback',p.spPre,'decimal'],['Split Post-Payback',p.spPost,'decimal'],['Mes Apertura',p.mAp,'1=Ene…12=Dic']].forEach(([l,v,n])=>sStyleP(ws.addRow([l,v,n])));
   ws.addRow([]); sStyleSec(ws.addRow(['ROTACIONES ALM (vueltas/día)']));

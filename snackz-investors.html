@@ -259,6 +259,63 @@ footer { background: #111; padding: 32px; text-align: center; font-size: 11px; c
 footer a { color: #888; text-decoration: none; }
 footer a:hover { color: #fff; }
 
+/* ── ESCENARIOS PREVIEW ── */
+#escenarios-preview { background: var(--dark); }
+#escenarios-preview .section-label { color: #666; }
+#escenarios-preview .section-title { color: #fff; }
+#escenarios-preview .section-sub { color: #aaa; margin-bottom: 32px; }
+.esc-preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.esc-preview-card { background: #111; border: 1px solid #2a2a2a; padding: 24px; cursor: pointer; transition: border-color 0.3s, background 0.3s; position: relative; overflow: hidden; }
+.esc-preview-card:hover { border-color: var(--red); background: #1a1a1a; }
+.esc-preview-card.selected { border-color: var(--red); background: #1a0505; }
+.epc-num { font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #555; margin-bottom: 6px; }
+.epc-name { font-size: 13px; font-weight: 700; color: #ccc; margin-bottom: 16px; line-height: 1.3; }
+.epc-main { font-size: 28px; font-weight: 900; color: var(--green); margin-bottom: 12px; }
+.epc-main span { font-size: 12px; font-weight: 500; color: #666; }
+.epc-row { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-bottom: 5px; }
+.epc-row strong { color: #bbb; }
+.epc-cta { margin-top: 18px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--red); }
+
+/* ── SENSIBILIDAD ── */
+.sensibilidad-block { margin-top: 24px; border-top: 2px solid var(--border); padding-top: 24px; }
+.sens-table td:first-child { text-align: left !important; font-weight: 600; }
+.sens-table td { padding: 6px 10px !important; }
+.sens-pess td { color: #dc2626; background: #fef2f2; }
+.sens-cons td { color: #ea580c; background: #fff7ed; }
+.sens-base td { background: #fefce8; font-weight: 700 !important; color: var(--dark) !important; }
+.sens-opt td { color: #16a34a; background: #f0fdf4; }
+.sens-best td { color: #15803d; background: #dcfce7; font-weight: 700 !important; }
+
+/* ── INSTAGRAM EQUIPO ── */
+.tc-ig-row { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.tc-ig { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #aaa; text-decoration: none; transition: color 0.2s; }
+.tc-ig:hover { color: #e4405f; }
+.tc-ig svg { width: 14px; height: 14px; flex-shrink: 0; fill: currentColor; }
+
+/* ── INSTA GRID (fotos) ── */
+.insta-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.ig-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.4s; }
+.ig-img:hover { transform: scale(1.04); filter: brightness(1.08); }
+.photo-grid { gap: 6px; }
+.photo-grid img { aspect-ratio: 1/1; height: auto !important; transition: transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.4s; }
+.photo-grid img:hover { transform: scale(1.04); filter: brightness(1.08); }
+.photo-overlay { display: none; }
+
+/* ── FORMATO AFTER ── */
+.after-block { background: #fafafa; border: 1px solid var(--border); padding: 20px; border-left: 3px solid var(--orange); }
+
+/* ── SCROLL REVEAL ── */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal-d1 { transition-delay: 0.1s; }
+.reveal-d2 { transition-delay: 0.2s; }
+.reveal-d3 { transition-delay: 0.3s; }
+.reveal-d4 { transition-delay: 0.4s; }
+
+/* ── PANEL TRANSITION ── */
+.esc-panel.visible { display: block; animation: fadeSlide 0.4s cubic-bezier(0.22,1,0.36,1); }
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 720px) {
   #hero .container, .two-col, .team-grid, .kpi-row, .panel-top, .inv-grid, .estado-grid { grid-template-columns: 1fr; }
@@ -328,7 +385,7 @@ footer a:hover { color: #fff; }
   <div class="container">
     <div class="section-label">El concepto</div>
     <div class="grad-line"></div>
-    <h2 class="section-title">Alta cocina japonesa<br>con espíritu callejero.</h2>
+    <h2 class="section-title reveal">Alta cocina japonesa<br>con espíritu callejero.</h2>
     <p class="section-sub">
       Snackz Izakaya toma los platillos callejeros y tradicionales de Japón y los ejecuta con técnica de autor.
       La carta se construye en torno a bocados pequeños que salen rápido y se comparten alrededor de la barra — donde la cocina está abierta y visible al comensal.
@@ -381,49 +438,77 @@ footer a:hover { color: #fff; }
   </div>
 </section>
 
-<!-- ── ARQUITECTURA (full-bleed photos) ── -->
-<div class="photo-section">
-  <div class="ref-grid">
-    <img src="refs-visuales/ref01.png" alt="Estilo y arquitectura 1" style="height:440px">
-    <img src="refs-visuales/ref02.png" alt="Estilo y arquitectura 2" style="height:440px">
+<!-- ── ESCENARIOS PREVIEW ── -->
+<section id="escenarios-preview">
+  <div class="container">
+    <div class="section-label">Cuatro escenarios</div>
+    <div class="grad-line"></div>
+    <h2 class="section-title">Elegí tu escenario</h2>
+    <p class="section-sub">Mismo local, misma operación. La diferencia: apertura del After y optimización fiscal.</p>
+    <div class="esc-preview-grid">
+      <div class="esc-preview-card reveal reveal-d1" onclick="goToEsc(1)">
+        <div class="epc-num">Escenario 1</div>
+        <div class="epc-name">Solo Cena<br>Sin optimización</div>
+        <div class="epc-main">$14,310<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M28</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.41x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$273,800</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
+      </div>
+      <div class="esc-preview-card reveal reveal-d2" onclick="goToEsc(2)">
+        <div class="epc-num">Escenario 2 ★</div>
+        <div class="epc-name">Solo Cena<br>Con optimización fiscal</div>
+        <div class="epc-main">$18,754<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M21</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.60x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$273,800</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
+      </div>
+      <div class="esc-preview-card reveal reveal-d3" onclick="goToEsc(3)">
+        <div class="epc-num">Escenario 3</div>
+        <div class="epc-name">Cena + After<br>Sin optimización</div>
+        <div class="epc-main">$19,222<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M24</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.47x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$330,400</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
+      </div>
+      <div class="esc-preview-card reveal reveal-d4" onclick="goToEsc(4)">
+        <div class="epc-num">Escenario 4 ★</div>
+        <div class="epc-name">Cena + After<br>Con optimización fiscal</div>
+        <div class="epc-main">$25,651<span>/mes neto</span></div>
+        <div class="epc-row"><span>Payback</span><strong>M19</strong></div>
+        <div class="epc-row"><span>Múltiplo 5A</span><strong>1.75x</strong></div>
+        <div class="epc-row"><span>Inversión</span><strong>$330,400</strong></div>
+        <div class="epc-cta">Ver escenario completo →</div>
+      </div>
+    </div>
   </div>
-  <div class="photo-overlay">
-    <div class="ol">Snackz Izakaya · Estilo &amp; Arquitectura</div>
-    <div class="ov">REFERENCIAS PRELIMINARES — Inputs de mood, no la dirección visual final. Curaduría definitiva en proceso.</div>
-  </div>
-</div>
+</section>
 
-<div class="photo-section" style="margin-top:4px">
-  <div class="ref-grid">
-    <img src="refs-visuales/ref03.png" alt="Estilo y arquitectura 3" style="height:380px">
-    <img src="refs-visuales/ref04.png" alt="Estilo y arquitectura 4" style="height:380px">
+<!-- ── ARQUITECTURA ── -->
+<div class="photo-section">
+  <div class="insta-grid">
+    <img src="refs-visuales/ref01.png" alt="Arquitectura 1" class="ig-img">
+    <img src="refs-visuales/ref02.png" alt="Arquitectura 2" class="ig-img">
+    <img src="refs-visuales/ref03.png" alt="Arquitectura 3" class="ig-img">
+    <img src="refs-visuales/ref04.png" alt="Arquitectura 4" class="ig-img">
+    <img src="refs-visuales/ref05.jpg" alt="Arquitectura 5" class="ig-img">
   </div>
 </div>
 
 <!-- ── FOOD REFERENCES ── -->
-<div class="photo-section" style="margin-top:4px">
+<div class="photo-section" style="margin-top:6px">
   <div class="photo-grid">
     <img src="food-photos/food01.png" alt="Food ref 1">
     <img src="food-photos/food02.png" alt="Food ref 2">
     <img src="food-photos/food03.png" alt="Food ref 3">
-  </div>
-  <div style="margin-top:4px">
-    <div class="photo-grid">
-      <img src="food-photos/food04.png" alt="Food ref 4">
-      <img src="food-photos/food05.jpg" alt="Food ref 5">
-      <img src="food-photos/food06.jpg" alt="Food ref 6">
-    </div>
-  </div>
-  <div style="margin-top:4px">
-    <div class="photo-grid">
-      <img src="food-photos/food07.jpg" alt="Food ref 7">
-      <img src="food-photos/food08.jpg" alt="Food ref 8">
-      <img src="food-photos/food09.jpg" alt="Food ref 9">
-    </div>
-  </div>
-  <div class="photo-overlay">
-    <div class="ol">Snackz Izakaya · Food References</div>
-    <div class="ov">REFERENCIAS PRELIMINARES — Inputs de plato para alinear con chef ejecutivo. La carta definitiva se desarrolla en pre-apertura.</div>
+    <img src="food-photos/food04.png" alt="Food ref 4">
+    <img src="food-photos/food05.jpg" alt="Food ref 5">
+    <img src="food-photos/food06.jpg" alt="Food ref 6">
+    <img src="food-photos/food07.jpg" alt="Food ref 7">
+    <img src="food-photos/food08.jpg" alt="Food ref 8">
+    <img src="food-photos/food09.jpg" alt="Food ref 9">
   </div>
 </div>
 
@@ -432,11 +517,11 @@ footer a:hover { color: #fff; }
   <div class="container">
     <div class="section-label">Quiénes están detrás</div>
     <div class="grad-line"></div>
-    <h2 class="section-title">Socios fundadores</h2>
+    <h2 class="section-title reveal">Socios fundadores</h2>
     <p class="section-sub">Un socio con visión financiera, brand-building y capacidad de levantar capital. Otro con la operación gastronómica, la red de proveedores y el track record de escalar restaurantes exitosos.</p>
 
     <div class="team-grid">
-      <div class="team-card">
+      <div class="team-card reveal">
         <div class="tc-name">Marcos Huergo</div>
         <div class="tc-role">CEO — Swell &amp; RAME</div>
         <div class="tc-row"><div class="tc-dot"></div><span>Founder de <strong>Swell</strong> (turismo aventura premium: surf, ski, snow, gastronomía) y <strong>RAME</strong> (productora BTL para marcas top).</span></div>
@@ -447,9 +532,20 @@ footer a:hover { color: #fff; }
         <div class="tc-stat"><div class="sv">$2M+</div><div class="sl">USD/año facturación combinada</div></div>
         <div class="tc-stat"><div class="sv">2</div><div class="sl">locaciones propias operativas</div></div>
         <div class="tc-stat"><div class="sv">18</div><div class="sl">empleados</div></div>
+        <div class="tc-divider"></div>
+        <div class="tc-ig-row">
+          <a href="https://www.instagram.com/swell.trips" target="_blank" class="tc-ig">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @swell.trips
+          </a>
+          <a href="https://www.instagram.com/rame.produccionesok" target="_blank" class="tc-ig">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @rame.produccionesok
+          </a>
+        </div>
       </div>
 
-      <div class="team-card">
+      <div class="team-card reveal reveal-d1">
         <div class="tc-name">Ramón</div>
         <div class="tc-role">Founder — Lima Nikkei &amp; Norimoto</div>
         <div class="tc-row"><div class="tc-dot"></div><span>Founder de <strong>Lima Estilo Nikkei</strong> — 4 locales en Buenos Aires + 1 en Key Biscayne.</span></div>
@@ -459,6 +555,17 @@ footer a:hover { color: #fff; }
         <div class="tc-stat"><div class="sv">$1.2M+</div><div class="sl">USD/mes facturación combinada Lima + Norimoto</div></div>
         <div class="tc-stat"><div class="sv">12</div><div class="sl">locales operativos + 2 en obra</div></div>
         <div class="tc-stat"><div class="sv">250+</div><div class="sl">empleados</div></div>
+        <div class="tc-divider"></div>
+        <div class="tc-ig-row">
+          <a href="https://www.instagram.com/lima.estilonikkei" target="_blank" class="tc-ig">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @lima.estilonikkei
+          </a>
+          <a href="https://www.instagram.com/norimoto.ba" target="_blank" class="tc-ig">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @norimoto.ba
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -469,13 +576,13 @@ footer a:hover { color: #fff; }
   <div class="container">
     <div class="section-label">Formato &amp; Operación</div>
     <div class="grad-line"></div>
-    <h2 class="section-title">Cómo funciona</h2>
+    <h2 class="section-title reveal">Cómo funciona</h2>
 
     <div class="kpi-row">
       <div class="kpi-box"><div class="kv">35</div><div class="kl">Pax en barra</div></div>
       <div class="kpi-box"><div class="kv">~200m²</div><div class="kl">Local objetivo</div></div>
       <div class="kpi-box"><div class="kv red">$42</div><div class="kl">Ticket cena (USD)</div></div>
-      <div class="kpi-box"><div class="kv">12</div><div class="kl">Staff por turno cena</div></div>
+      <div class="kpi-box"><div class="kv" id="fmt-staff">12</div><div class="kl">Staff activo total</div></div>
     </div>
 
     <div class="two-col">
@@ -488,7 +595,7 @@ footer a:hover { color: #fff; }
         <table class="data-table">
           <tr><th>Turno</th><th>Días</th><th>Ticket</th></tr>
           <tr><td>Cena</td><td>Mar–Dom</td><td class="num">$42 USD</td></tr>
-          <tr style="opacity:.6"><td>Speakeasy <span style="font-size:9px;color:var(--orange)">(upside)</span></td><td>Mié–Sáb · post cena</td><td class="num">a confirmar</td></tr>
+          <tr id="fmt-after-row" style="opacity:.6"><td>After <span style="font-size:9px;color:var(--orange)" id="fmt-after-badge">(upside)</span></td><td>Mié–Sáb · post cena</td><td class="num" id="fmt-after-ticket">a confirmar</td></tr>
         </table>
         <div class="small-note">Lunes cerrado. Speakeasy sujeto a disponibilidad del local y definición de variables operativas.</div>
 
@@ -510,7 +617,17 @@ footer a:hover { color: #fff; }
           <tr><td>Recepción / caja</td><td class="num">2</td></tr>
           <tr class="subtotal"><td>Total</td><td class="num">12</td></tr>
         </table>
-        <div class="small-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.<br>El speakeasy del Escenario B tiene dotación propia adicional.</div>
+        <div class="small-note" id="fmt-nomina-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.</div>
+
+        <div class="after-block" id="fmt-after-block" style="display:none; margin-top:20px;">
+          <div class="col-title" style="color:var(--orange); margin-top:0">After — Bar íntimo post-cena</div>
+          <p class="body-text">Espacio físicamente separado dentro del mismo local. Abre post-cierre de cena (Mi–Sáb). Bar íntimo con música en vivo, cocktails curados y bocados fríos en tapeo. Experiencia distinta: más íntima, más oscura, audiencia diferente.</p>
+          <table class="data-table" style="margin-top:12px">
+            <tr><th>Turno</th><th>Días</th><th>Covers/mes</th><th>Ticket</th></tr>
+            <tr><td>After</td><td>Mié–Sáb</td><td class="num">879</td><td class="num">~$24 USD</td></tr>
+          </table>
+          <div class="small-note" style="margin-top:8px">4 staff adicionales. Nómina total: 16 personas. Revenue incremental: $21,535/mes.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -563,7 +680,7 @@ footer a:hover { color: #fff; }
   <div class="container">
     <div class="section-label">P&amp;L por escenario</div>
     <div class="grad-line"></div>
-    <h2 class="section-title">4 escenarios de negocio</h2>
+    <h2 class="section-title reveal">4 escenarios de negocio</h2>
     <p class="section-sub">
       Todos los escenarios sobre la misma base: 35 pax, rotación media anual con estacionalidad aplicada mes a mes.
       Esc 2 y 4 incluyen optimización fiscal vía compra de facturas.
@@ -644,6 +761,19 @@ footer a:hover { color: #fff; }
           </tbody>
         </table>
       </div>
+      <div class="sensibilidad-block">
+        <div class="retorno-title">Análisis de sensibilidad — sub-escenarios</div>
+        <table class="pnl-table sens-table">
+          <thead><tr><th></th><th>Covers/mes</th><th>EBITDA/mes</th><th>Payback</th></tr></thead>
+          <tbody>
+            <tr class="sens-pess"><td>⬇⬇ Pesimista</td><td>883</td><td class="neg">–$1,057</td><td>N/A</td></tr>
+            <tr class="sens-cons"><td>⬇ Conservador</td><td>1,150</td><td>$8,289</td><td>N/A</td></tr>
+            <tr class="sens-base"><td>→ Base (modelo)</td><td>1,576</td><td>$25,217</td><td>M28</td></tr>
+            <tr class="sens-opt"><td>⬆ Optimista</td><td>1,668</td><td>$28,751</td><td>M24</td></tr>
+            <tr class="sens-best"><td>⬆⬆ Muy Optimista</td><td>2,453</td><td>$45,804</td><td>M16</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
         <a href="https://drive.google.com/file/d/13ibKBG9EPpoIL2Eo8m6UM4mu9JrdOTx0/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -703,6 +833,19 @@ footer a:hover { color: #fff; }
           </tbody>
         </table>
       </div>
+      <div class="sensibilidad-block">
+        <div class="retorno-title">Análisis de sensibilidad — sub-escenarios</div>
+        <table class="pnl-table sens-table">
+          <thead><tr><th></th><th>Covers/mes</th><th>EBITDA/mes</th><th>Payback</th></tr></thead>
+          <tbody>
+            <tr class="sens-pess"><td>⬇⬇ Pesimista</td><td>883</td><td class="neg">–$1,057</td><td>N/A</td></tr>
+            <tr class="sens-cons"><td>⬇ Conservador</td><td>1,150</td><td>$8,289</td><td>N/A</td></tr>
+            <tr class="sens-base"><td>→ Base (modelo)</td><td>1,576</td><td>$25,217</td><td>M21</td></tr>
+            <tr class="sens-opt"><td>⬆ Optimista</td><td>1,668</td><td>$28,751</td><td>M16</td></tr>
+            <tr class="sens-best"><td>⬆⬆ Muy Optimista</td><td>2,453</td><td>$45,804</td><td>M11</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
         <a href="https://drive.google.com/file/d/1_w9WyaDRG10b4ny71cxza-tg85156k4A/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -755,6 +898,19 @@ footer a:hover { color: #fff; }
           <tbody>
             <tr><td class="concept">Inversor cobra</td><td>$165,292</td><td>$165,292</td><td>$51,654</td><td>$51,362</td><td>$51,362</td><td class="pos">$484,961</td></tr>
             <tr class="retorno-total"><td class="concept">Operador cobra</td><td>$41,323</td><td>$41,323</td><td>$154,961</td><td>$154,086</td><td>$154,086</td><td class="pos">$545,779</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sensibilidad-block">
+        <div class="retorno-title">Análisis de sensibilidad — sub-escenarios</div>
+        <table class="pnl-table sens-table">
+          <thead><tr><th></th><th>Covers totales/mes</th><th>EBITDA/mes</th><th>Payback</th></tr></thead>
+          <tbody>
+            <tr class="sens-pess"><td>⬇⬇ Pesimista</td><td>1,403</td><td>$6,892</td><td>N/A</td></tr>
+            <tr class="sens-cons"><td>⬇ Conservador</td><td>1,823</td><td>$19,568</td><td>N/A</td></tr>
+            <tr class="sens-base"><td>→ Base (modelo)</td><td>2,455</td><td>$34,228</td><td>M24</td></tr>
+            <tr class="sens-opt"><td>⬆ Optimista</td><td>2,650</td><td>$39,420</td><td>M19</td></tr>
+            <tr class="sens-best"><td>⬆⬆ Muy Optimista</td><td>3,520</td><td>$62,630</td><td>M12</td></tr>
           </tbody>
         </table>
       </div>
@@ -818,6 +974,19 @@ footer a:hover { color: #fff; }
           </tbody>
         </table>
       </div>
+      <div class="sensibilidad-block">
+        <div class="retorno-title">Análisis de sensibilidad — sub-escenarios</div>
+        <table class="pnl-table sens-table">
+          <thead><tr><th></th><th>Covers totales/mes</th><th>EBITDA/mes</th><th>Payback</th></tr></thead>
+          <tbody>
+            <tr class="sens-pess"><td>⬇⬇ Pesimista</td><td>1,403</td><td>$6,892</td><td>N/A</td></tr>
+            <tr class="sens-cons"><td>⬇ Conservador</td><td>1,823</td><td>$19,568</td><td>N/A</td></tr>
+            <tr class="sens-base"><td>→ Base (modelo)</td><td>2,455</td><td>$34,228</td><td>M19</td></tr>
+            <tr class="sens-opt"><td>⬆ Optimista</td><td>2,650</td><td>$39,420</td><td>M15</td></tr>
+            <tr class="sens-best"><td>⬆⬆ Muy Optimista</td><td>3,520</td><td>$62,630</td><td>M9</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="panel-actions">
         <a href="https://drive.google.com/file/d/1iiQF-ysZook70QJYOHkbUVMnCbnoUjqN/view" target="_blank" class="btn-sheet">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -834,7 +1003,7 @@ footer a:hover { color: #fff; }
   <div class="container">
     <div class="section-label">Estructura de inversión</div>
     <div class="grad-line"></div>
-    <h2 class="section-title">Inversión: $250–300K · Split 80/25</h2>
+    <h2 class="section-title reveal" id="inv-titulo">Inversión: $273,800 · Split 80/25</h2>
     <p class="section-sub">Inversión única, sin deuda. El inversor ancla recibe el 80% del neto hasta recuperar su capital, luego pasa al 25% perpetuo.</p>
 
     <div class="inv-grid">
@@ -845,42 +1014,39 @@ footer a:hover { color: #fff; }
             <tr><td>Obra civil y remodelación</td><td>$150,000 – $180,000</td></tr>
             <tr><td>Equipamiento de cocina</td><td>$55,000 – $65,000</td></tr>
             <tr><td>Mobiliario / barra</td><td>$15,000 – $20,000</td></tr>
-            <tr><td>Speakeasy (Esc 3–4)</td><td>$20,000 – $30,000</td></tr>
+            <tr id="inv-row-after" style="display:none"><td>Espacio After</td><td>$30,000</td></tr>
             <tr><td>Branding / diseño</td><td>$10,000 – $15,000</td></tr>
             <tr><td>Habilitaciones</td><td>$5,000 – $10,000</td></tr>
-            <tr class="inv-total"><td>CAPEX Esc 1–2</td><td>$228,000</td></tr>
-            <tr class="inv-total"><td>CAPEX Esc 3–4 (+ speakeasy)</td><td>$266,000</td></tr>
-            <tr class="inv-note"><td colspan="2">+ Working capital (2 meses + stock): $47K – $62K</td></tr>
-            <tr class="inv-total"><td>INVERSIÓN TOTAL Esc 1–2</td><td>$275,000</td></tr>
-            <tr class="inv-total"><td>INVERSIÓN TOTAL Esc 3–4</td><td>$328,000</td></tr>
-            <tr class="inv-note"><td>Amortización mensual</td><td>$2,500 – $2,800/mes</td></tr>
+            <tr class="inv-total"><td>Subtotal CAPEX</td><td id="inv-capex-total">$228,000</td></tr>
+            <tr class="inv-note"><td colspan="2">+ Working capital (2 meses): <span id="inv-wc">$45,800</span></td></tr>
+            <tr class="inv-total"><td>INVERSIÓN TOTAL</td><td id="inv-total">$273,800</td></tr>
+            <tr class="inv-note"><td>Amortización mensual</td><td id="inv-amort">$2,558/mes</td></tr>
           </tbody>
         </table>
 
         <div class="timeline" style="margin-top: 28px;">
           <div class="tl-phase"><div class="dot" style="background:var(--red)"></div><div class="pl">Apertura</div><div class="pv">M0</div></div>
           <div class="tl-phase"><div class="dot" style="background:#eab308"></div><div class="pl">Break-even</div><div class="pv" style="color:#eab308">M3–4</div></div>
-          <div class="tl-phase"><div class="dot" style="background:var(--green)"></div><div class="pl">Payback A</div><div class="pv" style="color:var(--green)">~M34</div></div>
-          <div class="tl-phase"><div class="dot" style="background:var(--orange)"></div><div class="pl">Payback B</div><div class="pv" style="color:var(--orange)">~M21</div></div>
+          <div class="tl-phase"><div class="dot" style="background:var(--green)"></div><div class="pl">Payback</div><div class="pv" style="color:var(--green)" id="inv-tl-payback">~M28</div></div>
           <div class="tl-phase"><div class="dot" style="background:#7c3aed"></div><div class="pl">5 Años</div><div class="pv" style="color:#7c3aed">M60</div></div>
         </div>
       </div>
 
       <div class="inv-terms">
-        <div class="inv-term">
+        <div class="inv-term reveal">
           <div class="it-label">Estructura del split</div>
           <div class="it-val">80% pre-payback · 25% post</div>
           <p>El inversor recibe el 80% del neto mensual hasta recuperar su capital íntegro. Luego pasa a cobrar el 25% indefinidamente. Sin deuda, sin interés. El operador no cobra salario — su compensación es el 20% pre-payback y el 75% post-payback.</p>
         </div>
-        <div class="inv-term">
-          <div class="it-label">Ventana de payback</div>
-          <div class="it-val">21 – 34 meses</div>
-          <p>Según escenario elegido y aplicación o no de optimización fiscal. El escenario 4 (Cena + Speakeasy + Fiscal) alcanza payback en 21 meses con neto $19,424/mes.</p>
+        <div class="inv-term reveal">
+          <div class="it-label">Payback inversor</div>
+          <div class="it-val" id="inv-payback-val">28 meses</div>
+          <p id="inv-payback-txt">Escenario base sin optimización fiscal. Neto $14,310/mes → recupero íntegro en M28.</p>
         </div>
-        <div class="inv-term">
-          <div class="it-label">ROI año 1</div>
-          <div class="it-val">35.7% – 56.9%</div>
-          <p>Calculado sobre el neto mensual proyectado × 12, distribuido al split 80%. Sin apalancamiento, sin proyecciones de crecimiento incluidas.</p>
+        <div class="inv-term reveal reveal-d1">
+          <div class="it-label">ROI año 1 (inversor)</div>
+          <div class="it-val" id="inv-roi-val">44.9%</div>
+          <p>Cobro del inversor en el primer año (split 80%) sobre la inversión total. Sin apalancamiento.</p>
         </div>
       </div>
     </div>
@@ -985,11 +1151,54 @@ footer a:hover { color: #fff; }
 </footer>
 
 <script>
+const INV_DATA = {
+  1: { titulo:'Inversión: $273,800 · Split 80/25', after:false, capex:'$228,000', wc:'$45,800', total:'$273,800', amort:'$2,558/mes', tl:'~M28', pb:'28 meses', pbtxt:'Escenario base sin optimización fiscal. Neto $14,310/mes → recupero íntegro en M28.', roi:'44.9%' },
+  2: { titulo:'Inversión: $273,800 · Split 80/25', after:false, capex:'$228,000', wc:'$45,800', total:'$273,800', amort:'$2,558/mes', tl:'~M21', pb:'21 meses', pbtxt:'Con optimización fiscal activa. Neto $18,754/mes → payback en M21, 7 meses antes.', roi:'58.1%' },
+  3: { titulo:'Inversión: $330,400 · Split 80/25', after:true,  capex:'$266,000', wc:'$64,400', total:'$330,400', amort:'$2,988/mes', tl:'~M24', pb:'24 meses', pbtxt:'Cena + After sin fiscal. Neto $19,222/mes con 2,455 covers totales → payback M24.', roi:'50.0%' },
+  4: { titulo:'Inversión: $330,400 · Split 80/25', after:true,  capex:'$266,000', wc:'$64,400', total:'$330,400', amort:'$2,988/mes', tl:'~M19', pb:'19 meses', pbtxt:'Escenario estrella: Cena + After + fiscal. Neto $25,651/mes → payback M19.', roi:'66.4%' },
+};
+
+function updateInversion(n) {
+  const d = INV_DATA[n];
+  document.getElementById('inv-titulo').textContent = d.titulo;
+  document.getElementById('inv-row-after').style.display = d.after ? '' : 'none';
+  document.getElementById('inv-capex-total').textContent = d.capex;
+  document.getElementById('inv-wc').textContent = d.wc;
+  document.getElementById('inv-total').textContent = d.total;
+  document.getElementById('inv-amort').textContent = d.amort;
+  document.getElementById('inv-tl-payback').textContent = d.tl;
+  document.getElementById('inv-payback-val').textContent = d.pb;
+  document.getElementById('inv-payback-txt').textContent = d.pbtxt;
+  document.getElementById('inv-roi-val').textContent = d.roi;
+}
+
+function updateFormato(n) {
+  const hasAfter = n >= 3;
+  document.getElementById('fmt-staff').textContent = hasAfter ? '16' : '12';
+  document.getElementById('fmt-after-block').style.display = hasAfter ? '' : 'none';
+  document.getElementById('fmt-after-row').style.opacity = hasAfter ? '1' : '0.6';
+  document.getElementById('fmt-after-badge').textContent = hasAfter ? '(activo)' : '(upside)';
+  document.getElementById('fmt-after-badge').style.color = hasAfter ? 'var(--green)' : 'var(--orange)';
+  document.getElementById('fmt-after-ticket').textContent = hasAfter ? '~$24 USD' : 'a confirmar';
+  document.getElementById('fmt-nomina-note').textContent = hasAfter
+    ? 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina total (cena+after): $20.000/mes.'
+    : 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.';
+}
+
+function goToEsc(n) {
+  const tabs = document.querySelectorAll('#escenarios .esc-tab');
+  showEsc(n, tabs[n-1]);
+  document.getElementById('escenarios').scrollIntoView({ behavior: 'smooth' });
+}
+
 function showEsc(n, el) {
   document.querySelectorAll('.esc-panel').forEach(p => p.classList.remove('visible'));
   document.querySelectorAll('.esc-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + n).classList.add('visible');
-  el.classList.add('active');
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.esc-preview-card').forEach((c,i) => c.classList.toggle('selected', i+1===n));
+  updateInversion(n);
+  updateFormato(n);
 }
 
 const sections = document.querySelectorAll('section[id]');
@@ -1005,5 +1214,24 @@ window.addEventListener('scroll', () => {
 });
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<script>
+// Smooth scroll
+try {
+  const lenis = new Lenis({ duration: 1.2, easing: t => Math.min(1, 1.001 - Math.pow(2, -10*t)) });
+  function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+  requestAnimationFrame(raf);
+} catch(e) {}
+
+// Scroll reveals
+const revObs = new IntersectionObserver(es => {
+  es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); revObs.unobserve(e.target); }});
+}, { threshold: 0.08, rootMargin: '-40px' });
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+
+// Init inversión y formato con Esc 1
+updateInversion(1);
+updateFormato(1);
+</script>
 </body>
 </html>

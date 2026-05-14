@@ -1957,100 +1957,132 @@ async function exportExcel() {
   sStyleSec(ws.addRow(['ROTACIONES AFTER (vueltas/día)']));
   ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach((d,i)=>sStyleP(ws.addRow([d,p.rF[i],''])));
 
-  // ── P&L REAL (60M) ──────────────────────────────────────────────────────────
-  const wm = wb.addWorksheet('P&L Real', { tabColor:{argb:'FF1D4ED8'} });
-  wm.columns = [
-    {width:6},{width:7},{width:9},{width:11},{width:11},{width:12},{width:11},
-    {width:12},{width:12},{width:12},{width:11},{width:11},{width:11},{width:12},{width:10},
-    {width:11},{width:11},{width:11},{width:11},{width:11},{width:11},{width:11},{width:10},
-    {width:12},{width:9},{width:11},{width:10},{width:10},{width:10},{width:12},
-    {width:11},{width:12},{width:11},{width:13},{width:13},
-  ];
-  const PR_HDR = ['Mes#','Mes','Estac.%','Cov.Alm','Cov.Cena','Cov.After','Cov.Tot',
-    'Rev Bruto','Rev Blanco','Rev Negro','Food Cost','Paper Cost','CMV','Gross Profit','Gross%',
-    'Labor','Labor Bl','Labor Ng','Occupancy','OPEX','Marketing','Processing','SG&A',
-    'EBITDA','EBITDA%','IVA Pagar','IIBB','Déb/Créd','Fex Costo','Amort.',
-    'Tot Imp.','Neto Real','Net%','Cash Mes','Cash Acum'];
-  styleHdr(wm.addRow(PR_HDR));
-  const PR_PCT = new Set([3,15,25,33]);
-  const PR_BOLD = new Set([24,32,34,35]);
-  ms.forEach((m, i) => {
-    const row = wm.addRow([
-      m.mn, MNS[m.cm], pct(m.se),
-      num(m.cvA), num(m.cvC), num(m.cvF), num(m.cvTot),
-      num(m.revBruto), num(m.revBl), num(m.revNg),
-      num(m.foodCost), num(m.paperCost), num(m.cmv), num(m.grossProfit), pct(m.grossMargin),
-      num(m.labor), num(m.laborBl), num(m.laborNg),
-      num(m.occ), num(m.opex), num(m.mktg), num(m.proc), num(m.sga),
-      num(m.ebitda), pct(m.ebitdaM),
-      num(m.ivaPagar), num(m.iibb), num(m.debCred), num(m.fexCosto), num(m.amortMes),
-      num(m.totImp), num(m.netoReal), pct(m.netMargin),
-      num(m.cashMes), num(m.cashAcum),
-    ]);
-    styleData(row, i, PR_BOLD, PR_PCT);
-  });
-  wm.views = [{state:'frozen',xSplit:2,ySplit:1,topLeftCell:'C2',activeCell:'H2'}];
-
-  // ── P&L CONTABLE (60M) ──────────────────────────────────────────────────────
-  const wc = wb.addWorksheet('P&L Contable', { tabColor:{argb:'FF7C3AED'} });
-  wc.columns = [
-    {width:6},{width:7},{width:15},{width:14},{width:12},
-    {width:12},{width:12},{width:12},{width:12},{width:12},
-    {width:12},{width:12},{width:14},{width:12},{width:14},
-    {width:13},{width:12},{width:13},{width:13},{width:15},
-  ];
-  styleHdr(wc.addRow(['Mes#','Mes','Rev Bl Neto','CMV Fact Neto','Labor Bl',
-    'Alq Neto','Srv Neto','OPEX Neto','Mkt Neto','SGA Neto',
-    'Processing','Fex Neto','IIBB+DBC','Amort.','Tot. Deduc.',
-    'Base Impon.','Quebranto','Base c/Qbr.','Imp. Gan.','Res. Contable']));
+  // ── HELPER: sheet transpuesta (filas=métricas, columnas=meses) ──────────────
   const IVA = 0.21;
-  ms.forEach((m, i) => {
-    const row = wc.addRow([
-      m.mn, MNS[m.cm],
-      num(m.revBlNeto),
-      num(m.cmv * p.cmpB / (1+IVA)),
-      num(m.laborBl),
-      num(p.alq / (1+IVA)),
-      num(p.srv / (1+IVA)),
-      num(m.opex / (1+IVA)),
-      num(m.mktg / (1+IVA)),
-      num(m.sga / (1+IVA)),
-      num(m.proc),
-      num(p.fex / (1+IVA)),
-      num(m.iibb + m.debCred),
-      num(m.amortMes),
-      num(m.gastosDeducibles),
-      num(m.baseGan),
-      num(m.quebranto),
-      num(m.baseGanConQuebranto),
-      num(m.impGan),
-      num(m.resultadoContable),
-    ]);
-    styleData(row, i, new Set([20]), new Set([]));
-  });
-  wc.views = [{state:'frozen',xSplit:2,ySplit:1,topLeftCell:'C2',activeCell:'C2'}];
+  const addPnL = (name, tabColor, metrics) => {
+    const sh = wb.addWorksheet(name, { tabColor:{argb:tabColor} });
+    sh.getColumn(1).width = 22;
+    for(let c=2;c<=62;c++) sh.getColumn(c).width = 9;
+    // Fila 1: header de meses
+    const hdrVals = [name, ...ms.map(m=>`M${m.mn} ${MNS[m.cm]}`)];
+    const hdr = sh.addRow(hdrVals);
+    hdr.height = 20;
+    hdr.eachCell((c,ci)=>{
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}};
+      c.font={bold:true,color:{argb:ci===1?WHITE:GOLD},size:ci===1?9:7};
+      c.alignment={horizontal:ci===1?'left':'center'};
+    });
+    sh.views=[{state:'frozen',xSplit:1,ySplit:1,topLeftCell:'B2',activeCell:'B2'}];
+    // Filas de métricas
+    metrics.forEach(mt=>{
+      if(mt.sep){
+        const sr=sh.addRow([mt.label||'']);
+        sr.getCell(1).font={bold:true,color:{argb:GOLD},size:8};
+        sr.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F2942'}};
+        sr.height=14; return;
+      }
+      const vals=ms.map(m=>mt.pct?pct(mt.fn(m)):num(mt.fn(m)));
+      const row=sh.addRow([mt.label,...vals]);
+      row.getCell(1).font={bold:!!mt.bold,color:{argb:mt.bold?WHITE:LABEL},size:9};
+      row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
+      row.getCell(1).alignment={horizontal:'left'};
+      for(let ci=2;ci<=61;ci++){
+        const c=row.getCell(ci); const v=c.value;
+        const yr=Math.floor((ci-2)/12);
+        c.fill={type:'pattern',pattern:'solid',fgColor:{argb:yr%2===0?DARK:MID}};
+        const isNeg=typeof v==='number'&&v<0;
+        c.font=mt.bold?{bold:true,size:9,color:{argb:isNeg?RED:GREEN}}:{size:9,color:{argb:isNeg?RED:WHITE}};
+        c.alignment={horizontal:'right'};
+        if(mt.pct) c.numFmt='0.0%';
+        else if(typeof v==='number') c.numFmt='#,##0';
+      }
+      row.height=14;
+    });
+  };
 
-  // ── CASH FLOW (60M) ──────────────────────────────────────────────────────────
-  const wcf = wb.addWorksheet('Cash Flow', { tabColor:{argb:'FF0891B2'} });
-  wcf.columns = [
-    {width:6},{width:7},{width:13},{width:13},{width:13},
-    {width:13},{width:13},{width:14},{width:13},{width:13},{width:13},
-  ];
-  styleHdr(wcf.addRow(['Mes#','Mes','Rev Bruto','EBITDA','Tot Impuestos',
-    'Neto Real','CF Negro Neto','CF Blanco Neto','Cash Mes','Cash Acum','Inv / Op']));
-  ms.forEach((m, i) => {
-    const invOp = `Inv: $${(m.invSh/1000).toFixed(0)}k | Op: $${(m.opSh/1000).toFixed(0)}k`;
-    const row = wcf.addRow([
-      m.mn, MNS[m.cm],
-      num(m.revBruto), num(m.ebitda), num(m.totImp),
-      num(m.netoReal), num(m.cashNgNeto), num(m.cashBlNeto),
-      num(m.cashMes), num(m.cashAcum), invOp,
-    ]);
-    styleData(row, i, new Set([9,10]), new Set([]));
-    row.getCell(11).font = {size:8, color:{argb:MUTED}};
-    row.getCell(11).alignment = {horizontal:'left'};
-  });
-  wcf.views = [{state:'frozen',xSplit:2,ySplit:1,topLeftCell:'C2',activeCell:'C2'}];
+  // ── P&L REAL (transpuesto) ────────────────────────────────────────────────
+  addPnL('P&L Real','FF1D4ED8',[
+    {sep:true, label:'COBERTURAS'},
+    {label:'Estacionalidad %',  fn:m=>m.se,              pct:true},
+    {label:'Covers Almuerzo',   fn:m=>m.cvA},
+    {label:'Covers Cena',       fn:m=>m.cvC},
+    {label:'Covers After',      fn:m=>m.cvF},
+    {label:'Covers Total',      fn:m=>m.cvTot,           bold:true},
+    {sep:true, label:'REVENUE'},
+    {label:'Revenue Bruto',     fn:m=>m.revBruto,        bold:true},
+    {label:'  Revenue Blanco',  fn:m=>m.revBl},
+    {label:'  Revenue Negro',   fn:m=>m.revNg},
+    {sep:true, label:'COSTO VARIABLE'},
+    {label:'Food Cost',         fn:m=>m.foodCost},
+    {label:'Paper Cost',        fn:m=>m.paperCost},
+    {label:'CMV Total',         fn:m=>m.cmv,             bold:true},
+    {label:'Gross Profit',      fn:m=>m.grossProfit,     bold:true},
+    {label:'Gross Margin %',    fn:m=>m.grossMargin,     pct:true, bold:true},
+    {sep:true, label:'COSTOS OPERATIVOS'},
+    {label:'Labor',             fn:m=>m.labor},
+    {label:'  Labor Blanco',    fn:m=>m.laborBl},
+    {label:'  Labor Negro',     fn:m=>m.laborNg},
+    {label:'Occupancy',         fn:m=>m.occ},
+    {label:'OPEX',              fn:m=>m.opex},
+    {label:'Marketing',         fn:m=>m.mktg},
+    {label:'Processing',        fn:m=>m.proc},
+    {label:'SG&A',              fn:m=>m.sga},
+    {sep:true, label:'EBITDA'},
+    {label:'EBITDA',            fn:m=>m.ebitda,          bold:true},
+    {label:'EBITDA Margin %',   fn:m=>m.ebitdaM,         pct:true, bold:true},
+    {sep:true, label:'IMPUESTOS'},
+    {label:'IVA Pagar',         fn:m=>m.ivaPagar},
+    {label:'IIBB',              fn:m=>m.iibb},
+    {label:'Déb / Créd',        fn:m=>m.debCred},
+    {label:'Fex Costo',         fn:m=>m.fexCosto},
+    {label:'Amortización',      fn:m=>m.amortMes},
+    {label:'Total Impuestos',   fn:m=>m.totImp,          bold:true},
+    {sep:true, label:'RESULTADO'},
+    {label:'Neto Real',         fn:m=>m.netoReal,        bold:true},
+    {label:'Net Margin %',      fn:m=>m.netMargin,       pct:true, bold:true},
+    {label:'Cash Mes',          fn:m=>m.cashMes},
+    {label:'Cash Acumulado',    fn:m=>m.cashAcum,        bold:true},
+  ]);
+
+  // ── P&L CONTABLE (transpuesto) ────────────────────────────────────────────
+  addPnL('P&L Contable','FF7C3AED',[
+    {sep:true, label:'REVENUE'},
+    {label:'Rev Blanco Neto',    fn:m=>m.revBlNeto,                    bold:true},
+    {sep:true, label:'DEDUCCIONES'},
+    {label:'CMV Fact. Neto',     fn:m=>m.cmv*p.cmpB/(1+IVA)},
+    {label:'Labor Blanco',       fn:m=>m.laborBl},
+    {label:'Alquiler Neto',      fn:_=>p.alq/(1+IVA)},
+    {label:'Servicios Neto',     fn:_=>p.srv/(1+IVA)},
+    {label:'OPEX Neto',          fn:m=>m.opex/(1+IVA)},
+    {label:'Marketing Neto',     fn:m=>m.mktg/(1+IVA)},
+    {label:'SG&A Neto',          fn:m=>m.sga/(1+IVA)},
+    {label:'Processing',         fn:m=>m.proc},
+    {label:'Fex Neto',           fn:_=>p.fex/(1+IVA)},
+    {label:'IIBB + Déb/Créd',    fn:m=>m.iibb+m.debCred},
+    {label:'Amortización',       fn:m=>m.amortMes},
+    {label:'Total Deducciones',  fn:m=>m.gastosDeducibles,             bold:true},
+    {sep:true, label:'GANANCIAS'},
+    {label:'Base Imponible',     fn:m=>m.baseGan},
+    {label:'Quebranto',          fn:m=>m.quebranto},
+    {label:'Base c/ Quebranto',  fn:m=>m.baseGanConQuebranto},
+    {label:'Imp. Ganancias',     fn:m=>m.impGan},
+    {label:'Resultado Contable', fn:m=>m.resultadoContable,            bold:true},
+  ]);
+
+  // ── CASH FLOW (transpuesto) ───────────────────────────────────────────────
+  addPnL('Cash Flow','FF0891B2',[
+    {label:'Revenue Bruto',     fn:m=>m.revBruto,        bold:true},
+    {label:'EBITDA',            fn:m=>m.ebitda,          bold:true},
+    {label:'Total Impuestos',   fn:m=>m.totImp},
+    {label:'Neto Real',         fn:m=>m.netoReal,        bold:true},
+    {label:'CF Negro Neto',     fn:m=>m.cashNgNeto},
+    {label:'CF Blanco Neto',    fn:m=>m.cashBlNeto},
+    {label:'Cash Mes',          fn:m=>m.cashMes},
+    {label:'Cash Acumulado',    fn:m=>m.cashAcum,        bold:true},
+    {sep:true, label:'SPLIT'},
+    {label:'Inversor (mes)',    fn:m=>m.invSh},
+    {label:'Operador (mes)',    fn:m=>m.opSh},
+  ]);
 
   // ── INVERSOR ─────────────────────────────────────────────────────────────────
   const wi = wb.addWorksheet('Inversor', { tabColor:{argb:'FFFBBF24'} });

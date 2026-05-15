@@ -2232,7 +2232,7 @@ async function exportExcel() {
   });
   wc.getRow(1).height = 28;
   for (let i = 0; i < 60; i++) {
-    const p = mc(i);
+    const r = i + 2, p = mc(i);
     wc.addRow([
       i + 1,
       { formula:`'${PR}'!${p}${MN.MES}` },
@@ -2287,7 +2287,7 @@ async function exportExcel() {
   });
   wcf.getRow(1).height = 28;
   for (let i = 0; i < 60; i++) {
-    const p = mc(i);
+    const r = i + 2, p = mc(i);
     wcf.addRow([
       i + 1,
       { formula:`'${PR}'!${p}${MN.MES}` },

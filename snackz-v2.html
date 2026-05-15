@@ -2047,107 +2047,168 @@ async function exportExcel() {
   styleSection(ws.addRow(['ROTACIONES — AFTER (vueltas/día)']));
   DAYS.forEach((d,i) => { const el=document.getElementById(`rF${i}`); styleParam(ws.addRow([`After ${d}`, el?+el.value:rFDef[i], ''])); });
 
-  // ── SHEET 2: P&L REAL (60 MESES) con fórmulas referenciando Supuestos ───────
+  // ── SHEET 2: P&L REAL (60 MESES) — métricas en filas, meses en columnas ──────
   const PR = 'P&L Real';
   const wm = wb.addWorksheet(PR, { tabColor:{ argb:'FF1D4ED8' } });
-  wm.columns = [
-    { width:6  },{ width:7  },{ width:8  },{ width:9  },{ width:11 },{ width:11 },{ width:12 },
-    { width:11 },{ width:12 },{ width:12 },{ width:12 },{ width:11 },{ width:11 },{ width:11 },
-    { width:12 },{ width:12 },{ width:11 },{ width:12 },{ width:12 },{ width:11 },{ width:11 },
-    { width:11 },{ width:11 },{ width:10 },{ width:12 },{ width:9  },{ width:11 },{ width:11 },
-    { width:11 },{ width:10 },{ width:10 },{ width:10 },{ width:13 },{ width:12 },{ width:14 },
-    { width:12 },{ width:12 },{ width:12 },{ width:11 },{ width:11 },{ width:12 },{ width:11 },
-    { width:12 },{ width:13 },{ width:12 },{ width:9  },{ width:11 },{ width:11 },
-  ];
-  wm.addRow([
-    'Mes#','Mes','Cal.Idx','Estac.%','Covers Alm','Covers Cena','Covers After','Covers Tot',
-    'Rev Bruto','Rev Blanco','Rev Negro','Food Cost','Paper Cost','CMV','Gross Profit','Gross Mrgn%',
-    'Labor','Labor Blanco','Labor Negro','Occupancy','OPEX','Marketing','Processing','SG&A',
-    'EBITDA','EBITDA%','IVA Débito','IVA Crédito','IVA a Pagar','IIBB','Déb/Créd','Fex Costo',
-    'Amortización','Rev Bl Neto','Gtos Deduc.','Base Gan.','Quebranto','Base c/Qbr.','Imp.Gan.','Tot.Imp.',
-    'Neto Real','Net Mrgn%','Cash Mes','Cash Acum','Inv.Acum.','Split%','Inv.Share','Op.Share',
-  ]);
-  wm.getRow(1).eachCell(c => {
-    c.font = { bold:true, color:{ argb:GOLD }, size:8 };
-    c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
-    c.alignment = { horizontal:'center', wrapText:true };
-    c.border = { bottom:{ style:'medium', color:{ argb:'FF334155' } } };
+
+  // Column letter helper (1-based index)
+  const colLet = n => { let s=''; while(n>0){s=String.fromCharCode(64+((n-1)%26+1))+s;n=Math.floor((n-1)/26);}return s; };
+  const mc = i => colLet(2 + i); // month i (0-based) → Excel column letter
+
+  // Metric row numbers in the transposed sheet (row 1 = header)
+  const MN = {
+    MES:2, CAL:3, EST:4,
+    CAlm:5, CCen:6, CAft:7, CTot:8,
+    RevBrt:9, RevBl:10, RevNeg:11,
+    FC:12, PC:13, CMV:14, GP:15, GPpct:16,
+    Lab:17, LabBl:18, LabNeg:19, Occ:20,
+    OPEX:21, Mkt:22, Proc:23, SGA:24,
+    EBITDA:25, EBpct:26,
+    IVADeb:27, IVACred:28, IVAPag:29,
+    IIBB:30, DBC:31, FexC:32, Amort:33,
+    RevBlNeto:34, GtosDed:35, BaseGan:36,
+    Qbr:37, BaseQbr:38, ImpGan:39, TotImp:40,
+    NetoReal:41, NetMgn:42,
+    CashMes:43, CashAcum:44, InvAcum:45, Split:46, InvSh:47, OpSh:48,
+  };
+
+  wm.columns = [{ width:22 }, ...Array.from({length:60}, ()=>({ width:9 }))];
+
+  // Header row: label + month numbers
+  wm.addRow(['Métrica', ...Array.from({length:60}, (_,i)=>`M${i+1}`)]);
+  wm.getRow(1).eachCell((c,ci) => {
+    c.font  = { bold:true, color:{ argb: ci===1 ? GOLD : MUTED }, size: ci===1 ? 9 : 8 };
+    c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:MID } };
+    c.alignment = { horizontal: ci===1 ? 'left' : 'center' };
+    c.border = { bottom:{ style:'thin', color:{ argb:'FF334155' } } };
   });
-  wm.getRow(1).height = 28;
+  wm.getRow(1).height = 16;
 
-  const pctCols  = new Set([4,16,26,42,46]);
-  const boldCols = new Set([25,41,43,44]);
+  // Build all 60 month formula sets upfront
+  const allMF = Array.from({length:60}, (_, i) => {
+    const c = mc(i), pc = i > 0 ? mc(i-1) : null, m = MN;
+    return {
+      MES:     f(`=INDEX({"Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"},MOD(${sup(R.MAP)}-1+${i},12)+1)`),
+      CAL:     f(`=MOD(${sup(R.MAP)}-1+${i},12)`),
+      EST:     f(`=INDEX(${S}!$B$${R.SEAS}:$B$${R.SEAS+11},${c}${m.CAL}+1)`),
+      CAlm:    f(`=IF(${sup(R.TALM)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RA}:$B$${R.RA+6})*4.33*${c}${m.EST},0)`),
+      CCen:    f(`=IF(${sup(R.TCENA)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RC}:$B$${R.RC+6})*4.33*${c}${m.EST},0)`),
+      CAft:    f(`=IF(${sup(R.TAFTER)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RF}:$B$${R.RF+6})*4.33*${c}${m.EST},0)`),
+      CTot:    f(`=${c}${m.CAlm}+${c}${m.CCen}+${c}${m.CAft}`),
+      RevBl:   f(`=${c}${m.CAlm}*(1-${sup(R.PNEG)})*${sup(R.TKA)}+${c}${m.CCen}*(1-${sup(R.PNEG)})*${sup(R.TKC)}+${c}${m.CAft}*(1-${sup(R.PNEG)})*${sup(R.TKF)}`),
+      RevNeg:  f(`=(${c}${m.CAlm}*${sup(R.TKA)}+${c}${m.CCen}*${sup(R.TKC)}+${c}${m.CAft}*${sup(R.TKF)})*${sup(R.PNEG)}*(1-${sup(R.DNEG)})`),
+      RevBrt:  f(`=${c}${m.RevBl}+${c}${m.RevNeg}`),
+      FC:      f(`=${c}${m.RevBrt}*${sup(R.FC)}`),
+      PC:      f(`=${c}${m.RevBrt}*${sup(R.PC)}`),
+      CMV:     f(`=${c}${m.FC}+${c}${m.PC}`),
+      GP:      f(`=${c}${m.RevBrt}-${c}${m.CMV}`),
+      GPpct:   f(`=IF(${c}${m.RevBrt}>0,${c}${m.GP}/${c}${m.RevBrt},0)`),
+      Lab:     f(`=(${sup(R.TALM)}*${sup(R.SA)}+${sup(R.TCENA)}*${sup(R.SC)}+${sup(R.TAFTER)}*${sup(R.SF)})*${sup(R.SUE)}`),
+      LabBl:   f(`=IF(${sup(R.MONO)}=1,${c}${m.Lab},${c}${m.Lab}*0.5)`),
+      LabNeg:  f(`=IF(${sup(R.MONO)}=1,0,${c}${m.Lab}*0.5)`),
+      Occ:     f(`=${sup(R.ALQ)}+${sup(R.SRV)}`),
+      OPEX:    f(`=${c}${m.RevBrt}*${sup(R.OPX)}`),
+      Mkt:     f(`=${c}${m.RevBrt}*${sup(R.MKT)}`),
+      Proc:    f(`=${c}${m.RevBl}*${sup(R.PRC)}`),
+      SGA:     f(`=${sup(R.CNT)}+${sup(R.SFT)}`),
+      EBITDA:  f(`=${c}${m.GP}-${c}${m.Lab}-${c}${m.Occ}-${c}${m.OPEX}-${c}${m.Mkt}-${c}${m.Proc}-${c}${m.SGA}`),
+      EBpct:   f(`=IF(${c}${m.RevBrt}>0,${c}${m.EBITDA}/${c}${m.RevBrt},0)`),
+      IVADeb:  f(`=${c}${m.RevBl}/(1+${sup(R.IVA)})*${sup(R.IVA)}`),
+      IVACred: f(`=(${c}${m.CMV}*${sup(R.CMPB)}+${sup(R.ALQ)}+${sup(R.SRV)}+${c}${m.Mkt}+${c}${m.OPEX}+${sup(R.SFT)}+${sup(R.CNT)}+${sup(R.FEX)})*${sup(R.IVA)}/(1+${sup(R.IVA)})`),
+      IVAPag:  f(`=MAX(0,${c}${m.IVADeb}-${c}${m.IVACred})`),
+      IIBB:    f(`=${c}${m.RevBl}*${sup(R.IIBB)}`),
+      DBC:     f(`=${c}${m.RevBl}*${sup(R.DBC)}`),
+      FexC:    f(`=${sup(R.FEX)}*${sup(R.IVA)}/(1+${sup(R.IVA)})*${sup(R.FEXC)}`),
+      Amort:   f(`=IF(${i}<36,${sup(R.INVB)}/36,0)+IF(${i}<60,(${sup(R.INVC)}+${sup(R.INVH)})/60,0)+IF(${i}<120,(${sup(R.INVM)}+${sup(R.INVO)})/120,0)`),
+      RevBlNeto: f(`=${c}${m.RevBl}/(1+${sup(R.IVA)})`),
+      GtosDed: f(`=${c}${m.CMV}*${sup(R.CMPB)}/(1+${sup(R.IVA)})+${c}${m.LabBl}+${sup(R.ALQ)}/(1+${sup(R.IVA)})+${sup(R.SRV)}/(1+${sup(R.IVA)})+${c}${m.OPEX}/(1+${sup(R.IVA)})+${c}${m.Mkt}/(1+${sup(R.IVA)})+${sup(R.CNT)}/(1+${sup(R.IVA)})+${sup(R.SFT)}/(1+${sup(R.IVA)})+${c}${m.Proc}+${sup(R.FEX)}/(1+${sup(R.IVA)})+${c}${m.IVAPag}+${c}${m.IIBB}+${c}${m.Amort}`),
+      BaseGan: f(`=${c}${m.RevBlNeto}-${c}${m.GtosDed}`),
+      Qbr:     i===0 ? 0 : f(`=${pc}${m.Qbr}+IF(${pc}${m.BaseGan}<0,ABS(${pc}${m.BaseGan}),-MIN(${pc}${m.Qbr},MAX(0,${pc}${m.BaseGan})))`),
+      BaseQbr: f(`=IF(${c}${m.BaseGan}<0,0,MAX(0,${c}${m.BaseGan}-${c}${m.Qbr}))`),
+      ImpGan:  f(`=MAX(0,${c}${m.BaseQbr})*${sup(R.GAN)}`),
+      TotImp:  f(`=${c}${m.IVAPag}+${c}${m.IIBB}+${c}${m.DBC}+${c}${m.ImpGan}+${c}${m.FexC}`),
+      NetoReal:f(`=${c}${m.EBITDA}-${c}${m.TotImp}`),
+      NetMgn:  f(`=IF(${c}${m.RevBrt}>0,${c}${m.NetoReal}/${c}${m.RevBrt},0)`),
+      CashMes: f(`=${c}${m.EBITDA}-${c}${m.IVAPag}-${c}${m.IIBB}-${c}${m.DBC}-${c}${m.ImpGan}-${c}${m.FexC}`),
+      CashAcum:i===0 ? f(`=${c}${m.CashMes}-${sup(R.INV_TOT)}`) : f(`=${pc}${m.CashAcum}+${c}${m.CashMes}`),
+      InvAcum: i===0 ? f(`=IF(${c}${m.CashMes}>0,${c}${m.CashMes}*${c}${m.Split},0)`) : f(`=${pc}${m.InvAcum}+IF(${c}${m.CashMes}>0,${c}${m.CashMes}*${c}${m.Split},0)`),
+      Split:   i===0 ? f(`=IF(0>=${sup(R.INV_TOT)},${sup(R.SPPOST)},${sup(R.SPPRE)})`) : f(`=IF(${pc}${m.InvAcum}>=${sup(R.INV_TOT)},${sup(R.SPPOST)},${sup(R.SPPRE)})`),
+      InvSh:   f(`=IF(${c}${m.CashMes}>0,${c}${m.CashMes}*${c}${m.Split},0)`),
+      OpSh:    f(`=${c}${m.CashMes}-${c}${m.InvSh}`),
+    };
+  });
 
-  for (let i = 0; i < 60; i++) {
-    const r    = i + 2;
-    const prev = r - 1;
-    const rowData = [
-      i + 1,
-      f(`=INDEX({"Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"},MOD(${sup(R.MAP)}-1+${i},12)+1)`),
-      f(`=MOD(${sup(R.MAP)}-1+${i},12)`),
-      f(`=INDEX(${S}!$B$${R.SEAS}:$B$${R.SEAS+11},C${r}+1)`),
-      f(`=IF(${sup(R.TALM)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RA}:$B$${R.RA+6})*4.33*D${r},0)`),
-      f(`=IF(${sup(R.TCENA)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RC}:$B$${R.RC+6})*4.33*D${r},0)`),
-      f(`=IF(${sup(R.TAFTER)}=1,${sup(R.CAP)}*SUM(${S}!$B$${R.RF}:$B$${R.RF+6})*4.33*D${r},0)`),
-      f(`=E${r}+F${r}+G${r}`),
-      f(`=J${r}+K${r}`),
-      f(`=E${r}*(1-${sup(R.PNEG)})*${sup(R.TKA)}+F${r}*(1-${sup(R.PNEG)})*${sup(R.TKC)}+G${r}*(1-${sup(R.PNEG)})*${sup(R.TKF)}`),
-      f(`=(E${r}*${sup(R.TKA)}+F${r}*${sup(R.TKC)}+G${r}*${sup(R.TKF)})*${sup(R.PNEG)}*(1-${sup(R.DNEG)})`),
-      f(`=I${r}*${sup(R.FC)}`),
-      f(`=I${r}*${sup(R.PC)}`),
-      f(`=L${r}+M${r}`),
-      f(`=I${r}-N${r}`),
-      f(`=IF(I${r}>0,O${r}/I${r},0)`),
-      f(`=(${sup(R.TALM)}*${sup(R.SA)}+${sup(R.TCENA)}*${sup(R.SC)}+${sup(R.TAFTER)}*${sup(R.SF)})*${sup(R.SUE)}`),
-      f(`=IF(${sup(R.MONO)}=1,Q${r},Q${r}*0.5)`),
-      f(`=IF(${sup(R.MONO)}=1,0,Q${r}*0.5)`),
-      f(`=${sup(R.ALQ)}+${sup(R.SRV)}`),
-      f(`=I${r}*${sup(R.OPX)}`),
-      f(`=I${r}*${sup(R.MKT)}`),
-      f(`=J${r}*${sup(R.PRC)}`),
-      f(`=${sup(R.CNT)}+${sup(R.SFT)}`),
-      f(`=O${r}-Q${r}-T${r}-U${r}-V${r}-W${r}-X${r}`),
-      f(`=IF(I${r}>0,Y${r}/I${r},0)`),
-      f(`=J${r}/(1+${sup(R.IVA)})*${sup(R.IVA)}`),
-      f(`=(N${r}*${sup(R.CMPB)}+${sup(R.ALQ)}+${sup(R.SRV)}+V${r}+U${r}+${sup(R.SFT)}+${sup(R.CNT)}+${sup(R.FEX)})*${sup(R.IVA)}/(1+${sup(R.IVA)})`),
-      f(`=MAX(0,AA${r}-AB${r})`),
-      f(`=J${r}*${sup(R.IIBB)}`),
-      f(`=J${r}*${sup(R.DBC)}`),
-      f(`=${sup(R.FEX)}*${sup(R.IVA)}/(1+${sup(R.IVA)})*${sup(R.FEXC)}`),
-      f(`=IF(${i}<36,${sup(R.INVB)}/36,0)+IF(${i}<60,(${sup(R.INVC)}+${sup(R.INVH)})/60,0)+IF(${i}<120,(${sup(R.INVM)}+${sup(R.INVO)})/120,0)`),
-      f(`=J${r}/(1+${sup(R.IVA)})`),
-      f(`=N${r}*${sup(R.CMPB)}/(1+${sup(R.IVA)})+R${r}+${sup(R.ALQ)}/(1+${sup(R.IVA)})+${sup(R.SRV)}/(1+${sup(R.IVA)})+U${r}/(1+${sup(R.IVA)})+V${r}/(1+${sup(R.IVA)})+${sup(R.CNT)}/(1+${sup(R.IVA)})+${sup(R.SFT)}/(1+${sup(R.IVA)})+W${r}+${sup(R.FEX)}/(1+${sup(R.IVA)})+AD${r}+AE${r}+AG${r}`),
-      f(`=AH${r}-AI${r}`),
-      i === 0 ? 0 : f(`=AK${prev}+IF(AJ${prev}<0,ABS(AJ${prev}),-MIN(AK${prev},MAX(0,AJ${prev})))`),
-      f(`=IF(AJ${r}<0,0,MAX(0,AJ${r}-AK${r}))`),
-      f(`=MAX(0,AL${r})*${sup(R.GAN)}`),
-      f(`=AC${r}+AD${r}+AE${r}+AM${r}+AF${r}`),
-      f(`=Y${r}-AN${r}`),
-      f(`=IF(I${r}>0,AO${r}/I${r},0)`),
-      f(`=Y${r}-AC${r}-AD${r}-AE${r}-AM${r}-AF${r}`),
-      i === 0 ? f(`=AQ${r}-${sup(R.INV_TOT)}`) : f(`=AR${prev}+AQ${r}`),
-      i === 0 ? f(`=IF(AQ${r}>0,AQ${r}*AT${r},0)`) : f(`=AS${prev}+IF(AQ${r}>0,AQ${r}*AT${r},0)`),
-      i === 0 ? f(`=IF(0>=${sup(R.INV_TOT)},${sup(R.SPPOST)},${sup(R.SPPRE)})`) : f(`=IF(AS${prev}>=${sup(R.INV_TOT)},${sup(R.SPPOST)},${sup(R.SPPRE)})`),
-      f(`=IF(AQ${r}>0,AQ${r}*AT${r},0)`),
-      f(`=AQ${r}-AU${r}`),
-    ];
-    wm.addRow(rowData);
-    const row = wm.getRow(r);
-    row.height = 15;
-    row.eachCell({ includeEmpty:false }, (cell, colIdx) => {
-      cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: i%2===0 ? DARK : MID } };
-      cell.font = boldCols.has(colIdx)
-        ? { bold:true, size:9, color:{ argb: colIdx===43||colIdx===44 ? GOLD : GREEN } }
-        : { size:9, color:{ argb:WHITE } };
+  const metricDefs = [
+    { label:'Mes',          key:'MES',     txt:true  },
+    { label:'Cal.Idx',      key:'CAL',     fmt:'0'   },
+    { label:'Estac.%',      key:'EST',     pct:true  },
+    { label:'Covers Alm',   key:'CAlm'  },
+    { label:'Covers Cena',  key:'CCen'  },
+    { label:'Covers After', key:'CAft'  },
+    { label:'Covers Tot',   key:'CTot',   bold:true  },
+    { label:'Rev Bruto',    key:'RevBrt', bold:true  },
+    { label:'Rev Blanco',   key:'RevBl'  },
+    { label:'Rev Negro',    key:'RevNeg' },
+    { label:'Food Cost',    key:'FC'     },
+    { label:'Paper Cost',   key:'PC'     },
+    { label:'CMV',          key:'CMV'    },
+    { label:'Gross Profit', key:'GP',    bold:true   },
+    { label:'Gross Mrgn%',  key:'GPpct', pct:true    },
+    { label:'Labor',        key:'Lab'    },
+    { label:'Labor Blanco', key:'LabBl'  },
+    { label:'Labor Negro',  key:'LabNeg' },
+    { label:'Occupancy',    key:'Occ'    },
+    { label:'OPEX',         key:'OPEX'   },
+    { label:'Marketing',    key:'Mkt'    },
+    { label:'Processing',   key:'Proc'   },
+    { label:'SG&A',         key:'SGA'    },
+    { label:'EBITDA',       key:'EBITDA',bold:true    },
+    { label:'EBITDA%',      key:'EBpct', pct:true    },
+    { label:'IVA Débito',   key:'IVADeb' },
+    { label:'IVA Crédito',  key:'IVACred'},
+    { label:'IVA a Pagar',  key:'IVAPag' },
+    { label:'IIBB',         key:'IIBB'   },
+    { label:'Déb/Créd',     key:'DBC'    },
+    { label:'Fex Costo',    key:'FexC'   },
+    { label:'Amortización', key:'Amort'  },
+    { label:'Rev Bl Neto',  key:'RevBlNeto'},
+    { label:'Gtos Deduc.',  key:'GtosDed'},
+    { label:'Base Gan.',    key:'BaseGan'},
+    { label:'Quebranto',    key:'Qbr'    },
+    { label:'Base c/Qbr.',  key:'BaseQbr'},
+    { label:'Imp.Gan.',     key:'ImpGan' },
+    { label:'Tot.Imp.',     key:'TotImp' },
+    { label:'Neto Real',    key:'NetoReal',bold:true  },
+    { label:'Net Mrgn%',    key:'NetMgn', pct:true   },
+    { label:'Cash Mes',     key:'CashMes',bold:true   },
+    { label:'Cash Acum',    key:'CashAcum',bold:true,gold:true},
+    { label:'Inv.Acum.',    key:'InvAcum'},
+    { label:'Split%',       key:'Split',  pct:true   },
+    { label:'Inv.Share',    key:'InvSh',  bold:true,gold:true},
+    { label:'Op.Share',     key:'OpSh',   bold:true  },
+  ];
+
+  metricDefs.forEach((def, mi) => {
+    const rowNum = mi + 2;
+    wm.addRow([def.label, ...Array.from({length:60}, (_,i) => allMF[i][def.key])]);
+    const exRow = wm.getRow(rowNum);
+    exRow.height = 14;
+    const lblColor = def.bold ? (def.gold ? GOLD : GREEN) : LABEL;
+    exRow.getCell(1).font  = { bold:!!def.bold, color:{ argb:lblColor }, size:9 };
+    exRow.getCell(1).fill  = { type:'pattern', pattern:'solid', fgColor:{ argb: mi%2===0 ? DARK : MID } };
+    exRow.getCell(1).alignment = { horizontal:'left' };
+    for (let i = 0; i < 60; i++) {
+      const cell = exRow.getCell(i + 2);
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: mi%2===0 ? DARK : MID } };
+      cell.font = { bold:!!def.bold, size:8, color:{ argb: def.bold ? (def.gold ? GOLD : GREEN) : WHITE } };
       cell.alignment = { horizontal:'right' };
-      if (pctCols.has(colIdx)) cell.numFmt = '0.0%';
-      else if (colIdx >= 5 && colIdx !== 2 && colIdx !== 3) cell.numFmt = '#,##0';
-    });
-    row.getCell(1).alignment = { horizontal:'center' };
-    row.getCell(2).alignment = { horizontal:'center' };
-    row.getCell(2).numFmt = '@';
-  }
-  wm.views = [{ state:'frozen', xSplit:2, ySplit:1, topLeftCell:'C2', activeCell:'I2' }];
+      if      (def.txt) cell.numFmt = '@';
+      else if (def.fmt) cell.numFmt = def.fmt;
+      else if (def.pct) cell.numFmt = '0.0%';
+      else              cell.numFmt = '#,##0';
+    }
+  });
+  wm.views = [{ state:'frozen', xSplit:1, ySplit:1, topLeftCell:'B2', activeCell:'B8' }];
 
   // ── SHEET 3: P&L CONTABLE (60M) ─────────────────────────────────────────────
   const wc = wb.addWorksheet('P&L Contable', { tabColor:{ argb:'FF7C3AED' } });
@@ -2171,28 +2232,28 @@ async function exportExcel() {
   });
   wc.getRow(1).height = 28;
   for (let i = 0; i < 60; i++) {
-    const r = i + 2;
+    const p = mc(i);
     wc.addRow([
       i + 1,
-      { formula:`'${PR}'!B${r}` },
-      { formula:`'${PR}'!AH${r}` },
-      { formula:`'${PR}'!N${r}*${sup(R.CMPB)}/(1+${sup(R.IVA)})` },
-      { formula:`'${PR}'!R${r}` },
+      { formula:`'${PR}'!${p}${MN.MES}` },
+      { formula:`'${PR}'!${p}${MN.RevBlNeto}` },
+      { formula:`'${PR}'!${p}${MN.CMV}*${sup(R.CMPB)}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!${p}${MN.LabBl}` },
       { formula:`${sup(R.ALQ)}/(1+${sup(R.IVA)})` },
       { formula:`${sup(R.SRV)}/(1+${sup(R.IVA)})` },
-      { formula:`'${PR}'!U${r}/(1+${sup(R.IVA)})` },
-      { formula:`'${PR}'!V${r}/(1+${sup(R.IVA)})` },
-      { formula:`'${PR}'!X${r}/(1+${sup(R.IVA)})` },
-      { formula:`'${PR}'!W${r}` },
+      { formula:`'${PR}'!${p}${MN.OPEX}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!${p}${MN.Mkt}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!${p}${MN.SGA}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!${p}${MN.Proc}` },
       { formula:`${sup(R.FEX)}/(1+${sup(R.IVA)})` },
-      { formula:`'${PR}'!AD${r}+'${PR}'!AE${r}` },
-      { formula:`'${PR}'!AG${r}` },
-      { formula:`'${PR}'!AI${r}` },
-      { formula:`'${PR}'!AJ${r}` },
-      { formula:`'${PR}'!AK${r}` },
-      { formula:`'${PR}'!AL${r}` },
-      { formula:`'${PR}'!AM${r}` },
-      { formula:`'${PR}'!AH${r}-'${PR}'!AI${r}-'${PR}'!AM${r}` },
+      { formula:`'${PR}'!${p}${MN.IIBB}+'${PR}'!${p}${MN.DBC}` },
+      { formula:`'${PR}'!${p}${MN.Amort}` },
+      { formula:`'${PR}'!${p}${MN.GtosDed}` },
+      { formula:`'${PR}'!${p}${MN.BaseGan}` },
+      { formula:`'${PR}'!${p}${MN.Qbr}` },
+      { formula:`'${PR}'!${p}${MN.BaseQbr}` },
+      { formula:`'${PR}'!${p}${MN.ImpGan}` },
+      { formula:`'${PR}'!${p}${MN.RevBlNeto}-'${PR}'!${p}${MN.GtosDed}-'${PR}'!${p}${MN.ImpGan}` },
     ]);
     const row = wc.getRow(r);
     row.height = 15;
@@ -2226,19 +2287,19 @@ async function exportExcel() {
   });
   wcf.getRow(1).height = 28;
   for (let i = 0; i < 60; i++) {
-    const r = i + 2;
+    const p = mc(i);
     wcf.addRow([
       i + 1,
-      { formula:`'${PR}'!B${r}` },
-      { formula:`'${PR}'!I${r}` },
-      { formula:`'${PR}'!Y${r}` },
-      { formula:`'${PR}'!AN${r}` },
-      { formula:`'${PR}'!AO${r}` },
-      { formula:`'${PR}'!K${r}-'${PR}'!N${r}*${sup(R.PNEG)}` },
-      { formula:`'${PR}'!J${r}-'${PR}'!N${r}*(1-${sup(R.PNEG)})-'${PR}'!Q${r}-'${PR}'!T${r}-'${PR}'!U${r}-'${PR}'!V${r}-'${PR}'!W${r}-'${PR}'!X${r}-'${PR}'!AC${r}-'${PR}'!AD${r}-'${PR}'!AE${r}-'${PR}'!AM${r}` },
-      { formula:`'${PR}'!AQ${r}` },
-      { formula:`'${PR}'!AR${r}` },
-      { formula:`"Inv:"&TEXT('${PR}'!AU${r},"#,##0")&" | Op:"&TEXT('${PR}'!AV${r},"#,##0")` },
+      { formula:`'${PR}'!${p}${MN.MES}` },
+      { formula:`'${PR}'!${p}${MN.RevBrt}` },
+      { formula:`'${PR}'!${p}${MN.EBITDA}` },
+      { formula:`'${PR}'!${p}${MN.TotImp}` },
+      { formula:`'${PR}'!${p}${MN.NetoReal}` },
+      { formula:`'${PR}'!${p}${MN.RevNeg}-'${PR}'!${p}${MN.CMV}*${sup(R.PNEG)}` },
+      { formula:`'${PR}'!${p}${MN.RevBl}-'${PR}'!${p}${MN.CMV}*(1-${sup(R.PNEG)})-'${PR}'!${p}${MN.Lab}-'${PR}'!${p}${MN.Occ}-'${PR}'!${p}${MN.OPEX}-'${PR}'!${p}${MN.Mkt}-'${PR}'!${p}${MN.Proc}-'${PR}'!${p}${MN.SGA}-'${PR}'!${p}${MN.IVAPag}-'${PR}'!${p}${MN.IIBB}-'${PR}'!${p}${MN.DBC}-'${PR}'!${p}${MN.ImpGan}` },
+      { formula:`'${PR}'!${p}${MN.CashMes}` },
+      { formula:`'${PR}'!${p}${MN.CashAcum}` },
+      { formula:`"Inv:"&TEXT('${PR}'!${p}${MN.InvSh},"#,##0")&" | Op:"&TEXT('${PR}'!${p}${MN.OpSh},"#,##0")` },
     ]);
     const row = wcf.getRow(r);
     row.height = 15;
@@ -2273,14 +2334,14 @@ async function exportExcel() {
     c.font={bold:true,color:{argb:GOLD},size:9}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
   });
   const wiYrM = [
-    { label:'Inversor cobró (año)', fn: yr => `SUM('${PR}'!AU${2+yr*12}:AU${13+yr*12})` },
-    { label:'Inversor acum. (al fin del año)', fn: yr => `SUM('${PR}'!AU$2:AU${13+yr*12})` },
-    { label:'Operador cobró (año)', fn: yr => `SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
-    { label:'Operador acum. (al fin del año)', fn: yr => `SUM('${PR}'!AV$2:AV${13+yr*12})` },
-    { label:'Cash Acum. (fin de año)', fn: yr => `'${PR}'!AR${13+yr*12}` },
-    { label:'Revenue Bruto (año)', fn: yr => `SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
-    { label:'EBITDA (año)', fn: yr => `SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
-    { label:'Neto Real (año)', fn: yr => `SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
+    { label:'Inversor cobró (año)',           fn: yr => `SUM('${PR}'!${mc(yr*12)}${MN.InvSh}:${mc(yr*12+11)}${MN.InvSh})` },
+    { label:'Inversor acum. (al fin del año)',fn: yr => `SUM('${PR}'!B${MN.InvSh}:${mc(yr*12+11)}${MN.InvSh})` },
+    { label:'Operador cobró (año)',           fn: yr => `SUM('${PR}'!${mc(yr*12)}${MN.OpSh}:${mc(yr*12+11)}${MN.OpSh})` },
+    { label:'Operador acum. (al fin del año)',fn: yr => `SUM('${PR}'!B${MN.OpSh}:${mc(yr*12+11)}${MN.OpSh})` },
+    { label:'Cash Acum. (fin de año)',        fn: yr => `'${PR}'!${mc(yr*12+11)}${MN.CashAcum}` },
+    { label:'Revenue Bruto (año)',            fn: yr => `SUM('${PR}'!${mc(yr*12)}${MN.RevBrt}:${mc(yr*12+11)}${MN.RevBrt})` },
+    { label:'EBITDA (año)',                   fn: yr => `SUM('${PR}'!${mc(yr*12)}${MN.EBITDA}:${mc(yr*12+11)}${MN.EBITDA})` },
+    { label:'Neto Real (año)',                fn: yr => `SUM('${PR}'!${mc(yr*12)}${MN.NetoReal}:${mc(yr*12+11)}${MN.NetoReal})` },
   ];
   wiYrM.forEach((m, mi) => {
     const row = wi.addRow([m.label]);
@@ -2295,12 +2356,12 @@ async function exportExcel() {
   wi.addRow([]);
   styleSection(wi.addRow(['RESUMEN 5 AÑOS']));
   [
-    ['Inversor cobró total', `SUM('${PR}'!AU2:AU61)`],
-    ['Inversión original', `${sup(R.INV_TOT)}`],
-    ['Ganancia neta inversor', `SUM('${PR}'!AU2:AU61)-${sup(R.INV_TOT)}`],
-    ['Múltiplo (x veces)', `IF(${sup(R.INV_TOT)}>0,SUM('${PR}'!AU2:AU61)/${sup(R.INV_TOT)},0)`, '0.00"x"'],
-    ['Operador cobró total', `SUM('${PR}'!AV2:AV61)`],
-    ['Cash total generado (60M)', `SUM('${PR}'!AQ2:AQ61)`],
+    ['Inversor cobró total',        `SUM('${PR}'!B${MN.InvSh}:BI${MN.InvSh})`],
+    ['Inversión original',          `${sup(R.INV_TOT)}`],
+    ['Ganancia neta inversor',      `SUM('${PR}'!B${MN.InvSh}:BI${MN.InvSh})-${sup(R.INV_TOT)}`],
+    ['Múltiplo (x veces)',          `IF(${sup(R.INV_TOT)}>0,SUM('${PR}'!B${MN.InvSh}:BI${MN.InvSh})/${sup(R.INV_TOT)},0)`, '0.00"x"'],
+    ['Operador cobró total',        `SUM('${PR}'!B${MN.OpSh}:BI${MN.OpSh})`],
+    ['Cash total generado (60M)',   `SUM('${PR}'!B${MN.CashMes}:BI${MN.CashMes})`],
   ].forEach(([lbl, formula, fmt], mi) => {
     const row=wi.addRow([lbl,{formula}]);
     row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
@@ -2321,13 +2382,13 @@ async function exportExcel() {
     c.font={bold:true,color:{argb:GREEN},size:9}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
   });
   const woYrM = [
-    { label:'Op Share (año)', fn: yr=>`SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
-    { label:'Op Share acum.', fn: yr=>`SUM('${PR}'!AV$2:AV${13+yr*12})` },
-    { label:'Revenue Bruto (año)', fn: yr=>`SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
-    { label:'EBITDA (año)', fn: yr=>`SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
-    { label:'Neto Real (año)', fn: yr=>`SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
-    { label:'EBITDA Margin % prom.', fn: yr=>`AVERAGE('${PR}'!Z${2+yr*12}:Z${13+yr*12})`, pct:true },
-    { label:'Net Margin % prom.', fn: yr=>`AVERAGE('${PR}'!AP${2+yr*12}:AP${13+yr*12})`, pct:true },
+    { label:'Op Share (año)',        fn: yr=>`SUM('${PR}'!${mc(yr*12)}${MN.OpSh}:${mc(yr*12+11)}${MN.OpSh})` },
+    { label:'Op Share acum.',        fn: yr=>`SUM('${PR}'!B${MN.OpSh}:${mc(yr*12+11)}${MN.OpSh})` },
+    { label:'Revenue Bruto (año)',   fn: yr=>`SUM('${PR}'!${mc(yr*12)}${MN.RevBrt}:${mc(yr*12+11)}${MN.RevBrt})` },
+    { label:'EBITDA (año)',          fn: yr=>`SUM('${PR}'!${mc(yr*12)}${MN.EBITDA}:${mc(yr*12+11)}${MN.EBITDA})` },
+    { label:'Neto Real (año)',       fn: yr=>`SUM('${PR}'!${mc(yr*12)}${MN.NetoReal}:${mc(yr*12+11)}${MN.NetoReal})` },
+    { label:'EBITDA Margin % prom.', fn: yr=>`AVERAGE('${PR}'!${mc(yr*12)}${MN.EBpct}:${mc(yr*12+11)}${MN.EBpct})`, pct:true },
+    { label:'Net Margin % prom.',    fn: yr=>`AVERAGE('${PR}'!${mc(yr*12)}${MN.NetMgn}:${mc(yr*12+11)}${MN.NetMgn})`, pct:true },
   ];
   woYrM.forEach((m, mi) => {
     const row=wo.addRow([m.label]);
@@ -2342,14 +2403,14 @@ async function exportExcel() {
   wo.addRow([]);
   styleSection(wo.addRow(['PROMEDIOS MENSUALES (60 MESES)']));
   [
-    ['Revenue Bruto prom/mes', `AVERAGE('${PR}'!I2:I61)`],
-    ['Covers totales prom/mes', `AVERAGE('${PR}'!H2:H61)`],
-    ['EBITDA prom/mes', `AVERAGE('${PR}'!Y2:Y61)`],
-    ['Neto Real prom/mes', `AVERAGE('${PR}'!AO2:AO61)`],
-    ['EBITDA Margin % prom.', `AVERAGE('${PR}'!Z2:Z61)`, true],
-    ['Net Margin % prom.', `AVERAGE('${PR}'!AP2:AP61)`, true],
-    ['Op Share prom/mes', `AVERAGE('${PR}'!AV2:AV61)`],
-    ['Op Share total 5 años', `SUM('${PR}'!AV2:AV61)`],
+    ['Revenue Bruto prom/mes',  `AVERAGE('${PR}'!B${MN.RevBrt}:BI${MN.RevBrt})`],
+    ['Covers totales prom/mes', `AVERAGE('${PR}'!B${MN.CTot}:BI${MN.CTot})`],
+    ['EBITDA prom/mes',         `AVERAGE('${PR}'!B${MN.EBITDA}:BI${MN.EBITDA})`],
+    ['Neto Real prom/mes',      `AVERAGE('${PR}'!B${MN.NetoReal}:BI${MN.NetoReal})`],
+    ['EBITDA Margin % prom.',   `AVERAGE('${PR}'!B${MN.EBpct}:BI${MN.EBpct})`, true],
+    ['Net Margin % prom.',      `AVERAGE('${PR}'!B${MN.NetMgn}:BI${MN.NetMgn})`, true],
+    ['Op Share prom/mes',       `AVERAGE('${PR}'!B${MN.OpSh}:BI${MN.OpSh})`],
+    ['Op Share total 5 años',   `SUM('${PR}'!B${MN.OpSh}:BI${MN.OpSh})`],
   ].forEach(([lbl, formula, pct], mi) => {
     const row=wo.addRow([lbl,{formula}]);
     row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};

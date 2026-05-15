@@ -573,7 +573,7 @@ footer a:hover { color: #fff; }
     <div class="section-label">Cuatro escenarios</div>
     <div class="grad-line"></div>
     <h2 class="section-title">Elegí tu escenario</h2>
-    <p class="section-sub">Cuatro versiones del mismo negocio. La diferencia está en el tamaño del local, si se activa el After y si se optimiza la estructura fiscal.</p>
+    <p class="section-sub">Cuatro versiones del mismo negocio. La diferencia está en el tamaño del local, si se activa el Speakeasy y si se optimiza la estructura fiscal.</p>
     <div class="esc-preview-grid">
       <div class="esc-preview-card reveal reveal-d1" onclick="goToEsc(1)">
         <div class="epc-num">Escenario 1</div>
@@ -595,7 +595,7 @@ footer a:hover { color: #fff; }
       </div>
       <div class="esc-preview-card reveal reveal-d3" onclick="goToEsc(3)">
         <div class="epc-num">Escenario 3</div>
-        <div class="epc-name">Cena + After<br>Sin optimización</div>
+        <div class="epc-name">Cena + Speakeasy<br>Sin optimización</div>
         <div class="epc-main">$19,222<span>/mes neto</span></div>
         <div class="epc-row"><span>Payback</span><strong>M24</strong></div>
         <div class="epc-row"><span>Múltiplo 5A</span><strong>1.47x</strong></div>
@@ -604,7 +604,7 @@ footer a:hover { color: #fff; }
       </div>
       <div class="esc-preview-card reveal reveal-d4" onclick="goToEsc(4)">
         <div class="epc-num">Escenario 4 ★</div>
-        <div class="epc-name">Cena + After<br>Con optimización fiscal</div>
+        <div class="epc-name">Cena + Speakeasy<br>Con optimización fiscal</div>
         <div class="epc-main">$25,651<span>/mes neto</span></div>
         <div class="epc-row"><span>Payback</span><strong>M19</strong></div>
         <div class="epc-row"><span>Múltiplo 5A</span><strong>1.75x</strong></div>
@@ -803,7 +803,7 @@ footer a:hover { color: #fff; }
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
               <tr><td class="concept">Covers cena / mes</td><td>1,576</td><td></td></tr>
-              <tr><td class="concept">Covers after / mes</td><td>879</td><td></td></tr>
+              <tr><td class="concept">Covers speakeasy / mes</td><td>879</td><td></td></tr>
               <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$86,408</td><td>100%</td></tr>
               <tr class="section-header"><td colspan="3">CMV</td></tr>
               <tr><td class="concept">Food + Bev cost (25%)</td><td class="neg">–$21,602</td><td class="neg">–25.0%</td></tr>
@@ -885,7 +885,7 @@ footer a:hover { color: #fff; }
             <tbody>
               <tr class="section-header"><td colspan="3">REVENUE</td></tr>
               <tr><td class="concept">Covers cena / mes</td><td>1,576</td><td></td></tr>
-              <tr><td class="concept">Covers after / mes</td><td>879</td><td></td></tr>
+              <tr><td class="concept">Covers speakeasy / mes</td><td>879</td><td></td></tr>
               <tr class="subtotal"><td class="concept">Revenue bruto</td><td>$86,408</td><td>100%</td></tr>
               <tr class="section-header"><td colspan="3">CMV</td></tr>
               <tr><td class="concept">Food + Bev cost (25%)</td><td class="neg">–$21,602</td><td class="neg">–25.0%</td></tr>
@@ -989,11 +989,11 @@ footer a:hover { color: #fff; }
         <div class="small-note" id="fmt-nomina-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.</div>
 
         <div class="after-block" id="fmt-after-block" style="display:none; margin-top:20px;">
-          <div class="col-title" style="color:var(--orange); margin-top:0">After — Bar íntimo</div>
+          <div class="col-title" style="color:var(--orange); margin-top:0">Speakeasy — Bar íntimo</div>
           <p class="body-text">Espacio físicamente separado dentro del mismo local. Abre pre, durante y post cena (Mié–Sáb). Bar íntimo con música en vivo, cocktails curados y bocados fríos en tapeo. Experiencia distinta: más íntima, más oscura, audiencia diferente.</p>
           <table class="data-table" style="margin-top:12px">
             <tr><th>Turno</th><th>Días</th><th>Covers/mes</th><th>Ticket</th></tr>
-            <tr><td>After</td><td>Mié–Sáb</td><td class="num">879</td><td class="num">~$24 USD</td></tr>
+            <tr><td>Speakeasy</td><td>Mié–Sáb</td><td class="num">879</td><td class="num">~$24 USD</td></tr>
           </table>
           <div class="small-note" style="margin-top:8px">4 staff adicionales. Nómina total: 16 personas. Revenue incremental: $21,535/mes.</div>
         </div>
@@ -1201,8 +1201,8 @@ footer a:hover { color: #fff; }
 const INV_DATA = {
   1: { titulo:'Inversión: $273,800 · Split 80/25', after:false, capex:'$228,000', wc:'$45,800', total:'$273,800', amort:'$2,558/mes', tl:'~M28', pb:'28 meses', pbtxt:'Escenario base sin optimización fiscal. Neto $14,310/mes → recupero íntegro en M28.', roi:'44.9%' },
   2: { titulo:'Inversión: $273,800 · Split 80/25', after:false, capex:'$228,000', wc:'$45,800', total:'$273,800', amort:'$2,558/mes', tl:'~M21', pb:'21 meses', pbtxt:'Con optimización fiscal activa. Neto $18,754/mes → payback en M21, 7 meses antes.', roi:'58.1%' },
-  3: { titulo:'Inversión: $330,400 · Split 80/25', after:true,  capex:'$266,000', wc:'$64,400', total:'$330,400', amort:'$2,988/mes', tl:'~M24', pb:'24 meses', pbtxt:'Cena + After sin fiscal. Neto $19,222/mes con 2,455 covers totales → payback M24.', roi:'50.0%' },
-  4: { titulo:'Inversión: $330,400 · Split 80/25', after:true,  capex:'$266,000', wc:'$64,400', total:'$330,400', amort:'$2,988/mes', tl:'~M19', pb:'19 meses', pbtxt:'Escenario estrella: Cena + After + fiscal. Neto $25,651/mes → payback M19.', roi:'66.4%' },
+  3: { titulo:'Inversión: $330,400 · Split 80/25', after:true,  capex:'$266,000', wc:'$64,400', total:'$330,400', amort:'$2,988/mes', tl:'~M24', pb:'24 meses', pbtxt:'Cena + Speakeasy sin fiscal. Neto $19,222/mes con 2,455 covers totales → payback M24.', roi:'50.0%' },
+  4: { titulo:'Inversión: $330,400 · Split 80/25', after:true,  capex:'$266,000', wc:'$64,400', total:'$330,400', amort:'$2,988/mes', tl:'~M19', pb:'19 meses', pbtxt:'Escenario estrella: Cena + Speakeasy + fiscal. Neto $25,651/mes → payback M19.', roi:'66.4%' },
 };
 
 function updateInversion(n) {
@@ -1228,7 +1228,7 @@ function updateFormato(n) {
   document.getElementById('fmt-after-badge').style.color = hasAfter ? 'var(--green)' : 'var(--orange)';
   document.getElementById('fmt-after-ticket').textContent = hasAfter ? '~$24 USD' : 'a confirmar';
   document.getElementById('fmt-nomina-note').textContent = hasAfter
-    ? 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina total (cena+after): $20.000/mes.'
+    ? 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina total (cena+speakeasy): $20.000/mes.'
     : 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.';
   document.getElementById('exp-dj-block').style.display = hasAfter ? '' : 'none';
   document.getElementById('exp-base-block').style.display = hasAfter ? 'none' : '';

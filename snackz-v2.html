@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
@@ -2419,7 +2420,17 @@ async function exportExcel() {
     }
   });
 
-  const buf  = await wb.xlsx.writeBuffer();
+  // ExcelJS serializes formula cells as <f>=formula</f> (with leading =),
+  // which violates OOXML spec and causes "Formula parse error" in Google Sheets.
+  // Post-process the ZIP to strip the leading = from all <f> elements.
+  const rawBuf = await wb.xlsx.writeBuffer();
+  const zip = await JSZip.loadAsync(rawBuf);
+  const sheetNames = Object.keys(zip.files).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n));
+  await Promise.all(sheetNames.map(async name => {
+    const xml = await zip.files[name].async('string');
+    zip.file(name, xml.replace(/<f([^>]*)>=/g, '<f$1>'));
+  }));
+  const buf  = await zip.generateAsync({ type:'arraybuffer', compression:'DEFLATE' });
   const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');

@@ -1270,6 +1270,40 @@ document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
 // Init inversión y formato con Esc 1
 updateInversion(1);
 updateFormato(1);
+
+// Números animados
+function animateNum(el) {
+  const raw = el.textContent.trim();
+  const prefix = raw.match(/^[^0-9]*/)[0];
+  const suffix = raw.match(/[^0-9.]*$/)[0];
+  const num = parseFloat(raw.replace(/[^0-9.]/g, ''));
+  if (isNaN(num) || num === 0) return;
+  const isInt = Number.isInteger(num) || raw.includes(',') && !raw.includes('.');
+  const duration = 1200;
+  const start = performance.now();
+  el.dataset.animated = '1';
+  function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const cur = num * ease;
+    el.textContent = prefix + (isInt
+      ? Math.round(cur).toLocaleString('es-AR')
+      : cur.toFixed(raw.includes('%') ? 1 : 2)) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = raw;
+  }
+  requestAnimationFrame(tick);
+}
+
+const numObs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting && !e.target.dataset.animated) {
+      animateNum(e.target);
+      numObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.pv, .pkpi .pv').forEach(el => numObs.observe(el));
 </script>
 </body>
 </html>

@@ -1912,7 +1912,7 @@ async function exportExcel() {
     RF:96,
   };
   const sup = row => `${S}!$B$${row}`;
-  const f = formula => ({ formula });
+  const f = formula => ({ formula: formula.replace(/^=/, '') });
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Snackz V2'; wb.created = new Date();
@@ -2025,8 +2025,8 @@ async function exportExcel() {
     ['Capital de trabajo (meses)', p.capTrabMeses, `${p.capTrabMeses} mes${p.capTrabMeses>1?'es':''}`],
     ['Capital de trabajo ($)', p.capTrab, 'no se amortiza'],
   ].forEach(([lbl,val,note]) => styleParam(ws.addRow([lbl,val,note])));
-  { const row = ws.addRow(['TOTAL inversión (calculado)', { formula:`=B${R.INVC}+B${R.INVM}+B${R.INVO}+B${R.INVB}+B${R.INVH}+B${R.CTRAB}` }, 'activos fijos + cap. trabajo']); styleParam(row, true); }
-  { const row = ws.addRow(['Amortización / mes prom. (calculado)', { formula:`=B${R.INVC}/60+B${R.INVM}/120+B${R.INVO}/120+B${R.INVB}/36+B${R.INVH}/60` }, 'Cocina+Hab /60m, Mob+Obra /120m, Brand /36m']); styleParam(row, true); }
+  { const row = ws.addRow(['TOTAL inversión (calculado)', { formula:`B${R.INVC}+B${R.INVM}+B${R.INVO}+B${R.INVB}+B${R.INVH}+B${R.CTRAB}` }, 'activos fijos + cap. trabajo']); styleParam(row, true); }
+  { const row = ws.addRow(['Amortización / mes prom. (calculado)', { formula:`B${R.INVC}/60+B${R.INVM}/120+B${R.INVO}/120+B${R.INVB}/36+B${R.INVH}/60` }, 'Cocina+Hab /60m, Mob+Obra /120m, Brand /36m']); styleParam(row, true); }
   ws.addRow([]);
   styleSection(ws.addRow(['SPLIT INVERSOR / OPERADOR']));
   [
@@ -2173,25 +2173,25 @@ async function exportExcel() {
     const r = i + 2;
     wc.addRow([
       i + 1,
-      { formula:`='${PR}'!B${r}` },
-      { formula:`='${PR}'!AH${r}` },
-      { formula:`='${PR}'!N${r}*${sup(R.CMPB)}/(1+${sup(R.IVA)})` },
-      { formula:`='${PR}'!R${r}` },
-      { formula:`=${sup(R.ALQ)}/(1+${sup(R.IVA)})` },
-      { formula:`=${sup(R.SRV)}/(1+${sup(R.IVA)})` },
-      { formula:`='${PR}'!U${r}/(1+${sup(R.IVA)})` },
-      { formula:`='${PR}'!V${r}/(1+${sup(R.IVA)})` },
-      { formula:`='${PR}'!X${r}/(1+${sup(R.IVA)})` },
-      { formula:`='${PR}'!W${r}` },
-      { formula:`=${sup(R.FEX)}/(1+${sup(R.IVA)})` },
-      { formula:`='${PR}'!AD${r}+'${PR}'!AE${r}` },
-      { formula:`='${PR}'!AG${r}` },
-      { formula:`='${PR}'!AI${r}` },
-      { formula:`='${PR}'!AJ${r}` },
-      { formula:`='${PR}'!AK${r}` },
-      { formula:`='${PR}'!AL${r}` },
-      { formula:`='${PR}'!AM${r}` },
-      { formula:`='${PR}'!AH${r}-'${PR}'!AI${r}-'${PR}'!AM${r}` },
+      { formula:`'${PR}'!B${r}` },
+      { formula:`'${PR}'!AH${r}` },
+      { formula:`'${PR}'!N${r}*${sup(R.CMPB)}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!R${r}` },
+      { formula:`${sup(R.ALQ)}/(1+${sup(R.IVA)})` },
+      { formula:`${sup(R.SRV)}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!U${r}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!V${r}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!X${r}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!W${r}` },
+      { formula:`${sup(R.FEX)}/(1+${sup(R.IVA)})` },
+      { formula:`'${PR}'!AD${r}+'${PR}'!AE${r}` },
+      { formula:`'${PR}'!AG${r}` },
+      { formula:`'${PR}'!AI${r}` },
+      { formula:`'${PR}'!AJ${r}` },
+      { formula:`'${PR}'!AK${r}` },
+      { formula:`'${PR}'!AL${r}` },
+      { formula:`'${PR}'!AM${r}` },
+      { formula:`'${PR}'!AH${r}-'${PR}'!AI${r}-'${PR}'!AM${r}` },
     ]);
     const row = wc.getRow(r);
     row.height = 15;
@@ -2228,16 +2228,16 @@ async function exportExcel() {
     const r = i + 2;
     wcf.addRow([
       i + 1,
-      { formula:`='${PR}'!B${r}` },
-      { formula:`='${PR}'!I${r}` },
-      { formula:`='${PR}'!Y${r}` },
-      { formula:`='${PR}'!AN${r}` },
-      { formula:`='${PR}'!AO${r}` },
-      { formula:`='${PR}'!K${r}-'${PR}'!N${r}*${sup(R.PNEG)}` },
-      { formula:`='${PR}'!J${r}-'${PR}'!N${r}*(1-${sup(R.PNEG)})-'${PR}'!Q${r}-'${PR}'!T${r}-'${PR}'!U${r}-'${PR}'!V${r}-'${PR}'!W${r}-'${PR}'!X${r}-'${PR}'!AC${r}-'${PR}'!AD${r}-'${PR}'!AE${r}-'${PR}'!AM${r}` },
-      { formula:`='${PR}'!AQ${r}` },
-      { formula:`='${PR}'!AR${r}` },
-      { formula:`="Inv:"&TEXT('${PR}'!AU${r},"#,##0")&" | Op:"&TEXT('${PR}'!AV${r},"#,##0")` },
+      { formula:`'${PR}'!B${r}` },
+      { formula:`'${PR}'!I${r}` },
+      { formula:`'${PR}'!Y${r}` },
+      { formula:`'${PR}'!AN${r}` },
+      { formula:`'${PR}'!AO${r}` },
+      { formula:`'${PR}'!K${r}-'${PR}'!N${r}*${sup(R.PNEG)}` },
+      { formula:`'${PR}'!J${r}-'${PR}'!N${r}*(1-${sup(R.PNEG)})-'${PR}'!Q${r}-'${PR}'!T${r}-'${PR}'!U${r}-'${PR}'!V${r}-'${PR}'!W${r}-'${PR}'!X${r}-'${PR}'!AC${r}-'${PR}'!AD${r}-'${PR}'!AE${r}-'${PR}'!AM${r}` },
+      { formula:`'${PR}'!AQ${r}` },
+      { formula:`'${PR}'!AR${r}` },
+      { formula:`"Inv:"&TEXT('${PR}'!AU${r},"#,##0")&" | Op:"&TEXT('${PR}'!AV${r},"#,##0")` },
     ]);
     const row = wcf.getRow(r);
     row.height = 15;
@@ -2262,9 +2262,9 @@ async function exportExcel() {
   wiT.height = 22;
   wi.addRow([]);
   styleSection(wi.addRow(['INVERSIÓN']));
-  styleParam(wi.addRow(['Capital total invertido', { formula:`=${sup(R.INV_TOT)}` }, '']));
-  styleParam(wi.addRow(['Split pre-payback (% para inversor)', { formula:`=${sup(R.SPPRE)}` }, '']));
-  styleParam(wi.addRow(['Split post-payback (% para inversor)', { formula:`=${sup(R.SPPOST)}` }, '']));
+  styleParam(wi.addRow(['Capital total invertido', { formula:`${sup(R.INV_TOT)}` }, '']));
+  styleParam(wi.addRow(['Split pre-payback (% para inversor)', { formula:`${sup(R.SPPRE)}` }, '']));
+  styleParam(wi.addRow(['Split post-payback (% para inversor)', { formula:`${sup(R.SPPOST)}` }, '']));
   wi.addRow([]);
   styleSection(wi.addRow(['RETORNO POR AÑO']));
   wi.addRow(['','Año 1','Año 2','Año 3','Año 4','Año 5']).eachCell((c,ci) => {
@@ -2272,14 +2272,14 @@ async function exportExcel() {
     c.font={bold:true,color:{argb:GOLD},size:9}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
   });
   const wiYrM = [
-    { label:'Inversor cobró (año)', fn: yr => `=SUM('${PR}'!AU${2+yr*12}:AU${13+yr*12})` },
-    { label:'Inversor acum. (al fin del año)', fn: yr => `=SUM('${PR}'!AU$2:AU${13+yr*12})` },
-    { label:'Operador cobró (año)', fn: yr => `=SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
-    { label:'Operador acum. (al fin del año)', fn: yr => `=SUM('${PR}'!AV$2:AV${13+yr*12})` },
-    { label:'Cash Acum. (fin de año)', fn: yr => `='${PR}'!AR${13+yr*12}` },
-    { label:'Revenue Bruto (año)', fn: yr => `=SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
-    { label:'EBITDA (año)', fn: yr => `=SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
-    { label:'Neto Real (año)', fn: yr => `=SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
+    { label:'Inversor cobró (año)', fn: yr => `SUM('${PR}'!AU${2+yr*12}:AU${13+yr*12})` },
+    { label:'Inversor acum. (al fin del año)', fn: yr => `SUM('${PR}'!AU$2:AU${13+yr*12})` },
+    { label:'Operador cobró (año)', fn: yr => `SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
+    { label:'Operador acum. (al fin del año)', fn: yr => `SUM('${PR}'!AV$2:AV${13+yr*12})` },
+    { label:'Cash Acum. (fin de año)', fn: yr => `'${PR}'!AR${13+yr*12}` },
+    { label:'Revenue Bruto (año)', fn: yr => `SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
+    { label:'EBITDA (año)', fn: yr => `SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
+    { label:'Neto Real (año)', fn: yr => `SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
   ];
   wiYrM.forEach((m, mi) => {
     const row = wi.addRow([m.label]);
@@ -2294,12 +2294,12 @@ async function exportExcel() {
   wi.addRow([]);
   styleSection(wi.addRow(['RESUMEN 5 AÑOS']));
   [
-    ['Inversor cobró total', `=SUM('${PR}'!AU2:AU61)`],
-    ['Inversión original', `=${sup(R.INV_TOT)}`],
-    ['Ganancia neta inversor', `=SUM('${PR}'!AU2:AU61)-${sup(R.INV_TOT)}`],
-    ['Múltiplo (x veces)', `=IF(${sup(R.INV_TOT)}>0,SUM('${PR}'!AU2:AU61)/${sup(R.INV_TOT)},0)`, '0.00"x"'],
-    ['Operador cobró total', `=SUM('${PR}'!AV2:AV61)`],
-    ['Cash total generado (60M)', `=SUM('${PR}'!AQ2:AQ61)`],
+    ['Inversor cobró total', `SUM('${PR}'!AU2:AU61)`],
+    ['Inversión original', `${sup(R.INV_TOT)}`],
+    ['Ganancia neta inversor', `SUM('${PR}'!AU2:AU61)-${sup(R.INV_TOT)}`],
+    ['Múltiplo (x veces)', `IF(${sup(R.INV_TOT)}>0,SUM('${PR}'!AU2:AU61)/${sup(R.INV_TOT)},0)`, '0.00"x"'],
+    ['Operador cobró total', `SUM('${PR}'!AV2:AV61)`],
+    ['Cash total generado (60M)', `SUM('${PR}'!AQ2:AQ61)`],
   ].forEach(([lbl, formula, fmt], mi) => {
     const row=wi.addRow([lbl,{formula}]);
     row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};
@@ -2320,13 +2320,13 @@ async function exportExcel() {
     c.font={bold:true,color:{argb:GREEN},size:9}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MID}}; c.alignment={horizontal:'center'};
   });
   const woYrM = [
-    { label:'Op Share (año)', fn: yr=>`=SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
-    { label:'Op Share acum.', fn: yr=>`=SUM('${PR}'!AV$2:AV${13+yr*12})` },
-    { label:'Revenue Bruto (año)', fn: yr=>`=SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
-    { label:'EBITDA (año)', fn: yr=>`=SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
-    { label:'Neto Real (año)', fn: yr=>`=SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
-    { label:'EBITDA Margin % prom.', fn: yr=>`=AVERAGE('${PR}'!Z${2+yr*12}:Z${13+yr*12})`, pct:true },
-    { label:'Net Margin % prom.', fn: yr=>`=AVERAGE('${PR}'!AP${2+yr*12}:AP${13+yr*12})`, pct:true },
+    { label:'Op Share (año)', fn: yr=>`SUM('${PR}'!AV${2+yr*12}:AV${13+yr*12})` },
+    { label:'Op Share acum.', fn: yr=>`SUM('${PR}'!AV$2:AV${13+yr*12})` },
+    { label:'Revenue Bruto (año)', fn: yr=>`SUM('${PR}'!I${2+yr*12}:I${13+yr*12})` },
+    { label:'EBITDA (año)', fn: yr=>`SUM('${PR}'!Y${2+yr*12}:Y${13+yr*12})` },
+    { label:'Neto Real (año)', fn: yr=>`SUM('${PR}'!AO${2+yr*12}:AO${13+yr*12})` },
+    { label:'EBITDA Margin % prom.', fn: yr=>`AVERAGE('${PR}'!Z${2+yr*12}:Z${13+yr*12})`, pct:true },
+    { label:'Net Margin % prom.', fn: yr=>`AVERAGE('${PR}'!AP${2+yr*12}:AP${13+yr*12})`, pct:true },
   ];
   woYrM.forEach((m, mi) => {
     const row=wo.addRow([m.label]);
@@ -2341,14 +2341,14 @@ async function exportExcel() {
   wo.addRow([]);
   styleSection(wo.addRow(['PROMEDIOS MENSUALES (60 MESES)']));
   [
-    ['Revenue Bruto prom/mes', `=AVERAGE('${PR}'!I2:I61)`],
-    ['Covers totales prom/mes', `=AVERAGE('${PR}'!H2:H61)`],
-    ['EBITDA prom/mes', `=AVERAGE('${PR}'!Y2:Y61)`],
-    ['Neto Real prom/mes', `=AVERAGE('${PR}'!AO2:AO61)`],
-    ['EBITDA Margin % prom.', `=AVERAGE('${PR}'!Z2:Z61)`, true],
-    ['Net Margin % prom.', `=AVERAGE('${PR}'!AP2:AP61)`, true],
-    ['Op Share prom/mes', `=AVERAGE('${PR}'!AV2:AV61)`],
-    ['Op Share total 5 años', `=SUM('${PR}'!AV2:AV61)`],
+    ['Revenue Bruto prom/mes', `AVERAGE('${PR}'!I2:I61)`],
+    ['Covers totales prom/mes', `AVERAGE('${PR}'!H2:H61)`],
+    ['EBITDA prom/mes', `AVERAGE('${PR}'!Y2:Y61)`],
+    ['Neto Real prom/mes', `AVERAGE('${PR}'!AO2:AO61)`],
+    ['EBITDA Margin % prom.', `AVERAGE('${PR}'!Z2:Z61)`, true],
+    ['Net Margin % prom.', `AVERAGE('${PR}'!AP2:AP61)`, true],
+    ['Op Share prom/mes', `AVERAGE('${PR}'!AV2:AV61)`],
+    ['Op Share total 5 años', `SUM('${PR}'!AV2:AV61)`],
   ].forEach(([lbl, formula, pct], mi) => {
     const row=wo.addRow([lbl,{formula}]);
     row.getCell(1).font={color:{argb:LABEL},size:9}; row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};

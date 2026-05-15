@@ -986,7 +986,7 @@ footer a:hover { color: #fff; }
           <tr><td>Recepción / caja</td><td class="num">2</td></tr>
           <tr class="subtotal"><td>Total</td><td class="num">12</td></tr>
         </table>
-        <div class="small-note" id="fmt-nomina-note">Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.</div>
+        <div class="small-note" id="fmt-nomina-note">Costo por empleado: USD 1.150/mes (todo blanco). Nómina cena: $15.000/mes.</div>
 
         <div class="after-block" id="fmt-after-block" style="display:none; margin-top:20px;">
           <div class="col-title" style="color:var(--orange); margin-top:0">Speakeasy — Bar íntimo</div>
@@ -1228,8 +1228,8 @@ function updateFormato(n) {
   document.getElementById('fmt-after-badge').style.color = hasAfter ? 'var(--green)' : 'var(--orange)';
   document.getElementById('fmt-after-ticket').textContent = hasAfter ? '~$24 USD' : 'a confirmar';
   document.getElementById('fmt-nomina-note').textContent = hasAfter
-    ? 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina total (cena+speakeasy): $20.000/mes.'
-    : 'Costo por empleado: USD 1.250/mes (todo blanco). Nómina cena: $15.000/mes.';
+    ? 'Costo por empleado: USD 1.150/mes (todo blanco). Nómina total (cena+speakeasy): $20.000/mes.'
+    : 'Costo por empleado: USD 1.150/mes (todo blanco). Nómina cena: $15.000/mes.';
   document.getElementById('exp-dj-block').style.display = hasAfter ? '' : 'none';
   document.getElementById('exp-base-block').style.display = hasAfter ? 'none' : '';
 }

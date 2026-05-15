@@ -677,7 +677,7 @@ function calcMonth(p, mi) {
   // IMPUESTOS
   // IVA
   const ivaDb = revBl / (1 + IVA) * IVA;
-  const ivaCrGastos = (cmvFact + p.alq + p.srv + mktg + opex + p.sft + p.cnt + p.fex);
+  const ivaCrGastos = (cmvFact + p.alq + p.srv + mktg + opex + p.sft + p.cnt + p.fex + proc);
   const ivaCr = ivaCrGastos * IVA / (1 + IVA);
   const ivaPagar = Math.max(0, ivaDb - ivaCr);
 
@@ -707,7 +707,7 @@ function calcMonth(p, mi) {
     mktg / (1 + IVA) +
     p.cnt / (1 + IVA) +
     p.sft / (1 + IVA) +
-    proc +
+    proc / (1 + IVA) +
     p.fex / (1 + IVA) +
     iibb + debCred +
     amortMes;
@@ -1863,15 +1863,13 @@ function update() {
   $('mAp_v').textContent = MN[p.mAp-1];
 
   // Calc
-  const annualMs = Array.from({length:12},(_,i)=>calcMonth(p,i));
+  const data = calc60(p);
   const avg = {};
-  const nk = Object.keys(annualMs[0]).filter(k=>typeof annualMs[0][k]==='number');
-  for(const k of nk) avg[k] = annualMs.reduce((s,m)=>s+m[k],0)/12;
+  const nk = Object.keys(data.ms[0]).filter(k=>typeof data.ms[0][k]==='number');
+  for(const k of nk) avg[k] = data.ms.slice(0,12).reduce((s,m)=>s+m[k],0)/12;
 
   renderReal(avg);
   renderContable(avg);
-
-  const data = calc60(p);
   renderCash(data);
   renderInversor(avg, data, p);
   renderOperador(avg, data, p);
@@ -2114,14 +2112,14 @@ async function exportExcel() {
       EBITDA:  f(`=${c}${m.GP}-${c}${m.Lab}-${c}${m.Occ}-${c}${m.OPEX}-${c}${m.Mkt}-${c}${m.Proc}-${c}${m.SGA}`),
       EBpct:   f(`=IF(${c}${m.RevBrt}>0,${c}${m.EBITDA}/${c}${m.RevBrt},0)`),
       IVADeb:  f(`=${c}${m.RevBl}/(1+${sup(R.IVA)})*${sup(R.IVA)}`),
-      IVACred: f(`=(${c}${m.CMV}*${sup(R.CMPB)}+${sup(R.ALQ)}+${sup(R.SRV)}+${c}${m.Mkt}+${c}${m.OPEX}+${sup(R.SFT)}+${sup(R.CNT)}+${sup(R.FEX)})*${sup(R.IVA)}/(1+${sup(R.IVA)})`),
+      IVACred: f(`=(${c}${m.CMV}*${sup(R.CMPB)}+${sup(R.ALQ)}+${sup(R.SRV)}+${c}${m.Mkt}+${c}${m.OPEX}+${sup(R.SFT)}+${sup(R.CNT)}+${sup(R.FEX)}+${c}${m.Proc})*${sup(R.IVA)}/(1+${sup(R.IVA)})`),
       IVAPag:  f(`=MAX(0,${c}${m.IVADeb}-${c}${m.IVACred})`),
       IIBB:    f(`=${c}${m.RevBl}*${sup(R.IIBB)}`),
       DBC:     f(`=${c}${m.RevBl}*${sup(R.DBC)}`),
       FexC:    f(`=${sup(R.FEX)}*${sup(R.IVA)}/(1+${sup(R.IVA)})*${sup(R.FEXC)}`),
       Amort:   f(`=IF(${i}<36,${sup(R.INVB)}/36,0)+IF(${i}<60,(${sup(R.INVC)}+${sup(R.INVH)})/60,0)+IF(${i}<120,(${sup(R.INVM)}+${sup(R.INVO)})/120,0)`),
       RevBlNeto: f(`=${c}${m.RevBl}/(1+${sup(R.IVA)})`),
-      GtosDed: f(`=${c}${m.CMV}*${sup(R.CMPB)}/(1+${sup(R.IVA)})+${c}${m.LabBl}+${sup(R.ALQ)}/(1+${sup(R.IVA)})+${sup(R.SRV)}/(1+${sup(R.IVA)})+${c}${m.OPEX}/(1+${sup(R.IVA)})+${c}${m.Mkt}/(1+${sup(R.IVA)})+${sup(R.CNT)}/(1+${sup(R.IVA)})+${sup(R.SFT)}/(1+${sup(R.IVA)})+${c}${m.Proc}+${sup(R.FEX)}/(1+${sup(R.IVA)})+${c}${m.IVAPag}+${c}${m.IIBB}+${c}${m.Amort}`),
+      GtosDed: f(`=${c}${m.CMV}*${sup(R.CMPB)}/(1+${sup(R.IVA)})+${c}${m.LabBl}+${sup(R.ALQ)}/(1+${sup(R.IVA)})+${sup(R.SRV)}/(1+${sup(R.IVA)})+${c}${m.OPEX}/(1+${sup(R.IVA)})+${c}${m.Mkt}/(1+${sup(R.IVA)})+${sup(R.CNT)}/(1+${sup(R.IVA)})+${sup(R.SFT)}/(1+${sup(R.IVA)})+${c}${m.Proc}/(1+${sup(R.IVA)})+${sup(R.FEX)}/(1+${sup(R.IVA)})+${c}${m.IVAPag}+${c}${m.IIBB}+${c}${m.Amort}`),
       BaseGan: f(`=${c}${m.RevBlNeto}-${c}${m.GtosDed}`),
       Qbr:     i===0 ? 0 : f(`=${pc}${m.Qbr}+IF(${pc}${m.BaseGan}<0,ABS(${pc}${m.BaseGan}),-MIN(${pc}${m.Qbr},MAX(0,${pc}${m.BaseGan})))`),
       BaseQbr: f(`=IF(${c}${m.BaseGan}<0,0,MAX(0,${c}${m.BaseGan}-${c}${m.Qbr}))`),

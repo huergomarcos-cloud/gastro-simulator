@@ -1916,6 +1916,8 @@ async function exportExcel() {
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Snackz V2'; wb.created = new Date();
+  wb.calcProperties.fullCalcOnLoad = true;
+  wb.calcProperties.calcMode = 'auto';
 
   const DARK='FF0F172A', MID='FF1E293B', GOLD='FFFBBF24', WHITE='FFF1F5F9';
   const GREEN='FF4ADE80', RED='FFF87171', MUTED='FF94A3B8', LABEL='FFCBD5E1';
